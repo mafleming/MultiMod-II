@@ -1,0 +1,1 @@
+C:\"Program Files"\Saxonica\SaxonHE9.5N\bin\Transform.exe -t mm2.xml  -xsl:"c:\Program Files\kicad\bin\scripting\plugins\bom2grouped_csv.xsl" -o:"mm2.csv"

@@ -1,0 +1,602 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A 11000 8500
+encoding utf-8
+Sheet 3 6
+Title "MultiMod II"
+Date ""
+Rev "B"
+Comp ""
+Comment1 "Power Supply"
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text Notes 6900 1300 0    100  ~ 0
+Power Supply Sequencing\n1) 1.2V FPGA core voltage\n2) 3.3V External I/O\n3) 2.5V External I/O
+$Comp
+L power:+1V2 #PWR0115
+U 1 1 648EC984
+P 8975 2075
+F 0 "#PWR0115" H 8975 1925 50  0001 C CNN
+F 1 "+1V2" V 8990 2203 50  0000 L CNN
+F 2 "" H 8975 2075 50  0001 C CNN
+F 3 "" H 8975 2075 50  0001 C CNN
+	1    8975 2075
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+2V5 #PWR0116
+U 1 1 648ED40A
+P 7800 2775
+F 0 "#PWR0116" H 7800 2625 50  0001 C CNN
+F 1 "+2V5" V 7815 2903 50  0000 L CNN
+F 2 "" H 7800 2775 50  0001 C CNN
+F 3 "" H 7800 2775 50  0001 C CNN
+	1    7800 2775
+	0    1    1    0   
+$EndComp
+$Comp
+L power:GND #PWR0117
+U 1 1 648EDA67
+P 6525 3050
+F 0 "#PWR0117" H 6525 2800 50  0001 C CNN
+F 1 "GND" H 6530 2877 50  0000 C CNN
+F 2 "" H 6525 3050 50  0001 C CNN
+F 3 "" H 6525 3050 50  0001 C CNN
+	1    6525 3050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7650 2775 7800 2775
+Wire Wire Line
+	6525 3050 6525 2875
+Wire Wire Line
+	3650 5150 3875 5150
+Connection ~ 3650 5150
+Wire Wire Line
+	3650 6300 3650 5150
+Wire Wire Line
+	2700 6300 3650 6300
+Wire Wire Line
+	2700 6950 2700 6300
+Wire Wire Line
+	2775 6950 2700 6950
+Wire Wire Line
+	3650 3425 3900 3425
+Connection ~ 3650 3425
+Wire Wire Line
+	3650 4450 3650 3425
+Wire Wire Line
+	2700 4450 3650 4450
+Text Notes 3900 7325 0    50   ~ 0
+1uF, 10V, X5R, 20%
+Text Notes 3950 5850 0    50   ~ 0
+1uF, 10V, X5R, 20%
+Text Notes 4025 3950 0    50   ~ 0
+1uF, 10V, X5R, 20%
+Wire Wire Line
+	3900 3900 3175 3900
+Wire Wire Line
+	3875 5750 3175 5750
+Wire Wire Line
+	3775 7275 3175 7275
+Wire Wire Line
+	3775 6750 4175 6750
+Connection ~ 3775 6750
+Wire Wire Line
+	3775 6975 3775 6750
+Connection ~ 3875 5150
+Wire Wire Line
+	3875 5450 3875 5150
+Wire Wire Line
+	3900 3425 4175 3425
+Connection ~ 3900 3425
+Wire Wire Line
+	3900 3600 3900 3425
+$Comp
+L Device:C C11
+U 1 1 648C6954
+P 3775 7125
+F 0 "C11" H 3890 7171 50  0000 L CNN
+F 1 "1uF" H 3890 7080 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 3813 6975 50  0001 C CNN
+F 3 "~" H 3775 7125 50  0001 C CNN
+	1    3775 7125
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C9
+U 1 1 648C630C
+P 3875 5600
+F 0 "C9" H 3990 5646 50  0000 L CNN
+F 1 "1uF" H 3990 5555 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 3913 5450 50  0001 C CNN
+F 3 "~" H 3875 5600 50  0001 C CNN
+	1    3875 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C7
+U 1 1 648C5BE0
+P 3900 3750
+F 0 "C7" H 4015 3796 50  0000 L CNN
+F 1 "1uF" H 4015 3705 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 3938 3600 50  0001 C CNN
+F 3 "~" H 3900 3750 50  0001 C CNN
+	1    3900 3750
+	1    0    0    -1  
+$EndComp
+Text Notes 1175 7150 0    50   ~ 0
+1uF, 10V, X5R, 20%
+Text Notes 1200 5625 0    50   ~ 0
+1uF, 10V, X5R, 20%
+Text Notes 1150 3775 0    50   ~ 0
+1uF, 10V, X5R, 20%
+Wire Wire Line
+	3175 7275 3175 7450
+Connection ~ 3175 7275
+Wire Wire Line
+	2125 7275 3175 7275
+Wire Wire Line
+	2125 6750 2500 6750
+Wire Wire Line
+	2125 6975 2125 6750
+Wire Wire Line
+	3175 5750 3175 5925
+Connection ~ 3175 5750
+Wire Wire Line
+	2125 5750 3175 5750
+Wire Wire Line
+	2125 5275 2500 5275
+Wire Wire Line
+	2125 5450 2125 5275
+Wire Wire Line
+	3175 3900 3175 4050
+Connection ~ 3175 3900
+Wire Wire Line
+	2150 3900 3175 3900
+Wire Wire Line
+	2150 3600 2150 3425
+$Comp
+L Device:C C10
+U 1 1 648C3A0D
+P 2125 7125
+F 0 "C10" H 2240 7171 50  0000 L CNN
+F 1 "1uF" H 2240 7080 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 2163 6975 50  0001 C CNN
+F 3 "~" H 2125 7125 50  0001 C CNN
+	1    2125 7125
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C8
+U 1 1 648C37DC
+P 2125 5600
+F 0 "C8" H 2240 5646 50  0000 L CNN
+F 1 "1uF" H 2240 5555 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 2163 5450 50  0001 C CNN
+F 3 "~" H 2125 5600 50  0001 C CNN
+	1    2125 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C6
+U 1 1 648C33C6
+P 2150 3750
+F 0 "C6" H 2265 3796 50  0000 L CNN
+F 1 "1uF" H 2265 3705 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 2188 3600 50  0001 C CNN
+F 3 "~" H 2150 3750 50  0001 C CNN
+	1    2150 3750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2150 3425 2500 3425
+Connection ~ 2500 5275
+Wire Wire Line
+	2500 6750 2500 5275
+Wire Wire Line
+	2775 6750 2500 6750
+Wire Wire Line
+	3575 6750 3775 6750
+$Comp
+L power:+2V5 #PWR0118
+U 1 1 648C12BA
+P 4175 6750
+F 0 "#PWR0118" H 4175 6600 50  0001 C CNN
+F 1 "+2V5" V 4190 6878 50  0000 L CNN
+F 2 "" H 4175 6750 50  0001 C CNN
+F 3 "" H 4175 6750 50  0001 C CNN
+	1    4175 6750
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+3.3V #PWR0119
+U 1 1 648C06A5
+P 4175 5150
+F 0 "#PWR0119" H 4175 5000 50  0001 C CNN
+F 1 "+3.3V" V 4190 5278 50  0000 L CNN
+F 2 "" H 4175 5150 50  0001 C CNN
+F 3 "" H 4175 5150 50  0001 C CNN
+	1    4175 5150
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+1V2 #PWR0120
+U 1 1 648BFBA2
+P 4175 3425
+F 0 "#PWR0120" H 4175 3275 50  0001 C CNN
+F 1 "+1V2" V 4190 3553 50  0000 L CNN
+F 2 "" H 4175 3425 50  0001 C CNN
+F 3 "" H 4175 3425 50  0001 C CNN
+	1    4175 3425
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2500 3425 2775 3425
+Connection ~ 2500 3425
+Wire Wire Line
+	2775 3625 2500 3625
+Wire Wire Line
+	3175 7150 3175 7275
+Wire Wire Line
+	3175 5550 3175 5750
+Wire Wire Line
+	3175 3825 3175 3900
+$Comp
+L power:GND #PWR0121
+U 1 1 648BF097
+P 3175 4050
+F 0 "#PWR0121" H 3175 3800 50  0001 C CNN
+F 1 "GND" H 3180 3877 50  0000 C CNN
+F 2 "" H 3175 4050 50  0001 C CNN
+F 3 "" H 3175 4050 50  0001 C CNN
+	1    3175 4050
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0122
+U 1 1 648BEC43
+P 3175 5925
+F 0 "#PWR0122" H 3175 5675 50  0001 C CNN
+F 1 "GND" H 3180 5752 50  0000 C CNN
+F 2 "" H 3175 5925 50  0001 C CNN
+F 3 "" H 3175 5925 50  0001 C CNN
+	1    3175 5925
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0123
+U 1 1 648BE9C0
+P 3175 7450
+F 0 "#PWR0123" H 3175 7200 50  0001 C CNN
+F 1 "GND" H 3180 7277 50  0000 C CNN
+F 2 "" H 3175 7450 50  0001 C CNN
+F 3 "" H 3175 7450 50  0001 C CNN
+	1    3175 7450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Regulator_Linear:MIC5504-2.5YM5 U9
+U 1 1 648BB2BF
+P 3175 6850
+F 0 "U9" H 3175 7192 50  0000 C CNN
+F 1 "MIC5504-2.5" H 3150 7100 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23-5" H 3175 7175 50  0001 C CNN
+F 3 "https://www.diodes.com/assets/Datasheets/AP2127.pdf" H 3175 6950 50  0001 C CNN
+	1    3175 6850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Regulator_Linear:MIC5504-3.3YM5 U8
+U 1 1 648BA262
+P 3175 5250
+F 0 "U8" H 3175 5592 50  0000 C CNN
+F 1 "MIC5504-3.3" H 3175 5501 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23-5" H 3175 5575 50  0001 C CNN
+F 3 "https://www.diodes.com/assets/Datasheets/AP2127.pdf" H 3175 5350 50  0001 C CNN
+	1    3175 5250
+	1    0    0    -1  
+$EndComp
+$Comp
+L Regulator_Linear:MIC5504-1.2YM5 U7
+U 1 1 648B8D19
+P 3175 3525
+F 0 "U7" H 3175 3867 50  0000 C CNN
+F 1 "MIC5504-1.2" H 3175 3776 50  0000 C CNN
+F 2 "Package_TO_SOT_SMD:SOT-23-5" H 3175 3850 50  0001 C CNN
+F 3 "https://www.diodes.com/assets/Datasheets/AP2127.pdf" H 3175 3625 50  0001 C CNN
+	1    3175 3525
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:D_Schottky D1
+U 1 1 64893C5B
+P 1450 2250
+F 0 "D1" H 1450 2033 50  0000 C CNN
+F 1 "CDBZC0140L-HF" H 1450 2124 50  0000 C CNN
+F 2 "Diodes_SMD:D_0603" H 1450 2250 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/80/QW_G1155_CDBZC0140L_HF_RevA-3180235.pdf" H 1450 2250 50  0001 C CNN
+	1    1450 2250
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	3875 5150 4175 5150
+Wire Wire Line
+	2700 4450 2700 5350
+Wire Wire Line
+	2700 5350 2775 5350
+Wire Wire Line
+	3575 5150 3650 5150
+Wire Wire Line
+	3575 3425 3650 3425
+Wire Wire Line
+	2500 3425 2500 3625
+Connection ~ 2500 3625
+Wire Wire Line
+	2500 3625 2500 5150
+Connection ~ 2500 6750
+Wire Wire Line
+	2500 2675 2500 2775
+$Comp
+L Device:R R1
+U 1 1 649E5971
+P 2500 2525
+F 0 "R1" H 2570 2571 50  0000 L CNN
+F 1 "1" H 2570 2480 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603" V 2430 2525 50  0001 C CNN
+F 3 "~" H 2500 2525 50  0001 C CNN
+	1    2500 2525
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:TestPoint TP2
+U 1 1 649EAAF4
+P 2750 2775
+F 0 "TP2" V 2704 2963 50  0000 L CNN
+F 1 "TestPoint" V 2795 2963 50  0000 L CNN
+F 2 "Measurement_Points:Measurement_Point_Square-SMD-Pad_Big" H 2950 2775 50  0001 C CNN
+F 3 "~" H 2950 2775 50  0001 C CNN
+	1    2750 2775
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:TestPoint TP1
+U 1 1 649EB111
+P 2775 2375
+F 0 "TP1" V 2729 2563 50  0000 L CNN
+F 1 "TestPoint" V 2820 2563 50  0000 L CNN
+F 2 "Measurement_Points:Measurement_Point_Square-SMD-Pad_Big" H 2975 2375 50  0001 C CNN
+F 3 "~" H 2975 2375 50  0001 C CNN
+	1    2775 2375
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2775 2375 2500 2375
+Connection ~ 2500 2375
+Wire Wire Line
+	2750 2775 2500 2775
+Connection ~ 2500 2775
+Wire Wire Line
+	2500 2775 2500 3425
+Text Notes 3125 2625 0    100  ~ 0
+Measure supply current
+$Comp
+L Device:R R4
+U 1 1 64C93656
+P 8975 2375
+F 0 "R4" H 9045 2421 50  0000 L CNN
+F 1 "100" H 9045 2330 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603" V 8905 2375 50  0001 C CNN
+F 3 "~" H 8975 2375 50  0001 C CNN
+	1    8975 2375
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C5
+U 1 1 64C940E7
+P 8975 3275
+F 0 "C5" H 9090 3321 50  0000 L CNN
+F 1 "100nF" H 9090 3230 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 9013 3125 50  0001 C CNN
+F 3 "~" H 8975 3275 50  0001 C CNN
+	1    8975 3275
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C13
+U 1 1 64C94FE2
+P 9575 3275
+F 0 "C13" H 9690 3321 50  0000 L CNN
+F 1 "4.7uF" H 9690 3230 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 9613 3125 50  0001 C CNN
+F 3 "~" H 9575 3275 50  0001 C CNN
+	1    9575 3275
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8975 2075 8975 2225
+Wire Wire Line
+	8975 2525 8975 2975
+Connection ~ 8975 2975
+Wire Wire Line
+	8975 2975 8975 3125
+Wire Wire Line
+	9575 3125 9575 2975
+Wire Wire Line
+	9575 2975 8975 2975
+$Comp
+L power:GND #PWR0136
+U 1 1 64C9C937
+P 8975 3625
+F 0 "#PWR0136" H 8975 3375 50  0001 C CNN
+F 1 "GND" H 8980 3452 50  0000 C CNN
+F 2 "" H 8975 3625 50  0001 C CNN
+F 3 "" H 8975 3625 50  0001 C CNN
+	1    8975 3625
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8975 3425 8975 3550
+Wire Wire Line
+	9575 3425 9575 3550
+Wire Wire Line
+	9575 3550 8975 3550
+Connection ~ 8975 3550
+Wire Wire Line
+	8975 3550 8975 3625
+Wire Wire Line
+	7650 2975 8975 2975
+$Comp
+L Device:C C4
+U 1 1 64CA6A51
+P 8450 3275
+F 0 "C4" H 8565 3321 50  0000 L CNN
+F 1 "100nF" H 8565 3230 50  0000 L CNN
+F 2 "Capacitors_SMD:C_0603" H 8488 3125 50  0001 C CNN
+F 3 "~" H 8450 3275 50  0001 C CNN
+	1    8450 3275
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+1V2 #PWR0137
+U 1 1 64CA6EC7
+P 8450 2075
+F 0 "#PWR0137" H 8450 1925 50  0001 C CNN
+F 1 "+1V2" V 8465 2203 50  0000 L CNN
+F 2 "" H 8450 2075 50  0001 C CNN
+F 3 "" H 8450 2075 50  0001 C CNN
+	1    8450 2075
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0138
+U 1 1 64CA73BA
+P 8450 3625
+F 0 "#PWR0138" H 8450 3375 50  0001 C CNN
+F 1 "GND" H 8455 3452 50  0000 C CNN
+F 2 "" H 8450 3625 50  0001 C CNN
+F 3 "" H 8450 3625 50  0001 C CNN
+	1    8450 3625
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8450 3425 8450 3625
+Wire Wire Line
+	8450 2075 8450 2875
+Wire Wire Line
+	7650 2875 8450 2875
+Connection ~ 8450 2875
+Wire Wire Line
+	8450 2875 8450 3125
+$Comp
+L FPGA_Lattice_corrected:ICE40UP5K-SG48ITR U?
+U 4 1 64CBACFE
+P 7250 2875
+AR Path="/64CBACFE" Ref="U?"  Part="4" 
+AR Path="/648B84BF/64CBACFE" Ref="U1"  Part="4" 
+F 0 "U1" V 6883 2875 50  0000 C CNN
+F 1 "ICE40UP5K-SG48ITR" V 6974 2875 50  0000 C CNN
+F 2 "Package_DFN_QFN:QFN-48-1EP_7x7mm_P0.5mm_EP5.6x5.6mm" H 7250 1525 50  0001 C CNN
+F 3 "" H 6850 3875 50  0001 C CNN
+	4    7250 2875
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2775 5150 2500 5150
+Connection ~ 2500 5150
+Wire Wire Line
+	2500 5150 2500 5275
+Wire Wire Line
+	6850 2875 6525 2875
+$Comp
+L Device:R R?
+U 1 1 64C9546A
+P 7625 5700
+AR Path="/649807C3/64C9546A" Ref="R?"  Part="1" 
+AR Path="/648B84BF/64C9546A" Ref="R15"  Part="1" 
+F 0 "R15" H 7695 5746 50  0000 L CNN
+F 1 "100K" H 7695 5655 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603" V 7555 5700 50  0001 C CNN
+F 3 "~" H 7625 5700 50  0001 C CNN
+	1    7625 5700
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 64C95470
+P 7625 6125
+AR Path="/649807C3/64C95470" Ref="#PWR?"  Part="1" 
+AR Path="/648B84BF/64C95470" Ref="#PWR0135"  Part="1" 
+F 0 "#PWR0135" H 7625 5875 50  0001 C CNN
+F 1 "GND" H 7630 5952 50  0000 C CNN
+F 2 "" H 7625 6125 50  0001 C CNN
+F 3 "" H 7625 6125 50  0001 C CNN
+	1    7625 6125
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7075 4650 7625 4650
+Wire Wire Line
+	7625 4650 7625 4975
+Wire Wire Line
+	7625 5275 7625 5425
+Wire Wire Line
+	7625 5850 7625 6125
+Connection ~ 7625 5425
+Wire Wire Line
+	7625 5425 7625 5550
+Wire Wire Line
+	6875 5425 7625 5425
+Wire Wire Line
+	2500 1700 2500 2250
+Connection ~ 2500 2250
+Wire Wire Line
+	2500 2250 2500 2375
+Wire Wire Line
+	1050 2250 1300 2250
+Wire Wire Line
+	1600 2250 2500 2250
+Text Notes 675  2675 0    75   ~ 0
+If=100 mA\nVf=.33V typ, .8V max
+Text Notes 2900 3125 0    75   ~ 0
+38 uA quiescent
+Text GLabel 1150 1700 0    100  Input ~ 0
+VUSB
+Text GLabel 1050 2250 0    100  Input ~ 0
+Vdd
+Text GLabel 6875 5425 0    100  Input ~ 0
+USBactive
+Text GLabel 7075 4650 0    50   Input ~ 0
+VUSB
+$Comp
+L Device:R R?
+U 1 1 64C95464
+P 7625 5125
+AR Path="/649807C3/64C95464" Ref="R?"  Part="1" 
+AR Path="/648B84BF/64C95464" Ref="R10"  Part="1" 
+F 0 "R10" H 7695 5171 50  0000 L CNN
+F 1 "51K" H 7695 5080 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603" V 7555 5125 50  0001 C CNN
+F 3 "~" H 7625 5125 50  0001 C CNN
+	1    7625 5125
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:D_Schottky D2
+U 1 1 64D15012
+P 1475 1700
+F 0 "D2" H 1475 1483 50  0000 C CNN
+F 1 "CDBZC0140L-HF" H 1475 1574 50  0000 C CNN
+F 2 "Diodes_SMD:D_0603" H 1475 1700 50  0001 C CNN
+F 3 "https://www.mouser.com/datasheet/2/80/QW_G1155_CDBZC0140L_HF_RevA-3180235.pdf" H 1475 1700 50  0001 C CNN
+	1    1475 1700
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	1150 1700 1325 1700
+Wire Wire Line
+	1625 1700 2500 1700
+$EndSCHEMATC

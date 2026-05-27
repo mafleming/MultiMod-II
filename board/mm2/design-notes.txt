@@ -1,0 +1,46 @@
+Some comments on the design for the FPGA-based MultiMod II.
+
+I'm basing the design on the iCE40UP5K Fomu development board found at
+     https://github.com/im-tomu/fomu-hardware
+
+The FPGA flash has a boot image that can interface directly to USB. Controlled
+by a RISC-V core, the Fomu appears as a DFU device for programming the attached
+SPI flash chip. The FPGA is then reset to load a new configuration bitstream
+from SPI flash. The RISC-V core can be directed to execute custom code on reset.
+This feature has been used to configure the Fomu as a RISC-V CPU running
+micropython. More details on the boot loader can be found at
+     https://github.com/im-tomu/foboot
+
+I have a few questions on the design, some of which are comments on the
+schematic pages.
+
+On the Power schematic page (second page, 3/6) I added a pullup resistor on the
+Done output as you did with the Timer board. Both Fomu and Upduino leave this
+pin unconnected. The datasheet notes it has a weak pullup internally. I assume
+you added this because of your warning about pullups and Iq. The boot and reset
+section is also from the Fomu.
+
+You mentioned the problem of high current consumption on powering up, which you
+resolved with a 47 ohm resistor in the Vcc path. Was that between the 1.2V or
+the 3.3V LDO and the FPGA?
+
+Although two power sources are shown, the 71B battery and the USB connector,
+both sources are mutually exclusive. No one will be able to connect a USB cable
+while the board is in the 71B. The Schottky diode is there so I can determine
+which source is used and respond accordingly.
+
+On the fourth page with the FPGA and SPI flash I just copied your Timer
+connector. I'm considering just having pads that pogo pins can make contact with
+and making a programming jig for boards. The Fomu does something similar and their
+schematic notes that the FPGA should be reset to program the SPI flash and the
+flash should have Hold asserted to program the FPGA. I believe this setup will
+allow me to configure both devices on a new board.
+
+The last page has an oscillator needed for the USB device when it is in use. It
+will also be used for the Forth CPU that controls the MultiMod II operation.
+I'm hoping to gate the clock to the CPU when it's not in use to save power, and
+I'm considering gating the oscillator itself. Startup time is given as 5 ms max
+and I think that should be more than fast enough to respond to interrupt events.
+We'll see. I can switch to an internal oscillator to respond more quickly while
+waiting for the external oscillator, or just use the external oscillator only
+when connected to USB.

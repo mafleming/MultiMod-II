@@ -1,0 +1,666 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A 11000 8500
+encoding utf-8
+Sheet 2 6
+Title "MultiMod II"
+Date ""
+Rev "B"
+Comp ""
+Comment1 "HP-71B Interface"
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L SamacSys_Parts:CD40109BPWR IC?
+U 1 1 648AA92F
+P 3125 1675
+AR Path="/648AA92F" Ref="IC?"  Part="1" 
+AR Path="/648A1DFE/648AA92F" Ref="U3"  Part="1" 
+F 0 "U3" H 3875 1940 50  0000 C CNN
+F 1 "CD40109BPWR" H 3875 1849 50  0000 C CNN
+F 2 "SamacSys_Parts:SOP65P640X120-16N" H 4475 1775 50  0001 L CNN
+F 3 "http://www.ti.com/lit/gpn/cd40109b" H 4475 1675 50  0001 L CNN
+F 4 "CMOS Quad Low-to-High Voltage Level Shifter (20V Rating)" H 4475 1575 50  0001 L CNN "Description"
+F 5 "1.2" H 4475 1475 50  0001 L CNN "Height"
+F 6 "595-CD40109BPWR" H 4475 1375 50  0001 L CNN "Mouser2 Part Number"
+F 7 "https://www.mouser.com/Search/Refine.aspx?Keyword=595-CD40109BPWR" H 4475 1275 50  0001 L CNN "Mouser2 Price/Stock"
+F 8 "Texas Instruments" H 4475 1175 50  0001 L CNN "Manufacturer_Name"
+F 9 "CD40109BPWR" H 4475 1075 50  0001 L CNN "Manufacturer_Part_Number"
+	1    3125 1675
+	1    0    0    -1  
+$EndComp
+$Comp
+L SamacSys_Parts:CD40109BPWR IC?
+U 1 1 648AA93B
+P 4600 2850
+AR Path="/648AA93B" Ref="IC?"  Part="1" 
+AR Path="/648A1DFE/648AA93B" Ref="U4"  Part="1" 
+F 0 "U4" H 5350 3115 50  0000 C CNN
+F 1 "CD40109BPWR" H 5350 3024 50  0000 C CNN
+F 2 "SamacSys_Parts:SOP65P640X120-16N" H 5950 2950 50  0001 L CNN
+F 3 "http://www.ti.com/lit/gpn/cd40109b" H 5950 2850 50  0001 L CNN
+F 4 "CMOS Quad Low-to-High Voltage Level Shifter (20V Rating)" H 5950 2750 50  0001 L CNN "Description"
+F 5 "1.2" H 5950 2650 50  0001 L CNN "Height"
+F 6 "595-CD40109BPWR" H 5950 2550 50  0001 L CNN "Mouser2 Part Number"
+F 7 "https://www.mouser.com/Search/Refine.aspx?Keyword=595-CD40109BPWR" H 5950 2450 50  0001 L CNN "Mouser2 Price/Stock"
+F 8 "Texas Instruments" H 5950 2350 50  0001 L CNN "Manufacturer_Name"
+F 9 "CD40109BPWR" H 5950 2250 50  0001 L CNN "Manufacturer_Part_Number"
+	1    4600 2850
+	-1   0    0    -1  
+$EndComp
+$Comp
+L SamacSys_Parts:CD40109BPWR IC?
+U 1 1 648AA947
+P 3025 5225
+AR Path="/648AA947" Ref="IC?"  Part="1" 
+AR Path="/648A1DFE/648AA947" Ref="U5"  Part="1" 
+F 0 "U5" H 3775 5490 50  0000 C CNN
+F 1 "CD40109BPWR" H 3775 5399 50  0000 C CNN
+F 2 "SamacSys_Parts:SOP65P640X120-16N" H 4375 5325 50  0001 L CNN
+F 3 "http://www.ti.com/lit/gpn/cd40109b" H 4375 5225 50  0001 L CNN
+F 4 "CMOS Quad Low-to-High Voltage Level Shifter (20V Rating)" H 4375 5125 50  0001 L CNN "Description"
+F 5 "1.2" H 4375 5025 50  0001 L CNN "Height"
+F 6 "595-CD40109BPWR" H 4375 4925 50  0001 L CNN "Mouser2 Part Number"
+F 7 "https://www.mouser.com/Search/Refine.aspx?Keyword=595-CD40109BPWR" H 4375 4825 50  0001 L CNN "Mouser2 Price/Stock"
+F 8 "Texas Instruments" H 4375 4725 50  0001 L CNN "Manufacturer_Name"
+F 9 "CD40109BPWR" H 4375 4625 50  0001 L CNN "Manufacturer_Part_Number"
+	1    3025 5225
+	1    0    0    -1  
+$EndComp
+$Comp
+L SamacSys_Parts:CD40109BPWR IC?
+U 1 1 648AA953
+P 3025 6475
+AR Path="/648AA953" Ref="IC?"  Part="1" 
+AR Path="/648A1DFE/648AA953" Ref="U6"  Part="1" 
+F 0 "U6" H 3775 6740 50  0000 C CNN
+F 1 "CD40109BPWR" H 3775 6649 50  0000 C CNN
+F 2 "SamacSys_Parts:SOP65P640X120-16N" H 4375 6575 50  0001 L CNN
+F 3 "http://www.ti.com/lit/gpn/cd40109b" H 4375 6475 50  0001 L CNN
+F 4 "CMOS Quad Low-to-High Voltage Level Shifter (20V Rating)" H 4375 6375 50  0001 L CNN "Description"
+F 5 "1.2" H 4375 6275 50  0001 L CNN "Height"
+F 6 "595-CD40109BPWR" H 4375 6175 50  0001 L CNN "Mouser2 Part Number"
+F 7 "https://www.mouser.com/Search/Refine.aspx?Keyword=595-CD40109BPWR" H 4375 6075 50  0001 L CNN "Mouser2 Price/Stock"
+F 8 "Texas Instruments" H 4375 5975 50  0001 L CNN "Manufacturer_Name"
+F 9 "CD40109BPWR" H 4375 5875 50  0001 L CNN "Manufacturer_Part_Number"
+	1    3025 6475
+	1    0    0    -1  
+$EndComp
+Text Notes 2600 1175 0    100  ~ 0
+3V < Vdd < 18V, Vcc can exceed Vdd
+Wire Wire Line
+	3125 1675 2650 1675
+Wire Wire Line
+	2650 1675 2650 2850
+Wire Wire Line
+	2650 2850 3100 2850
+Wire Wire Line
+	3125 2175 2275 2175
+Wire Wire Line
+	5250 1875 4625 1875
+Wire Wire Line
+	5250 2275 4625 2275
+Wire Wire Line
+	2275 1875 3125 1875
+Wire Wire Line
+	4625 1675 4975 1675
+Wire Wire Line
+	4975 1675 4975 2850
+Wire Wire Line
+	4975 2850 4600 2850
+Wire Wire Line
+	2250 3150 3100 3150
+Wire Wire Line
+	2250 3350 3100 3350
+Wire Wire Line
+	5250 3150 4600 3150
+Wire Wire Line
+	5250 3250 4600 3250
+Wire Wire Line
+	3125 2275 2975 2275
+Wire Wire Line
+	2975 2275 2975 1775
+Wire Wire Line
+	2975 1775 3125 1775
+Wire Wire Line
+	4625 2375 4750 2375
+Wire Wire Line
+	4750 2375 4750 1775
+Wire Wire Line
+	4750 1775 4625 1775
+Wire Wire Line
+	4750 1775 4750 1300
+Wire Wire Line
+	4750 1300 2975 1300
+Wire Wire Line
+	2975 1300 2975 1775
+Connection ~ 2975 1775
+Connection ~ 4750 1775
+Wire Wire Line
+	1275 1300 1450 1300
+Connection ~ 2975 1300
+Wire Wire Line
+	5250 1675 4975 1675
+Connection ~ 4975 1675
+Wire Wire Line
+	2275 1675 2650 1675
+Connection ~ 2650 1675
+Wire Wire Line
+	3100 2950 2875 2950
+Wire Wire Line
+	2875 2950 2875 3550
+Wire Wire Line
+	2875 3550 3100 3550
+Wire Wire Line
+	4600 2950 4750 2950
+Wire Wire Line
+	4750 2950 4750 3450
+Wire Wire Line
+	4750 3450 4600 3450
+Wire Wire Line
+	4750 3450 4750 3850
+Wire Wire Line
+	4750 3850 2875 3850
+Wire Wire Line
+	2875 3850 2875 3550
+Connection ~ 4750 3450
+Connection ~ 2875 3550
+Wire Wire Line
+	1250 3850 1475 3850
+Connection ~ 2875 3850
+Text Label 2275 1875 2    50   ~ 0
+D0
+Text Label 2275 2175 2    50   ~ 0
+D1
+Text Label 2250 3150 2    50   ~ 0
+D3
+Text Label 2250 3350 2    50   ~ 0
+D2
+Text Label 5250 1875 0    50   ~ 0
+D3
+Text Label 5250 2275 0    50   ~ 0
+D2
+Text Label 5250 3150 0    50   ~ 0
+D0
+Text Label 5250 3250 0    50   ~ 0
+D1
+Wire Wire Line
+	5250 3550 4600 3550
+Wire Wire Line
+	3125 2375 2275 2375
+Wire Wire Line
+	3125 1975 2025 1975
+Wire Wire Line
+	3125 2075 2025 2075
+Wire Wire Line
+	4625 2175 5725 2175
+Wire Wire Line
+	4625 1975 5725 1975
+Wire Wire Line
+	4600 3050 5725 3050
+Wire Wire Line
+	4600 3350 5725 3350
+Wire Wire Line
+	3100 3450 2025 3450
+Wire Wire Line
+	3100 3050 2025 3050
+Wire Wire Line
+	2225 5225 3025 5225
+Wire Wire Line
+	5425 5225 4525 5225
+Wire Wire Line
+	3025 5925 2225 5925
+Wire Wire Line
+	3025 5325 2750 5325
+Wire Wire Line
+	2750 5325 2750 5825
+Wire Wire Line
+	2750 5825 3025 5825
+Wire Wire Line
+	4800 5925 4525 5925
+Wire Wire Line
+	1275 4875 1450 4875
+Wire Wire Line
+	2750 4875 2750 5325
+Connection ~ 2750 4875
+Wire Wire Line
+	2750 4875 4800 4875
+Connection ~ 2750 5325
+Text Label 2400 5425 2    50   ~ 0
+Din
+Text Label 2400 5725 2    50   ~ 0
+STRn
+Text Label 5350 5825 0    50   ~ 0
+CDn
+Wire Wire Line
+	4800 4875 4800 5925
+Wire Wire Line
+	5350 5825 4525 5825
+Wire Wire Line
+	3025 5725 2400 5725
+Wire Wire Line
+	3025 5425 2400 5425
+Wire Wire Line
+	4525 5325 4700 5325
+Wire Wire Line
+	4525 5425 4700 5425
+Wire Wire Line
+	4700 5425 4700 5325
+Connection ~ 4700 5325
+Wire Wire Line
+	4700 5325 5425 5325
+Wire Wire Line
+	4525 5725 5850 5725
+Wire Wire Line
+	2175 5525 3025 5525
+Wire Wire Line
+	2175 5625 3025 5625
+Wire Wire Line
+	2225 6475 3025 6475
+Wire Wire Line
+	2225 7175 3025 7175
+Wire Wire Line
+	5425 6475 4525 6475
+Wire Wire Line
+	3025 6575 2800 6575
+Wire Wire Line
+	2800 6575 2800 7075
+Wire Wire Line
+	2800 7075 3025 7075
+Wire Wire Line
+	4525 7175 4850 7175
+Wire Wire Line
+	4525 6575 4850 6575
+Wire Wire Line
+	4850 6575 4850 6675
+Wire Wire Line
+	4525 6675 4850 6675
+Connection ~ 4850 6675
+Wire Wire Line
+	4850 6675 4850 7075
+Wire Wire Line
+	4525 7075 4850 7075
+Connection ~ 4850 7075
+Wire Wire Line
+	4850 7075 4850 7175
+Wire Wire Line
+	1325 6575 1450 6575
+Connection ~ 2800 6575
+Text Label 2400 6775 2    50   ~ 0
+HALT
+Text Label 2400 6875 2    50   ~ 0
+IR14
+Wire Wire Line
+	2175 6675 3025 6675
+Wire Wire Line
+	2400 6775 3025 6775
+Wire Wire Line
+	2400 6875 3025 6875
+Wire Wire Line
+	2175 6975 3025 6975
+$Comp
+L power:GND #PWR?
+U 1 1 648AA9E1
+P 2275 2600
+AR Path="/648AA9E1" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/648AA9E1" Ref="#PWR0101"  Part="1" 
+F 0 "#PWR0101" H 2275 2350 50  0001 C CNN
+F 1 "GND" H 2280 2427 50  0000 C CNN
+F 2 "" H 2275 2600 50  0001 C CNN
+F 3 "" H 2275 2600 50  0001 C CNN
+	1    2275 2600
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 648AA9E7
+P 5250 3725
+AR Path="/648AA9E7" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/648AA9E7" Ref="#PWR0102"  Part="1" 
+F 0 "#PWR0102" H 5250 3475 50  0001 C CNN
+F 1 "GND" H 5255 3552 50  0000 C CNN
+F 2 "" H 5250 3725 50  0001 C CNN
+F 3 "" H 5250 3725 50  0001 C CNN
+	1    5250 3725
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 648AA9ED
+P 2225 6075
+AR Path="/648AA9ED" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/648AA9ED" Ref="#PWR0103"  Part="1" 
+F 0 "#PWR0103" H 2225 5825 50  0001 C CNN
+F 1 "GND" H 2230 5902 50  0000 C CNN
+F 2 "" H 2225 6075 50  0001 C CNN
+F 3 "" H 2225 6075 50  0001 C CNN
+	1    2225 6075
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 648AA9F3
+P 5425 5475
+AR Path="/648AA9F3" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/648AA9F3" Ref="#PWR0104"  Part="1" 
+F 0 "#PWR0104" H 5425 5225 50  0001 C CNN
+F 1 "GND" H 5430 5302 50  0000 C CNN
+F 2 "" H 5425 5475 50  0001 C CNN
+F 3 "" H 5425 5475 50  0001 C CNN
+	1    5425 5475
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 648AA9F9
+P 4850 7425
+AR Path="/648AA9F9" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/648AA9F9" Ref="#PWR0105"  Part="1" 
+F 0 "#PWR0105" H 4850 7175 50  0001 C CNN
+F 1 "GND" H 4855 7252 50  0000 C CNN
+F 2 "" H 4850 7425 50  0001 C CNN
+F 3 "" H 4850 7425 50  0001 C CNN
+	1    4850 7425
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 648AA9FF
+P 2225 7350
+AR Path="/648AA9FF" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/648AA9FF" Ref="#PWR0106"  Part="1" 
+F 0 "#PWR0106" H 2225 7100 50  0001 C CNN
+F 1 "GND" H 2230 7177 50  0000 C CNN
+F 2 "" H 2225 7350 50  0001 C CNN
+F 3 "" H 2225 7350 50  0001 C CNN
+	1    2225 7350
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4850 7425 4850 7175
+Connection ~ 4850 7175
+Wire Wire Line
+	2225 7350 2225 7175
+Wire Wire Line
+	2225 6075 2225 5925
+Wire Wire Line
+	5425 5475 5425 5325
+Wire Wire Line
+	5250 3725 5250 3550
+Wire Wire Line
+	2275 2600 2275 2375
+$Comp
+L Connector_Generic_MountingPin:Conn_01x11_MountingPin J?
+U 1 1 648B06CA
+P 8925 2800
+AR Path="/648B06CA" Ref="J?"  Part="1" 
+AR Path="/648A1DFE/648B06CA" Ref="J1"  Part="1" 
+F 0 "J1" H 9013 2764 50  0000 L CNN
+F 1 "Conn_01x11_MountingPin" H 9013 2673 50  0000 L CNN
+F 2 "mm2:SIP-11" H 8925 2800 50  0001 C CNN
+F 3 "~" H 8925 2800 50  0001 C CNN
+	1    8925 2800
+	1    0    0    -1  
+$EndComp
+Text Label 8225 2400 0    50   ~ 0
+HALT
+Text Label 8225 2500 0    50   ~ 0
+IR14
+Text Label 8225 2600 0    50   ~ 0
+Din
+Text Label 8225 2700 0    50   ~ 0
+D0
+Text Label 8225 2800 0    50   ~ 0
+D1
+Text Label 8225 2900 0    50   ~ 0
+D2
+Text Label 8225 3000 0    50   ~ 0
+D3
+Text Label 8225 3100 0    50   ~ 0
+STRn
+Text Label 8225 3200 0    50   ~ 0
+CDn
+Wire Wire Line
+	8725 2300 8225 2300
+Wire Wire Line
+	8725 2400 8225 2400
+Wire Wire Line
+	8725 2500 8225 2500
+Wire Wire Line
+	8725 2600 8225 2600
+Wire Wire Line
+	8725 2700 8225 2700
+Wire Wire Line
+	8725 2800 8225 2800
+Wire Wire Line
+	8725 2900 8225 2900
+Wire Wire Line
+	8725 3000 8225 3000
+Wire Wire Line
+	8725 3100 8225 3100
+Wire Wire Line
+	8725 3200 8225 3200
+Wire Wire Line
+	8725 3300 8450 3300
+$Comp
+L power:GND #PWR?
+U 1 1 648B06E6
+P 8450 3575
+AR Path="/648B06E6" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/648B06E6" Ref="#PWR0107"  Part="1" 
+F 0 "#PWR0107" H 8450 3325 50  0001 C CNN
+F 1 "GND" H 8455 3402 50  0000 C CNN
+F 2 "" H 8450 3575 50  0001 C CNN
+F 3 "" H 8450 3575 50  0001 C CNN
+	1    8450 3575
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8450 3575 8450 3300
+Text Notes 7525 1975 0    100  ~ 0
+A custom PCB footprint is needed\nwith proper hole size and spacing
+$Comp
+L power:GND #PWR?
+U 1 1 648D31EE
+P 1450 1800
+AR Path="/648D31EE" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/648D31EE" Ref="#PWR0108"  Part="1" 
+F 0 "#PWR0108" H 1450 1550 50  0001 C CNN
+F 1 "GND" H 1455 1627 50  0000 C CNN
+F 2 "" H 1450 1800 50  0001 C CNN
+F 3 "" H 1450 1800 50  0001 C CNN
+	1    1450 1800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R11
+U 1 1 648D378E
+P 1450 1525
+F 0 "R11" H 1520 1571 50  0000 L CNN
+F 1 "100K" H 1520 1480 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603" V 1380 1525 50  0001 C CNN
+F 3 "~" H 1450 1525 50  0001 C CNN
+	1    1450 1525
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1450 1375 1450 1300
+Connection ~ 1450 1300
+Wire Wire Line
+	1450 1300 2975 1300
+Wire Wire Line
+	1450 1675 1450 1800
+$Comp
+L Device:R R14
+U 1 1 648E0C6B
+P 1450 6850
+F 0 "R14" H 1520 6896 50  0000 L CNN
+F 1 "100K" H 1520 6805 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603" V 1380 6850 50  0001 C CNN
+F 3 "~" H 1450 6850 50  0001 C CNN
+	1    1450 6850
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 648E0ECB
+P 1450 7175
+AR Path="/648E0ECB" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/648E0ECB" Ref="#PWR0109"  Part="1" 
+F 0 "#PWR0109" H 1450 6925 50  0001 C CNN
+F 1 "GND" H 1455 7002 50  0000 C CNN
+F 2 "" H 1450 7175 50  0001 C CNN
+F 3 "" H 1450 7175 50  0001 C CNN
+	1    1450 7175
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1450 6700 1450 6575
+Connection ~ 1450 6575
+Wire Wire Line
+	1450 6575 2800 6575
+Wire Wire Line
+	1450 7000 1450 7175
+$Comp
+L Device:R R13
+U 1 1 649125C7
+P 1450 5175
+F 0 "R13" H 1520 5221 50  0000 L CNN
+F 1 "100K" H 1520 5130 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603" V 1380 5175 50  0001 C CNN
+F 3 "~" H 1450 5175 50  0001 C CNN
+	1    1450 5175
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 649135B0
+P 1450 5500
+AR Path="/649135B0" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/649135B0" Ref="#PWR0110"  Part="1" 
+F 0 "#PWR0110" H 1450 5250 50  0001 C CNN
+F 1 "GND" H 1455 5327 50  0000 C CNN
+F 2 "" H 1450 5500 50  0001 C CNN
+F 3 "" H 1450 5500 50  0001 C CNN
+	1    1450 5500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1450 5500 1450 5325
+Wire Wire Line
+	1450 5025 1450 4875
+Connection ~ 1450 4875
+Wire Wire Line
+	1450 4875 2750 4875
+$Comp
+L Device:R R12
+U 1 1 6492058E
+P 1475 4125
+F 0 "R12" H 1545 4171 50  0000 L CNN
+F 1 "100K" H 1545 4080 50  0000 L CNN
+F 2 "Resistors_SMD:R_0603" V 1405 4125 50  0001 C CNN
+F 3 "~" H 1475 4125 50  0001 C CNN
+	1    1475 4125
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR?
+U 1 1 64920B6F
+P 1475 4450
+AR Path="/64920B6F" Ref="#PWR?"  Part="1" 
+AR Path="/648A1DFE/64920B6F" Ref="#PWR0111"  Part="1" 
+F 0 "#PWR0111" H 1475 4200 50  0001 C CNN
+F 1 "GND" H 1480 4277 50  0000 C CNN
+F 2 "" H 1475 4450 50  0001 C CNN
+F 3 "" H 1475 4450 50  0001 C CNN
+	1    1475 4450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1475 4450 1475 4275
+Wire Wire Line
+	1475 3975 1475 3850
+Connection ~ 1475 3850
+Wire Wire Line
+	1475 3850 2875 3850
+$Comp
+L power:+3.3V #PWR0112
+U 1 1 648CDD54
+P 2275 1675
+F 0 "#PWR0112" H 2275 1525 50  0001 C CNN
+F 1 "+3.3V" V 2290 1803 50  0000 L CNN
+F 2 "" H 2275 1675 50  0001 C CNN
+F 3 "" H 2275 1675 50  0001 C CNN
+	1    2275 1675
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:+3.3V #PWR0113
+U 1 1 648CE3EC
+P 5425 5225
+F 0 "#PWR0113" H 5425 5075 50  0001 C CNN
+F 1 "+3.3V" V 5440 5353 50  0000 L CNN
+F 2 "" H 5425 5225 50  0001 C CNN
+F 3 "" H 5425 5225 50  0001 C CNN
+	1    5425 5225
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+3.3V #PWR0114
+U 1 1 648CE90A
+P 2225 6475
+F 0 "#PWR0114" H 2225 6325 50  0001 C CNN
+F 1 "+3.3V" V 2240 6603 50  0000 L CNN
+F 2 "" H 2225 6475 50  0001 C CNN
+F 3 "" H 2225 6475 50  0001 C CNN
+	1    2225 6475
+	0    -1   -1   0   
+$EndComp
+Text Notes 7350 4950 0    100  ~ 0
+Pulldowns protect 71B interface\nduring FPGA initialization and\nwhen power jumper removed
+Text GLabel 1275 1300 0    50   Input ~ 0
+TO71
+Text GLabel 1250 3850 0    50   Input ~ 0
+FROM71
+Text GLabel 2025 1975 0    50   Input ~ 0
+BIN0
+Text GLabel 2025 2075 0    50   Input ~ 0
+BIN1
+Text GLabel 2025 3050 0    50   Input ~ 0
+BOUT3
+Text GLabel 2025 3450 0    50   Input ~ 0
+BOUT2
+Text GLabel 5250 1675 2    50   Input ~ 0
+Vdd
+Text GLabel 5725 1975 2    50   Input ~ 0
+BIN3
+Text GLabel 5725 2175 2    50   Input ~ 0
+BIN2
+Text GLabel 5725 3050 2    50   Input ~ 0
+BOUT0
+Text GLabel 5725 3350 2    50   Input ~ 0
+BOUT1
+Text GLabel 8225 2300 0    50   Input ~ 0
+Vdd
+Text GLabel 1275 4875 0    50   Input ~ 0
+CTRL71
+Text GLabel 1325 6575 0    50   Input ~ 0
+INTR71
+Text GLabel 2225 5225 0    50   Input ~ 0
+Vdd
+Text GLabel 5425 6475 2    50   Input ~ 0
+Vdd
+Text GLabel 2175 5525 0    50   Input ~ 0
+DIN71
+Text GLabel 2175 5625 0    50   Input ~ 0
+STRN71
+Text GLabel 5850 5725 2    50   Input ~ 0
+CDN71
+Text GLabel 2175 6675 0    50   Input ~ 0
+HALT71
+Text GLabel 2175 6975 0    50   Input ~ 0
+IR1471
+$EndSCHEMATC

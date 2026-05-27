@@ -1,0 +1,48 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A 11000 8500
+encoding utf-8
+Sheet 1 6
+Title "MultiMod II"
+Date ""
+Rev "B"
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text Notes 7300 7250 0    50   ~ 0
+1
+$Sheet
+S 1575 1500 1300 1150
+U 648A1DFE
+F0 "71Interface" 100
+F1 "71Interface.sch" 100
+$EndSheet
+$Sheet
+S 3625 1525 1400 1325
+U 648B84BF
+F0 "Power" 100
+F1 "Power.sch" 100
+$EndSheet
+$Sheet
+S 6200 1500 1550 1375
+U 648EA8EF
+F0 "USBinterface" 100
+F1 "USBinterface.sch" 100
+$EndSheet
+$Sheet
+S 1650 3825 1475 1325
+U 6493B696
+F0 "Storage" 100
+F1 "Storage.sch" 100
+$EndSheet
+$Sheet
+S 3675 3800 1775 1350
+U 649807C3
+F0 "FPGA" 100
+F1 "FPGA.sch" 100
+$EndSheet
+$EndSCHEMATC

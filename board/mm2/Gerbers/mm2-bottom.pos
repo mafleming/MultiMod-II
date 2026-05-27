@@ -1,0 +1,37 @@
+### Footprint positions - created on 2025-07-21T18:20:45-0400 ###
+### Printed by KiCad version 9.0.3-9.0.3-0~ubuntu22.04.1
+## Unit = mm, Angle = deg.
+## Side : bottom
+# Ref     Val                      Package                                     PosX       PosY       Rot  Side
+C1        100nF                    C_0603_1608Metric                       112.0000   -78.5000  -90.0000  bottom
+C5        100nF                    C_0603_1608Metric                       114.0000   -82.5000  -90.0000  bottom
+C6        1uF                      C_0603_1608Metric                       118.5000   -67.0000   90.0000  bottom
+C7        1uF                      C_0603_1608Metric                       122.0000   -70.0000  180.0000  bottom
+C8        1uF                      C_0603_1608Metric                       125.5000   -67.0000   90.0000  bottom
+C9        1uF                      C_0603_1608Metric                       129.0000   -70.0000  180.0000  bottom
+C10       1uF                      C_0603_1608Metric                       132.5000   -67.0000   90.0000  bottom
+C11       1uF                      C_0603_1608Metric                       136.0000   -70.0000  180.0000  bottom
+C12       1uF                      C_0603_1608Metric                       110.0000   -78.5000  -90.0000  bottom
+C13       4.7uF                    C_0603_1608Metric                       112.0000   -82.5000  -90.0000  bottom
+D1        CDBUC00340-HF            D_0603_1608Metric                       104.0000   -76.0000    0.0000  bottom
+D2        CDBUC00340-HF            D_0603_1608Metric                       104.0000   -73.0000    0.0000  bottom
+J2        USB_C_Receptacle_USB2.0  USB_C_Receptacle_JAE_DX07S016JA1R1500   108.1000   -66.3000    0.0000  bottom
+R1        1_Ohm,_1%                R_0603_1608Metric                       116.0000   -73.0000    0.0000  bottom
+R2        22                       R_0603_1608Metric                       109.0000   -73.0000   90.0000  bottom
+R3        22                       R_0603_1608Metric                       107.0000   -73.0000  -90.0000  bottom
+R4        100                      R_0603_1608Metric                       110.0000   -82.5000   90.0000  bottom
+R5        5K1                      R_0603_1608Metric                       115.0000   -69.5000   90.0000  bottom
+R6        5K1                      R_0603_1608Metric                       115.0000   -66.0000  -90.0000  bottom
+R9        10K                      R_0603_1608Metric                       114.0000   -78.5000  -90.0000  bottom
+R11       100K                     R_0603_1608Metric                       118.0000   -77.0000  -90.0000  bottom
+R12       100K                     R_0603_1608Metric                       118.0000   -81.0000   90.0000  bottom
+R13       100K                     R_0603_1608Metric                       136.0000   -76.0000  180.0000  bottom
+R14       1.5K                     R_0603_1608Metric                       102.8192   -83.5284  -90.0000  bottom
+R17       10K                      R_0603_1608Metric                        97.6000   -82.3000    0.0000  bottom
+U3        CD40109BPWR              TSSOP-16_4.4x5mm_P0.65mm                125.0000   -75.5000  180.0000  bottom
+U4        CD40109BPWR              TSSOP-16_4.4x5mm_P0.65mm                125.0000   -81.5000  180.0000  bottom
+U5        CD40109BPWR              TSSOP-16_4.4x5mm_P0.65mm                136.0000   -80.0000    0.0000  bottom
+U7        AP2127K-1.2              SOT-23-5                                122.0000   -67.0000    0.0000  bottom
+U8        AP2127K-3.3              SOT-23-5                                129.0000   -67.0000    0.0000  bottom
+U9        AP2127K-2.5              SOT-23-5                                136.0000   -67.0000    0.0000  bottom
+## End

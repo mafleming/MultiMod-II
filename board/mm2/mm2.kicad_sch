@@ -1,0 +1,241 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "fe251f25-1fb4-4cab-87f1-3c765908f37f")
+	(paper "USLetter")
+	(title_block
+		(title "MultiMod II PVT1")
+		(date "2025-06-03")
+		(rev "C")
+		(company "Mark A Fleming")
+	)
+	(lib_symbols)
+	(text "1"
+		(exclude_from_sim no)
+		(at 185.42 184.15 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "875da049-bdc8-43ac-86b9-29ba92f7e648")
+	)
+	(sheet
+		(at 40.005 38.1)
+		(size 33.02 29.21)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "00000000-0000-0000-0000-0000648a1dfe")
+		(property "Sheetname" "71Interface"
+			(at 40.005 36.7534 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "71Interface.kicad_sch"
+			(at 40.005 68.4026 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mm2"
+				(path "/fe251f25-1fb4-4cab-87f1-3c765908f37f"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 92.075 38.735)
+		(size 35.56 33.655)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "00000000-0000-0000-0000-0000648b84bf")
+		(property "Sheetname" "Power"
+			(at 92.075 37.3884 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "Power.kicad_sch"
+			(at 92.075 73.4826 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mm2"
+				(path "/fe251f25-1fb4-4cab-87f1-3c765908f37f"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 157.48 38.1)
+		(size 39.37 34.925)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "00000000-0000-0000-0000-0000648ea8ef")
+		(property "Sheetname" "USBinterface"
+			(at 157.48 36.7534 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "USBinterface.kicad_sch"
+			(at 157.48 74.1176 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mm2"
+				(path "/fe251f25-1fb4-4cab-87f1-3c765908f37f"
+					(page "6")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 41.91 97.155)
+		(size 37.465 33.655)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "00000000-0000-0000-0000-00006493b696")
+		(property "Sheetname" "Storage"
+			(at 41.91 95.8084 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "Storage.kicad_sch"
+			(at 41.91 131.9026 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mm2"
+				(path "/fe251f25-1fb4-4cab-87f1-3c765908f37f"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 93.345 96.52)
+		(size 45.085 34.29)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "00000000-0000-0000-0000-0000649807c3")
+		(property "Sheetname" "FPGA"
+			(at 93.345 95.1734 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "FPGA.kicad_sch"
+			(at 93.345 131.9026 0)
+			(effects
+				(font
+					(size 2.54 2.54)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "mm2"
+				(path "/fe251f25-1fb4-4cab-87f1-3c765908f37f"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
