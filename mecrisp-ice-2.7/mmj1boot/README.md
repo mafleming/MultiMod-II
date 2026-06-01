@@ -1,0 +1,19 @@
+# Forth Bootloader for the MultiMod II
+The J1a soft Forth CPU was selected in order to implement the intelligent functionality of the MultiMod II as an HP-71B accessory. The use of Forth as the base language complemented the availability of Forth for the 71B itself.
+
+The mecrisp-ice project combines the J1a Forth CPU with the Mecrisp ANSI Forth implementation that targets the J1a instruction set. Details about the J1a implementation can be found at James Bowman's [github repository](https://github.com/jamesbowman/swapforth). More information about Mecrisp Forth can be found at its [Sourceforge](https://mecrisp.sourceforge.net/) site. [Unofficial documentation](https://mecrisp-stellaris-folkdoc.sourceforge.io/) for Mecrisp Forth can be found on Sourceforge as well.
+
+This version of the J1a its functionality with the hardware needed to perform USB detection and warm boot of a selected bitstream. The warm boot capability will also be present in the default working bitstream configuration so that the MultiMod II can be rebooted into a different configuration of the owners choice.
+
+## Bootloader Purpose
+An FPGA will load its design configuration, stored as a bitstream in external flash memory, when it first powers up or is forced to reset. Putting this configuration in flash requires equipment that is likely unavailable to a MultiMod II owner. A bootloader is a design configuration that will sense whether the MultiMod II is connected to a USB host. If so, it allows the host to update a working design configuration and then transfer control to that "production" configuration. If not connected to a USB host, control is immediately transferred to the working production configuration.
+
+There are a number of available bootloaders for the Lattice iCE40 FPGAs. A bootloader provides the means of updating the working FPGA bitstream configuration without the need for equipment to update the flash memory storing the configuration. Most bootloaders are a simple affair, providing only the means of updating the working FPGA bitstream configuration. However, the MultiMod II also requires a means of transferring user data files between the MultiMod II flash memory and the user PC.
+
+***The desired interactivity with the MultiMod II is complex enough to use the J1A Forth CPU in place of a simple single-purpose bootloader. This also means that the bootloader program itself can be augmented by the MultiMod II owner to extend its capability even after its purchase.***
+
+## Project Layout
+Board design and documentation for the mecrisp Forth implementation can be found in separate directories beneath the main MultiMod-II directory. The ```mecrisp-ice-x.xx``` directory contains only the board support directories for the MultiMod II. The ```mmj1boot``` directory contains the necessary build scripts, the default Forth files that support MultiMod II operation, and the board definition files. See the Build section of this documentation for details.
+
+## Forth Operation
+The current mecrisp-ice configuration supports the default implementation that communicates using the USB device for the default user console. An initial Forth dictionary that is a part of the bootloader configuration bitstream contains Forth words needed to support desired interactivity. The J1A hardware design has also been augmented with the necessary warm boot design components so that control can be transferred by loading an alternative FPGA bitstream configuration such as the production bitstream design to interface the MultiMod II with the HP-71B bus. Details are provided in the appropriate sections of the Notes directory.
