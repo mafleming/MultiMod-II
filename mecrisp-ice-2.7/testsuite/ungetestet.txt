@@ -1,0 +1,33 @@
+1C98 Code: 1C9E - 1CA4 Unknown: 0004  Name: see
+1C4E Code: 1C56 - 1C96 Unknown: 0021  Name: seec
+1B76 Code: 1B84 - 1C4C Unknown: 0065  Name: disasm-step
+1B52 Code: 1B5E - 1B74 Unknown: 000C  Name: memstamp
+1AAA Code: 1AB2 - 1B50 Unknown: 0050  Name: alu.
+19EC Code: 19F4 - 1AA8 Unknown: 005B  Name: name.
+19D8 Code: 19E6 - 19EA Unknown: 0003  Name: disasm-cont
+19C6 Code: 19D2 - 19D6 Unknown: 0003  Name: disasm-$
+189E Code: 18A4 - 190C Unknown: 001A  Name: .s
+1834 Code: 183C - 189C Unknown: 0031  Name: dump
+173E Code: 1748 - 174E Unknown: 0002  Name: divisor
+172E Code: 1736 - 173C Unknown: 0002  Name: shift
+171A Code: 1726 - 172C Unknown: 0002  Name: dividend
+13E0 Code: 13EE - 1402 Unknown: 000B  Name: cornerstone
+11D6 Code: 11DC - 11E0 Unknown: 0002  Name: hld
+11CC Code: 11D2 - 11D4 Unknown: 0002  Name: BUF
+1140 Code: 1148 - 11CA Unknown: 001E  Name: BUF0
+0F4A Code: 0F52 - 0F5C Unknown: 0006  Name: xor!
+0F32 Code: 0F3A - 0F48 Unknown: 0008  Name: bic!
+0F1E Code: 0F26 - 0F30 Unknown: 0006  Name: bis!
+0F0E Code: 0F16 - 0F1C Unknown: 0004  Name: eint?
+0F04 Code: 0F0C - 0F0C Unknown: 0001  Name: dint
+0EFA Code: 0F02 - 0F02 Unknown: 0001  Name: eint
+0EBE Code: 0EC6 - 0EF8 Unknown: 0001  Name: quit
+0E18 Code: 0E22 - 0E7A Unknown: 0007  Name: accept
+0C20 Code: 0C2A - 0E16 Unknown: 0015  Name: number
+0B74 Code: 0B7C - 0B82 Unknown: 0001  Name: abort
+057C Code: 0582 - 0584 Unknown: 0002  Name: tib
+0570 Code: 0578 - 057A Unknown: 0002  Name: init
+0564 Code: 056C - 056E Unknown: 0002  Name: forth
+048A Code: 0494 - 0540 Unknown: 0011  Name: /string
+0270 Code: 0276 - 0276 Unknown: 0001  Name: io@
+0266 Code: 026C - 026E Unknown: 0002  Name: io!

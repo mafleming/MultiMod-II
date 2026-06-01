@@ -1,0 +1,4 @@
+set_io TXD B12
+set_io RXD B10
+set_io oscillator J3
+set_io reset_button A16

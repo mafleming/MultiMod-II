@@ -1,0 +1,1863 @@
+
+Mecrisp-Ice 2.7
+
+  ok.
+\ Definitions in high-level Forth that can be compiled by the small  ok.
+\ nucleus itself. They are included into the bitstream for default.  ok.
+  ok.
+\ #######   CORE   ############################################  ok.
+  ok.
+: [']  ok.
+    '  ok.
+; immediate 0 foldable  ok.
+  ok.
+: [char]  ok.
+    char  ok.
+; immediate 0 foldable  ok.
+  ok.
+: (  ok.
+    [char] ) parse 2drop  ok.
+; immediate 0 foldable  ok.
+  ok.
+: u>= ( u1 u2 -- ? ) u< invert ; 2 foldable  ok.
+: u<= ( u1 u2 -- ? ) u> invert ; 2 foldable  ok.
+: >=  ( n1 n2 -- ? )  < invert ; 2 foldable  ok.
+: <=  ( n1 n2 -- ? )  > invert ; 2 foldable  ok.
+  ok.
+: else  ok.
+    postpone ahead  ok.
+    swap  ok.
+    postpone then  ok.
+; immediate  ok.
+  ok.
+: while  ok.
+    postpone if  ok.
+    swap  ok.
+; immediate  ok.
+  ok.
+: repeat  ok.
+     postpone again  ok.
+     postpone then  ok.
+; immediate  ok.
+  ok.
+: create ( "<name>" -- ; -- addr )  ok.
+    :  ok.
+    here 2 cells + postpone literal  ok.
+    postpone ;  ok.
+;  ok.
+  ok.
+: buffer: ( u "<name>" -- ; -- addr )  ok.
+   create allot 0 foldable  ok.
+;  ok.
+  ok.
+: >body ( addr -- addr' )  ok.
+    @ -1 1 rshift and \ Remove the literal opcode MSB  ok.
+;  ok.
+  ok.
+: m* ( n1 n2 -- d )  ok.
+    2dup xor >r  ok.
+    abs swap abs um*  ok.
+    r> 0< if dnegate then  ok.
+; 2 foldable  ok.
+  ok.
+: variable ( x "name" -- ; -- addr )  ok.
+    create ,  ok.
+    0 foldable  ok.
+;  ok.
+  ok.
+: constant ( x "name" -- ; -- x ) : postpone literal postpone ; 0 foldable ;  ok
+.
+  ok.
+: sgn ( u1 n1 -- n2 ) \ n2 is u1 with the sign of n1  ok.
+    0< if negate then  ok.
+; 2 foldable  ok.
+  ok.
+\ Divide d1 by n1, giving the symmetric quotient n3 and the remainder  ok.
+\ n2.  ok.
+: sm/rem ( d1 n1 -- n2 n3 )  ok.
+    2dup xor >r     \ combined sign, for quotient  ok.
+    over >r         \ sign of dividend, for remainder  ok.
+    abs >r dabs r>  ok.
+    um/mod          ( remainder quotient )  ok.
+    swap r> sgn     \ apply to remainder  ok.
+    swap r> sgn     \ apply to quotient  ok.
+; 3 foldable  ok.
+  ok.
+\ Divide d1 by n1, giving the floored quotient n3 and the remainder n2.  ok.
+\ Adapted from hForth  ok.
+: fm/mod ( d1 n1 -- n2 n3 )  ok.
+    dup >r 2dup xor >r  ok.
+    >r dabs r@ abs  ok.
+    um/mod  ok.
+    r> 0< if  ok.
+        swap negate swap  ok.
+    then  ok.
+    r> 0< if  ok.
+        negate         \ negative quotient  ok.
+        over if  ok.
+            r@ rot - swap 1-  ok.
+        then  ok.
+    then  ok.
+    r> drop  ok.
+; 3 foldable  ok.
+  ok.
+: */mod ( n1 n2 n3 -- n4 n5 ) >r m* r> sm/rem ; 3 foldable  ok.
+: */    ( n1 n2 n3 -- n4 )    */mod nip ; 3 foldable  ok.
+  ok.
+: spaces ( n -- )  ok.
+    begin  ok.
+        dup 0>  ok.
+    while  ok.
+        space 1-  ok.
+    repeat  ok.
+    drop  ok.
+;  ok.
+  ok.
+( Pictured numeric output                    JCB 08:06 07/18/14)  ok.
+\ Adapted from hForth  ok.
+  ok.
+\ "The size of the pictured numeric output string buffer shall  ok.
+\ be at least (2*n) + 2 characters, where n is the number of  ok.
+\ bits in a cell."  ok.
+  ok.
+create BUF0  ok.
+16 cells 2 + 128 max  ok.
+allot here constant BUF  ok.
+  ok.
+0 variable hld  ok.
+  ok.
+: <# ( -- )  ok.
+    BUF hld !  ok.
+;  ok.
+  ok.
+: hold ( c -- )  ok.
+    hld @ 1- dup hld ! c!  ok.
+;  ok.
+  ok.
+: sign ( n -- )  ok.
+    0< if  ok.
+        [char] - hold  ok.
+    then  ok.
+;  ok.
+  ok.
+: .digit ( u -- c )  ok.
+  9 over <  ok.
+  [char] A [char] 9 1 + -  ok.
+  and +  ok.
+  [char] 0 +  ok.
+;  ok.
+  ok.
+: # ( ud -- ud* )  ok.
+    0 base @ um/mod >r base @ um/mod swap  ok.
+    .digit hold r>  ok.
+;  ok.
+  ok.
+: #s ( ud -- 0 0 )  ok.
+    begin  ok.
+        #  ok.
+        2dup d0=  ok.
+    until  ok.
+;  ok.
+  ok.
+: #> ( ud -- addr len )  ok.
+    2drop hld @ BUF over -  ok.
+;  ok.
+  ok.
+: (d.) ( d -- addr len )  ok.
+    dup >r dabs <# #s r> sign #>  ok.
+;  ok.
+  ok.
+: ud. ( ud -- )  ok.
+    <# #s #> type space  ok.
+;  ok.
+  ok.
+: d. ( d -- )  ok.
+    (d.) type space  ok.
+;  ok.
+  ok.
+: . ( n -- )  ok.
+    s>d d.  ok.
+;  ok.
+  ok.
+: u. ( u -- )  ok.
+    0 d.  ok.
+;  ok.
+  ok.
+: rtype ( caddr u1 u2 -- ) \ display character string specified by caddr u1  ok.
+
+                           \ in a field u2 characters wide.  ok.
+  2dup u< if over - spaces else drop then  ok.
+  type  ok.
+;  ok.
+  ok.
+: d.r ( d length -- )  ok.
+    >r (d.)  ok.
+    r> rtype  ok.
+;  ok.
+  ok.
+: .r ( n length -- )  ok.
+    >r s>d r> d.r  ok.
+;  ok.
+  ok.
+: u.r ( u length -- )  ok.
+    0 swap d.r  ok.
+;  ok.
+  ok.
+( Memory operations                          JCB 18:02 05/31/15)  ok.
+  ok.
+: move ( addr1 addr2 u -- )  ok.
+    >r 2dup u< if  ok.
+        r> cmove>  ok.
+    else  ok.
+        r> cmove  ok.
+    then  ok.
+;  ok.
+  ok.
+: /mod ( n1 n2 -- n3 n4 ) >r s>d r> sm/rem ; 2 foldable  ok.
+: /    ( n1 n2 -- n3 )    /mod nip ; 2 foldable  ok.
+: mod  ( n1 n2 -- n3 )    /mod drop ; 2 foldable  ok.
+  ok.
+: ."  ok.
+    [char] " parse  ok.
+    state @ if  ok.
+        postpone sliteral  ok.
+        postpone type  ok.
+    else  ok.
+        type  ok.
+    then  ok.
+; immediate 0 foldable  ok.
+  ok.
+\ #######   CORE EXT   ########################################  ok.
+  ok.
+: pad ( -- addr )  ok.
+    here aligned  ok.
+;  ok.
+  ok.
+: within ( n1|u1 n2|u2 n3|u3 -- flag ) over - >r - r> u< ; 3 foldable  ok.
+  ok.
+: s"  ok.
+    [char] " parse  ok.
+    state @ if  ok.
+        postpone sliteral  ok.
+    then  ok.
+; immediate  ok.
+  ok.
+( CASE                                       JCB 09:15 07/18/14)  ok.
+\ From ANS specification A.3.2.3.2  ok.
+  ok.
+: case ( -- 0 ) 0 ; immediate  ( init count of ofs )  ok.
+  ok.
+: of  ( #of -- orig #of+1 / x -- )  ok.
+    1+    ( count ofs )  ok.
+    >r    ( move off the stack in case the control-flow )  ok.
+          ( stack is the data stack. )  ok.
+    postpone over  postpone = ( copy and test case value)  ok.
+    postpone if    ( add orig to control flow stack )  ok.
+    postpone drop  ( discards case value if = )  ok.
+    r>             ( we can bring count back now )  ok.
+; immediate  ok.
+  ok.
+: endof ( orig1 #of -- orig2 #of )  ok.
+    >r   ( move off the stack in case the control-flow )  ok.
+         ( stack is the data stack. )  ok.
+    postpone else  ok.
+    r>   ( we can bring count back now )  ok.
+; immediate  ok.
+  ok.
+: endcase  ( orig1..orign #of -- )  ok.
+    postpone drop  ( discard case value )  ok.
+    0 ?do  ok.
+      postpone then  ok.
+    loop  ok.
+; immediate  ok.
+  ok.
+\ #######   DICTIONARY   ######################################  ok.
+  ok.
+: cornerstone ( "name" -- )  ok.
+  create  ok.
+    forth 2@        \ preserve FORTH and DP after this  ok.
+    , 2 cells + ,  ok.
+  does>  ok.
+    2@ forth 2! \ restore FORTH and DP  ok.
+;  ok.
+  ok.
+: unused ( -- u ) $3C00 here - ;  ok.
+  ok.
+: ticks ( -- u ) $40 io@ ;  ok.
+  ok.
+: nextirq ( cycles -- ) \ Trigger the next interrupt u cycles after the last one
+.  ok.
+  $4000 io@  \ Read current tick  ok.
+  -           \ Subtract the cycles already elapsed  ok.
+  8 -          \ Correction for the cycles neccessary to do this  ok.
+  invert        \ Timer counts up to zero to trigger the interrupt  ok.
+  $4000 io!      \ Prepare timer for the next irq  ok.
+;  ok.
+  ok.
+: ms    ( u -- ) 0 do 1200 0 do loop loop ; \ 10 cycles per loop run. 1 ms * 12 
+MHz / 10  ok.
+: leds  ( x -- ) 8 io! ;  ok.
+  ok.
+: randombit ( -- 0 | 1 ) $2000 io@ 2 rshift 1 and ;  ok.
+: random ( -- x ) 0  16 0 do 2* randombit or 100 0 do loop loop ;  ok.
+  ok.
+: sram@ ( addr -- x ) $21 io! $20 io@ ;  ok.
+: sram! ( x addr -- ) $21 io! $20 io! ;  ok.
+  ok.
+: h71@ ( daddr -- x ) swap $51 io! $52 io! $50 io@ ;  ok.
+: h71! ( x daddr -- ) swap $51 io! $52 io! $50 io! ;  ok.
+  ok.
+\ -------------------------------------------------------------  ok.
+\  Double tools  ok.
+\ -------------------------------------------------------------  ok.
+  ok.
+: 2or  ( d1 d2 -- d ) >r swap >r or  r> r> or  ; 4 foldable  ok.
+: 2and ( d1 d2 -- d ) >r swap >r and r> r> and ; 4 foldable  ok.
+: 2xor ( d1 d2 -- d ) >r swap >r xor r> r> xor ; 4 foldable  ok.
+  ok.
+: d0<   ( d -- ? ) nip 0< ; 2 foldable  ok.
+  ok.
+: d= ( x0 x1 y0 y1 -- ? )  ok.
+  ok.
+  swap ( x0 x1 y1 y0 )  ok.
+  >r   ( x0 x1 y1 R: y0 )  ok.
+  =    ( x0 x1=y1 R: y0 )  ok.
+  swap ( x1=y1 x0 R: y0 )  ok.
+  r>   ( x1=y1 x0 y0 )  ok.
+  =    ( x1=y1 x0=y0 )  ok.
+  and  ok.
+; 4 foldable  ok.
+  ok.
+: d<> d= not ; 4 foldable  ok.
+  ok.
+: d2/  ( x1 x2 -- x1' x2' ) >r 1 rshift r@ 8 cells 1- lshift or r> 2/       ; 2 
+foldable  ok.
+: dshr ( x1 x2 -- x1' x2' ) >r 1 rshift r@ 8 cells 1- lshift or r> 1 rshift ; 2 
+foldable  ok.
+  ok.
+\ : 2lshift  ( ud u -- ud* ) begin dup while >r d2*  r> 1- repeat drop ; 3 folda
+ble  ok.
+\ : 2arshift (  d u --  d* ) begin dup while >r d2/  r> 1- repeat drop ; 3 folda
+ble  ok.
+\ : 2rshift  ( ud u -- ud* ) begin dup while >r dshr r> 1- repeat drop ; 3 folda
+ble  ok.
+  ok.
+: 2lshift ( low high u -- )  ok.
+  dup >r ( low high u R: u )  ok.
+  lshift ( low high* )  ok.
+  over 8 cells r@ - rshift or  ok.
+  over r@ 8 cells - lshift or  ok.
+  swap r> lshift swap  ok.
+; 3 foldable  ok.
+  ok.
+: 2rshift ( low high u -- )  ok.
+  >r swap ( high low R: u )  ok.
+  r@ rshift  ok.
+  over 8 cells r@ - lshift or  ok.
+  over r@ 8 cells - rshift or  ok.
+  swap  ok.
+  r> rshift  ok.
+; 3 foldable  ok.
+  ok.
+: 2arshift ( low high u -- )  ok.
+  dup >r 8 cells u< ( low high R: u )  ok.
+  if  ok.
+    swap ( high low R: u )  ok.
+    r@ rshift  ok.
+    over 8 cells r@ - lshift or  ok.
+  else  ok.
+    nip dup r@ 8 cells - arshift  ok.
+  then  ok.
+  swap r> arshift  ok.
+; 3 foldable  ok.
+  ok.
+: 2nip ( d1 d2 -- d2 )  ok.
+  >r nip nip r>  ok.
+; 4 foldable  ok.
+  ok.
+: 2rot ( d1 d2 d3 -- d2 d3 d1 )  ok.
+  >r >r ( d1 d2 R: d3 )  ok.
+  2swap ( d2 d1 R: d3 )  ok.
+  r> r> ( d2 d1 d3 )  ok.
+  2swap ( d2 d3 d1 )  ok.
+; 6 foldable  ok.
+  ok.
+: d<            \ ( al ah bl bh -- flag )  ok.
+    rot         \ al bl bh ah  ok.
+    2dup =  ok.
+    if  ok.
+        2drop u<  ok.
+    else  ok.
+        > nip nip  ok.
+    then  ok.
+; 4 foldable  ok.
+  ok.
+: d>  ( d1 d2 -- ? ) 2swap d< ; 4 foldable  ok.
+: d>= ( d1 d2 -- ? ) d< not   ; 4 foldable  ok.
+: d<= ( d1 d2 -- ? ) d> not   ; 4 foldable  ok.
+  ok.
+: dmin ( d1 d2 -- d ) 2over 2over d< if 2drop else 2nip then ; 4 foldable  ok.
+: dmax ( d1 d2 -- d ) 2over 2over d< if 2nip else 2drop then ; 4 foldable  ok.
+  ok.
+: du<           \ ( al ah bl bh -- flag )  ok.
+    rot         \ al bl bh ah  ok.
+    2dup =  ok.
+    if  ok.
+        2drop u<  ok.
+    else  ok.
+        u> nip nip  ok.
+    then  ok.
+; 4 foldable  ok.
+  ok.
+: du>  ( d1 d2 -- ? ) 2swap du< ; 4 foldable  ok.
+: du>= ( d1 d2 -- ? ) du< not   ; 4 foldable  ok.
+: du<= ( d1 d2 -- ? ) du> not   ; 4 foldable  ok.
+  ok.
+\ -------------------------------------------------------------  ok.
+\  Fixpoint output  ok.
+\ -------------------------------------------------------------  ok.
+  ok.
+: hold< ( c -- ) \ Add a character at the end of the number string  ok.
+  hld @   dup 1- dup hld !    BUF hld @ -  move  ok.
+  BUF 1- c!  ok.
+;  ok.
+  ok.
+: f# ( u -- u ) base @ um* .digit hold< ;  ok.
+  ok.
+: f.n ( f n -- ) ( f-Low f-High n -- ) \ Prints a s15.16 number  ok.
+  ok.
+  >r ( Low High R: n )  ok.
+  ok.
+  dup 0< if [char] - emit then  ok.
+  dabs  ok.
+  ( uLow uHigh )  ok.
+  0 <# #s   ( uLow 0 0 )  ok.
+  drop swap ( 0 uLow )  ok.
+  ok.
+  [char] , hold<  ok.
+  r> 0 ?do f# loop  ok.
+  ok.
+  #> type space  ok.
+;  ok.
+  ok.
+: f. ( f -- ) 8 cells f.n ;  ok.
+  ok.
+\ -------------------------------------------------------------  ok.
+\  Fixpoint calculations  ok.
+\ -------------------------------------------------------------  ok.
+  ok.
+: 2variable ( d -- ) create , , 0 foldable ;  ok.
+\ : 2constant ( d -- ) create , , 0 foldable does> 2@ ;  ok.
+: 2constant ( d -- ) swap : postpone literal postpone literal postpone ; 0 folda
+ble ;  ok.
+  ok.
+: s>f ( n -- f ) 0 swap ; 1 foldable  \ Signed integer --> Fixpoint s15.16  ok.
+\ : f>s ( f -- n ) nip    ; 2 foldable  \ Fixpoint s15.16 --> Signed integer  ok
+.
+  ok.
+: f* ( f1 f2 -- f )  ok.
+  ok.
+        dup >r dabs  ok.
+  2swap dup >r dabs  ok.
+  ok.
+            ( d c b a )  ok.
+  swap >r   ( d c a R: b )  ok.
+  2dup *    ( d c a ac R: b )  ok.
+  >r        ( d c a R: b ac )  ok.
+  >r        ( d c R: b ac a )  ok.
+  over      ( d c d R: b ac a )  ok.
+  r> um*    ( d c L H R: b ac )  ok.
+  r> +      ( d c L H' R: b )  ok.
+  rot       ( d L H' c R: b )  ok.
+  r@        ( d L H' c b R: b )  ok.
+  um* d+    ( d L' H'' R: b )  ok.
+  rot       ( L' H'' d R: b )  ok.
+  r>        ( L' H'' d b )  ok.
+  um* nip 0 ( L' H'' db 0 )  ok.
+  d+        ( L'' H''' )  ok.
+  ok.
+  r> r> xor 0< if dnegate then  ok.
+  ok.
+; 4 foldable  ok.
+  ok.
+0. 2variable dividend  ok.
+0. 2variable shift  ok.
+0. 2variable divisor  ok.
+  ok.
+: (ud/mod) ( -- )  ok.
+  ok.
+  16 cells  ok.
+  begin  ok.
+  ok.
+    \ Shift the long chain of four cells.  ok.
+  ok.
+       dividend cell+ @ dup 8 cells 1- rshift >r 2*    dividend cell+ !  ok.
+    r> dividend       @ dup 8 cells 1- rshift >r 2* or dividend       !  ok.
+    r>    shift cell+ @ dup 8 cells 1- rshift >r 2* or    shift cell+ !  ok.
+    r>    shift       @                          2* or    shift       !  ok.
+  ok.
+    \ Subtract divisor when shifted out value is large enough  ok.
+  ok.
+    shift 2@ divisor 2@  du>=  ok.
+  ok.
+    if \ Greater or Equal: Subtract !  ok.
+      shift 2@ divisor 2@ d- shift 2!  ok.
+      dividend cell+ @ 1+ dividend cell+ !  ok.
+    then  ok.
+  ok.
+    1- dup 0=  ok.
+  until  ok.
+  drop  ok.
+;  ok.
+  ok.
+: ud/mod ( ud1 ud2 -- ud-rem ud-div )  ok.
+  ok.
+     divisor 2!  ok.
+  0. shift 2!  ok.
+     dividend 2!  ok.
+  ok.
+  (ud/mod)  ok.
+  ok.
+  shift 2@  ok.
+  dividend 2@  ok.
+  ok.
+; 4 foldable  ok.
+  ok.
+: f/ ( f1 f2 -- f )  ok.
+  ok.
+  dup >r dabs  divisor 2!  ok.
+  dup >r dabs  0 Shift 2! 0 swap dividend 2!  ok.
+  ok.
+  (ud/mod)  ok.
+  ok.
+  dividend 2@  ok.
+  r> r> xor 0< if dnegate then  ok.
+  ok.
+; 4 foldable  ok.
+  ok.
+\ #######   DUMP   ############################################  ok.
+  ok.
+: dump  ok.
+    ?dup  ok.
+    if  ok.
+        1- 4 rshift 1+  ok.
+        0 do  ok.
+            cr dup dup .x space space  ok.
+            16 0 do  ok.
+                dup c@ .x2 1+  ok.
+            loop  ok.
+            space swap  ok.
+            16 0 do  ok.
+                dup c@ dup bl 127 within invert if  ok.
+                    drop [char] .  ok.
+                then  ok.
+                emit 1+  ok.
+            loop  ok.
+            drop  ok.
+        loop  ok.
+    then  ok.
+    drop  ok.
+;  ok.
+  ok.
+\ #######   INSIGHT   #########################################  ok.
+  ok.
+  ok.
+( Deep insight into stack, dictionary and code )  ok.
+( Matthias Koch )  ok.
+  ok.
+: .s ( -- )  ok.
+  \ Save initial depth  ok.
+  depth dup >r  ok.
+  ok.
+  \ Flush stack contents to temporary storage  ok.
+  begin  ok.
+    dup  ok.
+  while  ok.
+    1-  ok.
+    swap  ok.
+    over cells pad + !  ok.
+  repeat  ok.
+  drop  ok.
+  ok.
+  \ Print original depth  ok.
+  ." [ "  ok.
+  r@ .x2  ok.
+  ." ] "  ok.
+  ok.
+  \ Print all elements in reverse order  ok.
+  r@  ok.
+  begin  ok.
+    dup  ok.
+  while  ok.
+    r@ over - cells pad + @ .x  ok.
+    1-  ok.
+  repeat  ok.
+  drop  ok.
+  ok.
+  \ Restore original stack  ok.
+  0  ok.
+  begin  ok.
+    dup r@ u<  ok.
+  while  ok.
+    dup cells pad + @ swap  ok.
+    1+  ok.
+  repeat  ok.
+  rdrop  ok.
+  drop  ok.
+;  ok.
+  ok.
+: insight ( -- )  ( Long listing of everything inside of the dictionary structur
+e )  ok.
+    base @ hex cr  ok.
+    forth @  ok.
+    begin  ok.
+        dup  ok.
+    while  ok.
+         ." Addr: "     dup .x  ok.
+        ."  Link: "     dup link@ .x  ok.
+        ."  Flags: "    dup cell+ c@ 128 and if ." I " else ." - " then  ok.
+                        dup @ 7 and ?dup if 1- u. else ." - " then  ok.
+        ."  Code: "     dup cell+ count 127 and + aligned .x  ok.
+        space           dup cell+ count 127 and type  ok.
+        link@ cr  ok.
+    repeat  ok.
+    drop  ok.
+    base !  ok.
+;  ok.
+  ok.
+0 variable disasm-$    ( Current position for disassembling )  ok.
+0 variable disasm-cont ( Continue up to this position )  ok.
+  ok.
+: name. ( Address -- )  ( If the address is Code-Start of a dictionary word, it 
+gets named. )  ok.
+  ok.
+  dup ['] s, 24 + = \ Is this a string literal ?  ok.
+  if  ok.
+    ."   --> s" [char] " emit space  ok.
+    disasm-$ @ count type  ok.
+    [char] " emit  ok.
+  ok.
+    disasm-$ @ c@ 1+ aligned disasm-$ +!  ok.
+    drop exit  ok.
+  then  ok.
+  ok.
+  >r  ok.
+  forth @  ok.
+  begin  ok.
+    dup  ok.
+  while  ok.
+    dup cell+ count 127 and + aligned ( Dictionary Codestart )  ok.
+      r@ = if ."   --> " dup cell+ count 127 and type then  ok.
+    link@  ok.
+  repeat  ok.
+  drop r>  ok.
+  ok.
+  $000E =                                  \ A call to execute  ok.
+  disasm-$ @ 2 cells - @ $C000 and $C000 =  \ after a literal which has bit $400
+0 set means:  ok.
+  and                                        \ Memory fetch.  ok.
+  if  ok.
+    ."   --> " disasm-$ @ 2 cells - @ $3FFF and .x ." @"  ok.
+  then  ok.
+;  ok.
+  ok.
+: alu. ( Opcode -- ) ( If this opcode is from an one-opcode definition, it gets 
+named. This way inlined ALUs get a proper descri  ok.
+  ok.
+  dup $6127 = if ." >r"    drop exit then  ok.
+  dup $6B11 = if ." r@"    drop exit then  ok.
+  dup $6B1D = if ." r>"    drop exit then  ok.
+  dup $600C = if ." rdrop" drop exit then  ok.
+  ok.
+  $FF73 and  ok.
+  >r  ok.
+  forth @  ok.
+  begin  ok.
+    dup  ok.
+  while  ok.
+    dup cell+ count 127 and + aligned @ ( Dictionary First-Opcode )  ok.
+        dup $E080 and $6080 =  ok.
+        if  ok.
+          $FF73 and r@ = if rdrop cell+ count 127 and type space exit then  ok.
+        else  ok.
+          drop  ok.
+        then  ok.
+  ok.
+    link@  ok.
+  repeat  ok.
+  drop r> drop  ok.
+;  ok.
+  ok.
+  ok.
+: memstamp ( Addr -- ) dup .x ." : " @ .x ."   " ; ( Shows a memory location nic
+ely )  ok.
+  ok.
+: disasm-step ( -- )  ok.
+  disasm-$ @ memstamp  ok.
+  disasm-$ @ @        ( Fetch next opcode )  ok.
+  1 cells disasm-$ +! ( Increment position )  ok.
+  ok.
+  dup $8000 and         if ." Imm  " $7FFF and       dup .x 6 spaces            
+          .x       exit then ( Immediate )  ok.
+  dup $E000 and $0000 = if ." Jmp  " $1FFF and cells dup                        
+          .x name. exit then ( Branch )  ok.
+  dup $E000 and $2000 = if ." JZ   " $1FFF and cells disasm-cont @ over max disa
+sm-cont ! .x       exit then ( 0-Branch )  ok.
+  dup $E000 and $4000 = if ." Call " $1FFF and cells dup                        
+          .x name. exit then ( Call )  ok.
+                           ." Alu"   13 spaces dup alu. $80 and if ." exit" then
+                             ( ALU )  ok.
+;  ok.
+  ok.
+: seec ( -- ) ( Continues to see )  ok.
+  base @ hex cr  ok.
+  0 disasm-cont !  ok.
+  begin  ok.
+    disasm-$ @ @  ok.
+    dup  $E080 and $6080 =           ( Loop terminates with ret )  ok.
+    swap $E000 and 0= or             ( or when an unconditional jump is reached.
+ )  ok.
+    disasm-$ @ disasm-cont @ u>= and ( Do not stop when there has been a conditi
+onal jump further )  ok.
+  ok.
+    disasm-step cr  ok.
+  until  ok.
+  ok.
+  base !  ok.
+;  ok.
+  ok.
+: see ( -- ) ( Takes name of definition and shows its contents from beginning to
+ first ret )  ok.
+  ' disasm-$ !  ok.
+  seec  ok.
+;  ok.
+  ok.
+cornerstone new  ok.
+  ok.
+\ #######   Flash   ###########################################  ok.
+  ok.
+\ SPI Flash tools and loader  ok.
+\ NOTE: Code based on that from UPduino-Mecrisp-Ice-15kB by Igor-m  ok.
+\ BSD -3-Clause license  ok.
+\ https://github.com/igor-m/UPduino-Mecrisp-Ice-15kB.git  ok.
+  ok.
+\ Fomu seems to have used some of the first 7 64K sectors for  ok.
+\ flash bitstream or data. Reserve the first 1MB (64 16K) sectors  ok.
+\ for bitstreams and their data. 16KB sectors 0 to 15 are the  ok.
+\ powerup/reset bitstream and should be protected.  ok.
+\ Default load on power-up would be 16K sector number 0  ok.
+  ok.
+8 constant bitfence  \ Write protect 16KB pages below this point  ok.
+64 constant frtstart  \ Forth dictionary images start point  ok.
+128 constant romstart  \ HP-71B ROM/IRAM image start  ok.
+  ok.
+\ #############################################################  ok.
+\ #######    SPI IO    ########################################  ok.
+  ok.
+: idle  ( -- )  ok.
+    \ Deselect flash to mark the end of a command  ok.
+    1 $28 io!   \ Deselect flash CS/ = 1  ok.
+;  ok.
+  ok.
+: spixbit ( x -- y )  ok.
+    \ Output data in high byte, assemble input in low byte  ok.
+    dup 0< 2 and        \ extract MS bit  ok.
+    dup $28 io!          \ lower SCK, update MOSI  ok.
+    4 + $28 io!           \ raise SCK  ok.
+    2*                     \ next bit  ok.
+    $30 io@ +               \ read MISO, accumulate  ok.
+;  ok.
+  ok.
+: spix ( outdata -- indata )  ok.
+    8 lshift  ok.
+    spixbit spixbit spixbit spixbit  ok.
+    spixbit spixbit spixbit spixbit  ok.
+;  ok.
+  ok.
+: >spi ( -- byte )  ok.
+    spix drop  ok.
+;  ok.
+  ok.
+: spi> ( byte -- )  ok.
+    0 spix  ok.
+;  ok.
+  ok.
+: waitspi  ( -- )  ok.
+  begin  ok.
+    $05 >spi \ Read Flag status register  ok.
+    spi> $01 and 0= \ WIP: Write in Progress.  ok.
+    idle  ok.
+  until  ok.
+;  ok.
+  ok.
+: spiwe ( -- )  ok.
+    $06 >spi \ Write enable  ok.
+    idle  ok.
+;  ok.
+  ok.
+  ok.
+\ #############################################################  ok.
+\ #######    SPI SUPPORT     ##################################  ok.
+  ok.
+: sect2addr ( sector16k -- double_rom_addr )  ok.
+    \ Convert a 10-bit `sector16k` value to a 24-bit flash address.  ok.
+    \ Where TOS is high 8 bits and next is low 16 bits.  ok.
+    dup 3 and 14 lshift      \ Low 16 bits of address  ok.
+    swap 2 rshift             \ High 16 bits of address  ok.
+;  ok.
+  ok.
+: addr2sect ( double_rom_addr -- sector16k )  ok.
+    \ Convert a 24-bit flash address to a 10-bit sector16k value.  ok.
+    $FF and 2 lshift    \ High 8 bits masked and shifted right  ok.
+    swap 14 rshift or    \ Divide by 16K, form lower 2 bits of sector16k  ok.
+;  ok.
+  ok.
+: addr2spi ( double_rom_addr -- )  ok.
+    \ Output a 24-bit address to spi flash. The address is a double  ok.
+    \ where the high 8 bits are in TOSand the low 16 bits in NOS.  ok.
+    $FF and      >spi     \ Address high byte  ok.
+    dup 8 rshift >spi      \ Address mid byte  ok.
+    $FF and      >spi       \ Address low byte  ok.
+;  ok.
+  ok.
+: spiread ( double_rom_addr -- )  ok.
+    \ Set up the read command and byte address  ok.
+    \ Address is a double, high 16-bits in TOS  ok.
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM  ok.
+    idle  ok.
+    0  begin 1+ dup 500 =  until drop \ delay 100us  ok.
+  ok.
+    03 >spi              \ Read command  ok.
+    addr2spi              \ Output 24-bit address  ok.
+;  ok.
+  ok.
+: spiwrite ( double_rom_addr -- )  ok.
+    \ Set up the write command and byte address  ok.
+    \ Address is a double, high 16-bits in TOS  ok.
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM  ok.
+    idle  ok.
+    0  begin 1+ dup 500 =  until drop \ delay 100us  ok.
+   ok.
+    spiwe       \ Setup write  ok.
+    02 >spi      \ Write command  ok.
+    addr2spi      \ Output 24-bit address  ok.
+;  ok.
+  ok.
+: spiread16k ( sector16k -- )  ok.
+    \ Set up the read command and sector address  ok.
+    sect2addr  ok.
+    spiread  ok.
+;  ok.
+  ok.
+  ok.
+\ #############################################################  ok.
+\ #######    SPI UTILITY     ##################################  ok.
+  ok.
+: spiflush ( Nbytes -- )  ok.
+    \ Flush N bytes from the spi flash being read  ok.
+    0 ?do  ok.
+        spi> drop  ok.
+    loop  ok.
+;  ok.
+  ok.
+: spidump ( Nbytes -- )  ok.
+    \ Print N bytes from the spi flash being read  ok.
+    0 ?do  ok.
+        spi> .  ok.
+    loop  ok.
+;  ok.
+  ok.
+: numsectors ( -- #sector16k )  ok.
+    \ Return the number of 16K sectors in this flash device  ok.
+    \ For device independence, RDID command capacity is # of address bits  ok.
+    \ i.e. 21 = 2M, 22 = 4M, etc.  ok.
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM  ok.
+    idle  ok.
+    0  begin 1+ dup 500 =  until drop \ delay 100us  ok.
+    $9F >spi spi> drop spi> drop spi> 14 - 1 swap lshift  ok.
+;  ok.
+  ok.
+  ok.
+\ #######   DATA I/O   ########################################  ok.
+\ Definition of load/save/erase words support 16K sectors  ok.
+\ 2 MB flash: 128 sectors, 4 MB flash: 256 sectors, 16 MB flash: 1024 sectors  o
+k.
+  ok.
+  \ There's only a 4K and 64K sector erase command  ok.
+: erase4k ( sector4k -- )  ok.
+    dup bitfence 2 lshift 1- u> if   \ Never overwrite bitstream !  ok.
+        $AB >spi                      \ Release from Deep Power Down  ok.
+        idle  ok.
+        0  begin 1+ dup 500 =  until drop  \ delay  ok.
+  ok.
+        spiwe  ok.
+        $20              >spi    \ Sector erase, 4K  ok.
+        dup 4 rshift     >spi     \ Sector number, bits 9 to 4  ok.
+        $F and 4 lshift  >spi      \ Address high  ok.
+        $00              >spi       \ Address low  ok.
+        idle  ok.
+        waitspi  ok.
+    else drop then  ok.
+;  ok.
+  ok.
+  \ Erase 16K sectors using 4K sector erase command four times  ok.
+: erase ( sector16k -- ) \ Erase 4 4K sectors given 16K sector number  ok.
+  dup + dup +   \ 4K sector number is 4 times 16K sector number  ok.
+  dup erase4k  ok.
+  1+ dup erase4k  ok.
+  1+ dup erase4k  ok.
+  1+ erase4k  ok.
+;  ok.
+  ok.
+: load ( sector16k -- )  ok.
+    \ Save FORTH instruction store (15K EBR) to 16K sector  ok.
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM  ok.
+    idle  ok.
+    0  begin 1+ dup 500 =  until drop \ delay 100us  ok.
+  ok.
+    spiread16k  ok.
+    spi> spi> 8 lshift or  ok.
+  ok.
+    dup $FFFF <> \ Execution starts at address 0, there always will be a valid o
+pcode.  ok.
+    if             \ $FFFF denotes an empty sector that should not be loaded.  o
+k.
+ 0 !         \ Store first byte  ok.
+  ok.
+        2             \ 2nd through 15K bytes  ok.
+        begin  ok.
+        spi> spi> 8 lshift or over !  ok.
+        2 +  ok.
+        dup $3C00 =       \ For 15kB ram  ok.
+        until  ok.
+  ok.
+    then  ok.
+  ok.
+    drop  ok.
+    idle  ok.
+    init \ @i ?dup if execute then \ The freshly loaded image might have init se
+t  ok.
+    quit  ok.
+;  ok.
+  ok.
+  \ Erase 16K sector then save instruction store  ok.
+: save ( sector16k -- )  ok.
+    dup bitfence u> if \ Never overwrite bitstream !  ok.
+  ok.
+        $AB >spi \ Release from Deep Power Down  ok.
+        idle  ok.
+        0  begin 1+ dup 500 =  until drop \ delay 100us  ok.
+  ok.
+ dup erase  ok.
+        sect2addr  ok.
+ begin              \ addrL addrH --  ok.
+     spiwe           \ Write enable  ok.
+            $02 >spi         \ Page program (256 bytes)  ok.
+     2dup addr2spi     \ Output 24-bit address  ok.
+     swap               \ addrL addrH -- addrH addrL  ok.
+            begin               \ Write 256 bytes, incrementing counter  ok.
+  dup $3FFF and    \ Address range 0~$3FFF  ok.
+  c@ >spi           \ Read dictionary, write flash  ok.
+                1+                 \ Increment addrL  ok.
+                dup $FF and 0=      \ 256 bytes?  ok.
+     until  ok.
+            idle                      \ Must disable select after last byte  ok.
+
+     waitspi                    \ Wait for write to finish  ok.
+     swap over                   \ addrH addrL -- addrL addrH addrL  ok.
+            $3FFF and $3C00 =            \ for 15kB ram  ok.
+        until  ok.
+        2drop  ok.
+  ok.
+    else drop then \ Bitstream protection  ok.
+;  ok.
+  ok.
+cornerstone hp71b    \ Everything below this is core Forth  ok.
+\ #######   Warm Boot   ###########################################  ok.
+  ok.
+\ Support For FPGA Warm Boot  ok.
+  ok.
+  ok.
+: warmboot ( num -- )  ok.
+    \ num is 0 .. 7  ok.
+    \ bits [1:0] select bitstream image  ok.
+    \ bit [2] = 1 triggers warm boot  ok.
+    $a0 io!     \ Write to BOOTCTL register  ok.
+;  ok.
+  ok.
+\ #######   HP-71B  ###########################################  ok.
+\ Words to support HP-71B ROM/RAM modules in flash  ok.
+  ok.
+: rom2ram ( sector16k ram# -- )  ok.
+    \ Copy 16K ROM image to SPRAM  ok.
+    \ ram# 0~7, 16K block in SPRAM  ok.
+    \ sector16k frthstart~1023, 16K block in flash ( 14 MB )  ok.
+  ok.
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM  ok.
+    idle  ok.
+    0 begin 1+ dup 500 =  until drop \ delay  ok.
+      ok.
+    \ Set SPI flash address to 16K block number  ok.
+    swap               \ ( ram# sector16k -- )  ok.
+    03             >spi \ Read command  ok.
+    dup 2 rshift   >spi  \ Sector number, bits 7-2  ok.
+    3 and 6 lshift >spi   \ Address high, bits 1-0 << 6  ok.
+    $00            >spi    \ Address low  ok.
+  ok.
+    $2000 *   \ ( Ram_pointer -- )  ok.
+    0 swap     \ ( Ram_counter Ram_pointer -- )  ok.
+    begin  ok.
+        spi> spi> 8 lshift or    \ ( Ram_counter Ram_pointer Word -- )  ok.
+        over            \ ( Ram_counter Ram_pointer Word Ram_pointer -- )  ok.
+        sram!            \ ( -- Ram_counter Ram_pointer )  ok.
+        1+ swap 1+ swap   \ ( Ram_counter Ram_pointer -- )  ok.
+        over $2000 =  ok.
+    until  ok.
+    idle 2drop  ok.
+;  ok.
+  ok.
+: rom32k2ram ( sector16k ram# -- )  ok.
+    \ Copy 32K ROM image to SPRAM  ok.
+    \ ram# 0~7, 16K block in SPRAM  ok.
+    \ sector16k frthstart~1023, 16K block in flash ( 14 MB )  ok.
+  ok.
+    dup 6 u> if     \ 32K won't fit last 16K block  ok.
+        2dup rom2ram  ok.
+        1+ swap 1+ swap  ok.
+        rom2ram  ok.
+    else  ok.
+        2drop  ok.
+    then  ok.
+;  ok.
+  ok.
+: rom64k2ram ( sector16k ram# -- )  ok.
+    \ Copy 64K ROM image to SPRAM  ok.
+    \ ram# 0~7, 16K block in SPRAM  ok.
+    \ sector16k frthstart~1023, 16K block in flash ( 14 MB )  ok.
+  ok.
+    dup 4 u> if     \ 64K won't fit last 16K block  ok.
+        2dup rom2ram  ok.
+        1+ swap 1+ swap 2dup  ok.
+        rom2ram  ok.
+        1+ swap 1+ swap 2dup  ok.
+        rom2ram  ok.
+        1+ swap 1+ swap  ok.
+        rom2ram  ok.
+    else 2drop then  ok.
+;  ok.
+  ok.
+  ok.
+  ok.
+: ram2rom  ( ram# sector16k -- )  ok.
+    \ ram# 0~7, 16K block is SPRAM  ok.
+    \ sector16k 32~127, 16K block in flash ( 2 MB )  ok.
+  ok.
+    dup bitfence 1- u> if    \ Never overwrite bitstream !  ok.
+  ok.
+        swap $2000 * swap      \ ( ram_addr sector16k -- )  ok.
+        $AB >spi                \ Release from Deep Power Down  ok.
+        idle  ok.
+        dup erase  ok.
+        dup 3 and 14 lshift    \ beginning count  ok.
+        begin   \ ( ram_addr sector16k spi_addr -- )  ok.
+            spiwe  ok.
+  ok.
+            $02            >spi  \ Page program (256 bytes)  ok.
+            over 2 rshift  >spi   \ Sector number  ok.
+            dup 8 rshift   >spi    \ Address high  ok.
+            $00            >spi     \ Address low  ok.
+  ok.
+            rot                  \ ( sector16k spi_addr ram_addr -- )  ok.
+            begin                 \ Write 256 bytes, incrementing counter  ok.
+                dup sram@   ok.
+                dup $FF and >spi  ok.
+                8 rshift    >spi  ok.
+                1+  ok.
+                dup $7F and 0=  ok.
+            until  ok.
+  ok.
+            idle  ok.
+            waitspi  ok.
+            rot rot $0101 +     \ ( ram_addr sector16k spi_addr -- )  ok.
+            dup $3F and $00 =    \ for 16kB ram  ok.
+        until  ok.
+        2drop drop  ok.
+  ok.
+    else 2drop then \ Bitstream protection  ok.
+;  ok.
+  ok.
+: ram32k2rom ( ram# sector16k -- )  ok.
+    \ Copy 32K SRAM image to ROM  ok.
+    \ ram# 0~7, 16K block in SPRAM  ok.
+    \ sector16k 32~127, 16K block in flash ( 2 MB )  ok.
+  ok.
+    over 6 u> if     \ 32K isn't last 16K block  ok.
+        2dup ram2rom  ok.
+        1+ swap 1+ swap  ok.
+        ram2rom  ok.
+    else  ok.
+        2drop  ok.
+    then  ok.
+;  ok.
+  ok.
+: ram64k2rom ( ram# sector16k -- )  ok.
+    \ Copy 64K RAM image to ROM  ok.
+    \ ram# 0~7, 16K block in SPRAM  ok.
+    \ sector16k 32~127, 16K block in flash (2 MB)  ok.
+  ok.
+    over 4 u> if    \ 64K won't fit in last 3 16K blocks  ok.
+        2dup ram2rom  ok.
+        1+ swap 1+ swap 2dup  ok.
+        ram2rom  ok.
+        1+ swap 1+ swap 2dup  ok.
+        ram2rom  ok.
+        1+ swap 1+ swap  ok.
+        ram2rom  ok.
+    else  ok.
+        2drop  ok.
+    then  ok.
+;  ok.
+  ok.
+: ram2ram ( ramfrom# ramto# -- )  ok.
+    \ Copy content of one 16K ram block to another  ok.
+    \ ramfrom# 0~7, 16K block is SPRAM  ok.
+    \ ramto# 0~7, 16K block is SPRAM  ok.
+      ok.
+    $2000 * swap $2000 * swap  ok.
+    begin             \ ( from_addr to_addr -- )  ok.
+        over sram@     \ ( from_addr to_addr -- from_addr to_addr word )  ok.
+        over sram!      \ ( from_addr to_addr word -- from_addr to_addr )  ok.
+        1+ swap 1+ swap  \ ( from_addr to_addr -- )  ok.
+        dup $1FFF and 0=  ok.
+    until  ok.
+    2drop  ok.
+;  ok.
+  ok.
+: zeroram ( ram# -- )  ok.
+    \ Fill indicated SPRAM block with zeros, used to make IRAMs  ok.
+  ok.
+    $2000 *         \ Starting address in SPRAM  ok.
+    $2000 0 ?do      \ Fill 8K of 16-bit words  ok.
+        0 over sram!  \ With zeros  ok.
+        1+             \ Next address  ok.
+    loop  ok.
+    drop  ok.
+;  ok.
+  ok.
+: onesram ( ram# -- )  ok.
+    \ Fill indicated SPRAM block with ones, used to fill out data  ok.
+    \ written to flash.  ok.
+  ok.
+    $2000 *         \ Starting address in SPRAM  ok.
+    $2000 0 ?do      \ Fill 8K of 16-bit words  ok.
+        $FF over sram!  \ With ones  ok.
+        1+             \ Next address  ok.
+    loop  ok.
+    drop  ok.
+;  ok.
+  ok.
+\ #######   Image Transfer   ##########################################  ok.
+\ Words to transfer ROM images to/from SPRAM via the console.  ok.
+\ ROM/IRAM .bin files are converted to a hex ASCII stream of  ok.
+\ 32 bytes (64 characters) per line, sent to the MultiMod II,  ok.
+\ then converted back to binary in SPRAM. The process can also  ok.
+\ be performed in reverse, sending binary data in SPRAM as  ok.
+\ a stream of hex characters.  ok.
+  ok.
+: bin2hex ( nibble -- char )  ok.
+  \ Convert 4 bit number to hex character  ok.
+    $30 + dup $39 > if $7 + then  ok.
+;  ok.
+  ok.
+: hexdump ( ram# -- )  ok.
+    \ Dump the content of a 16KB RAM block in hex, 32 bytes per line.  ok.
+    \ Bytes in a 16-bit dictionary word are output low byte first.  ok.
+    \ Bytes themselves are output high nibble first, then low nibble.  ok.
+  ok.
+    $2000 * 0 swap   \ ( counter ram_address -- )  ok.
+    begin  ok.
+        dup sram@  ok.
+                     \ Low byte  ok.
+        dup $FF and  ok.
+        dup 4 rshift bin2hex emit  ok.
+        $F and bin2hex emit  ok.
+                     \ High byte  ok.
+        8 rshift  ok.
+        dup 4 rshift bin2hex emit  ok.
+        $F and bin2hex emit  ok.
+                     \ Increment address and counter  ok.
+        1+ swap 1+ swap  ok.
+                     \ Terminate line after 32 bytes, 16 words  ok.
+        dup $F and 0= if cr then  ok.
+        over $2000 =  ok.
+    until  ok.
+    2drop  ok.
+;  ok.
+  ok.
+: hexdump32 ( ram# -- )  ok.
+    \ Dump two contiguous 16K RAM blocks as 32K image  ok.
+    dup 6 u> if      \ 32K isn't last 16K block  ok.
+        dup hexdump   \ First 16K RAM block  ok.
+        1+  hexdump    \ Second block  ok.
+    else  ok.
+        drop             \ Fail  ok.
+    then  ok.
+;  ok.
+  ok.
+: hexdump64 ( ram# -- )  ok.
+    \ Dump four contiguous 16K RAM blocks as 64K image  ok.
+    dup 4 u> if          \ 64K isn't last 3 16K blocks  ok.
+        dup    hexdump    \ First 16K RAM block  ok.
+        1+ dup hexdump     \ Second  ok.
+        1+ dup hexdump      \ Third  ok.
+        1+     hexdump       \ Fourth  ok.
+    else  ok.
+        drop  ok.
+    then  ok.
+;  ok.
+  ok.
+  ok.
+  ok.
+: hex2bin ( -- byte|-1 )  ok.
+  \ Read two hex characters, return byte equivalent  ok.
+  \ Return -1 if two carriage returns read in a row  ok.
+    key             \ High nibble  ok.
+    dup $0D = if     \ EOL?  ok.
+        drop key      \ Second EOL?  ok.
+        dup $0D = if   \ Two CR's terminate  ok.
+            drop -1  ok.
+            exit  ok.
+        then  ok.
+    then  ok.
+    $30 - dup 9 > if $7 - then  ok.
+    key                      \ Low nibble  ok.
+    $30 - dup 9 > if $7 - then  ok.
+    swap 4 lshift or  ok.
+;  ok.
+  ok.
+: hexload ( ram# -- nwords )  ok.
+\ Load hex data stream to 16K RAM page. Data stream is any  ok.
+\ length, multiple of 4 hex digits, terminated by two carriage returns  ok.
+  ok.
+    dup $2000 *     \ ( ram# -- ram# ram_address )  ok.
+    begin  ok.
+        dup           \ (ram# ram_address -- ram# ram_address ram_address )  ok.
+
+        hex2bin        \ Get low byte of SRAM word  ok.
+                        \ ( -- ram# ram_address low_byte )  ok.
+        dup -1 = if      \ Encountered two CR's? (EOF)  ok.
+     2drop         \ ram# ram_address ram_address low_byte --  ok.
+                    \ ram# ram_address )  ok.
+            swap $2000 *    \ ( ram# ram_address -- ram_address1 ram_address2)  
+ok.
+            -                \ ( ram_address1 ram_address2 -- #words )  ok.
+     exit  ok.
+        then  ok.
+  ok.
+        hex2bin       \ Get high byte of SRAM word  ok.
+                       \ ( ram# ram_address ram_address low_byte high_byte )  ok
+.
+ dup -1 = if     \ ( ram# ram_address ram_address low_byte high_byte --  ok.
+     drop swap    \ ( -- ram# ram_address low_byte ram_address )  ok.
+     sram!         \ Write ( ram# ram_address low_byte ram_address -- )  ok.
+                    \ low byte ( --  ram# ram_address )  ok.
+            swap $2000 *    \ ( ram# ram_address1 -- ram_address1 ram_address2) 
+ ok.
+            -                \ ( ram_address1 ram_address2 -- #words )  ok.
+     exit  ok.
+        then  ok.
+  ok.
+        8 lshift or    \ Assemble word  ok.
+                        \ ( -- ram# ram_address ram_address word )  ok.
+        swap sram! 1+    \ ( -- ram# ram_address )  ok.
+    again  ok.
+;  ok.
+\ #######   HP-71B  ###########################################  ok.
+\ Words to support directories in flash  ok.
+  ok.
+\ A directory consists of two 16KB sectors in flash - the first holding  ok.
+\ the directory itself and the second as a scratch block used when a  ok.
+\ pack operation occurs. The 16KB directory sector contains 1024 entries  ok.
+\ of 16 bytes each. Following the two 16KB sectors are the 16KB sectors  ok.
+\ holding Forth dictionary images or HP-71B ROM/IRAM images.  ok.
+  ok.
+\ Implementation Note:  ok.
+\ Several routines involving access to the name string stored in an  ok.
+\ directory entry require the string access functions to flush the  ok.
+\ training bytes from the string field in order to keep the read  ok.
+\ command address pointer on a directory entry boundary. This  ok.
+\ requirement could be discarded if the goto_entry in conjunction  ok.
+\ with the loop index to set the read pointer to each entry starting  ok.
+\ point.  ok.
+  ok.
+\ ---------------------------------------------------------------------  ok.
+\ ######   Define variables and constants  ok.
+  ok.
+\ The starting point for the Forth dictionary images and for the HP-71B  ok.
+\ ROM/IRAM images are both defined as variables so they can be modified  ok.
+\ by the owner.  ok.
+  ok.
+\ Forth dictionary images begin at the 1MB address, hex $100000, which  ok.
+\ would be 16K block #64. The first two 16K blocks are dedicated to the  ok.
+\ directory for the images.  ok.
+frtstart variable forthdir    \ Initial value taken from stack  ok.
+  ok.
+\ HP-71B dictionary images begin at the 2MB address, hex $200000, which  ok.
+\ would be block #128. The first two 16K blocks are dedicated to the  ok.
+\ directory for the images.  ok.
+romstart variable romdir    \ Initial value taken from stack  ok.
+  ok.
+\ variable fth_dtop     \ Next entry number in Forth directory (0~1023)  ok.
+\ variable rom_dtop     \ Next entry number in HP-71B directory (0~1023)  ok.
+  ok.
+  ok.
+\ Types of entry in the first entry byte  ok.
+$FF constant Empty  ok.
+$F0 constant Valid  ok.
+$00 constant Reclaim  ok.
+  ok.
+\ Types of HP-71B images in upper nibble of the second entry byte  ok.
+\ Lower nibble contains image length in 16KB sectors (1~15, 0 reserved)  ok.
+$00 constant IRAM  ok.
+$10 constant ROM  ok.
+$20 constant HARD  ok.
+$30 constant TAKEOVER  ok.
+$80 constant DIRSIZE  ok.
+  ok.
+\ Third and forth bytes of entry contain offset from dictionary end  ok.
+\ to image (0~1023)  ok.
+  ok.
+  ok.
+  ok.
+\ ---------------------------------------------------------------------  ok.
+\ ######   Useful support words  ok.
+  ok.
+: writeloc ( sector16k -- )  ok.
+    \ Write a 10-bit `sector16k` value as two bytes to flash write  ok.
+    \ pointer location (Assumes write command active)  ok.
+    dup $FF and >spi     \ Low byte sector16k location  ok.
+    8 rshift 3 and >spi   \ High byte sector16k location  ok.
+;  ok.
+  ok.
+: readloc ( -- sector16k )  ok.
+    \ Read a 10-bit sector16k value as two bytes from flash read  ok.
+    \ pointer location (Assumes read command active)  ok.
+    spi>         \ Low byte sector16k location  ok.
+    spi>          \ High byte sector16k location  ok.
+    8 lshift or    \ Assemble bytes to 10-bit sector16k value  ok.
+;  ok.
+  ok.
+: writestr ( string -- )  ok.
+    \ Take a `string` and write it to flash, truncating it as  ok.
+    \ necessary. A string consists of a string length integer (TOS)  ok.
+    \ and the address of the string (next on stack).  ok.
+    \ Assumes write command active.  ok.
+    \ Needs to truncate strings longer than 11 characters!  ok.
+    dup 11 > if  ok.
+        drop     \ Discard string length > 11  ok.
+        11        \ Truncate name to fit space in directory entry  ok.
+    then  ok.
+    dup >spi        \ Write string length  ok.
+    0 do  ok.
+ dup c@ >spi   \ Write string character  ok.
+ 1+             \ Advance pointer  ok.
+    loop  ok.
+    drop                 \ Lose the string addr  ok.
+;  ok.
+  ok.
+: printstr ( -- )  ok.
+    \ Read string from flash, starting with the string length byte,  ok.
+    \ and emit each character to the console.  ok.
+    \ Assumes read command active.  ok.
+    spi>          \ String length  ok.
+    dup            \ Keep copy  ok.
+    0 do  ok.
+ spi> emit    \ Read and print string character  ok.
+    loop  ok.
+    12 swap - 1-       \ Remaining bytes in directory entry  ok.
+    spiflush            \ Move to next entry  ok.
+;  ok.
+  ok.
+: empty_entry ( sector16k -- entry# )  ok.
+    \ Return the first empty entry associated with the `sector16k`  ok.
+    \ directory. This involves scanning each 16 byte directory entry  ok.
+    \ starting at the beginning until an erased entry is found,  ok.
+    \ or the end of the directory is found.  ok.
+    \ A return value of 1024 indicates a full directory.  ok.
+    spiread16k      \ Set read pointer to beginning of directory  ok.
+    spi> drop        \ First directory entry is DIRSIZE  ok.
+    0                 \ Loop count  ok.
+    begin  ok.
+ 15 spiflush     \ Advance to next directory entry  ok.
+ 1+               \ Increment counter  ok.
+ dup 1024 =        \ End of directory?  ok.
+ spi> Empty =       \ Found an empty directory entry?  ok.
+ or  ok.
+    until  ok.
+;  ok.
+  ok.
+: entry_addr ( entry# sector16k -- double_rom_addr )  ok.
+    \ Calculate the SPI flash address of a directory entry given the  ok.
+    \ `sector16k` address of the directory and the entry number,  ok.
+    \ range 0~1023. Note entries are 16 bytes in length.  ok.
+    \ This function can be used as a more efficient way of setting  ok.
+    \ the SPI flash write address in place of goto_entry.  ok.
+    sect2addr     \ Convert sector16k to double_rom_addr  ok.
+    rot 4 lshift   \ Retrieve entry#, multiply by 16  ok.
+    0 d+            \ Convert 16*entry# to double, add to directory addr  ok.
+;  ok.
+  ok.
+: goto_entry ( entry# sector16k -- )  ok.
+    \ Set up a read operation at the start of a specified directory `entry#`  ok
+.
+    \ For the directory at sector number `sector16k`  ok.
+    entry_addr            \ Compute 3-byte flash address  ok.
+    spiread                \ Issue read command  ok.
+;  ok.
+  ok.
+: mark_reclaim ( entry# sector16k -- )  ok.
+    \ Given the base address `sector16k` of a dictionary and an entry  ok.
+    \ number, mark the entry as Reclaim and no longer Valid.  ok.
+    entry_addr         \ Compute address of directory entry  ok.
+    spiwrite            \ Switch to write mode  ok.
+    Reclaim >spi         \ Clear `Valid` bit  ok.
+    idle                  \ Must disable select after last byte  ok.
+    waitspi                \ Wait for write to finish  ok.
+;  ok.
+  ok.
+: free_image ( sector16k -- sector16k )  ok.
+    \ For a `sector16k` dictionary, find the next free image block  ok.
+    \ within the dictionary. Use the last non empty dictionary  ok.
+    \ location plus its image length to find next free block.  ok.
+    dup empty_entry      \ Last used dictionary entry  ok.
+    1- swap               \ ( entry# sector16k -- )  ok.
+    goto_entry             \ Flash address of directory entry  ok.
+    spi> drop                \ Skip entry type  ok.
+    spi> $F and               \ Image Type.Size, mask off Size  ok.
+    readloc +                  \ Read pointer to last allocated block  ok.
+;  ok.
+  ok.
+: entry_type ( entry# sector16k -- type.size )  ok.
+    goto_entry     \ Set read command pointer to directory entry  ok.
+    spi> drop       \ Discard entry type  ok.
+    spi>             \ Return type.size byte  ok.
+;  ok.
+  ok.
+: entry_image ( entry# sector16k -- block# )  ok.
+    \ Given a directory `sector16k` and a directory entry `entry#`,  ok.
+    \ Return the image `block#` where the entry image starting  ok.
+    \ address is. The actual `sector16k` address of the image would  ok.
+    \ be the directory address + block# + 2.  ok.
+    goto_entry     \ Set read command pointer to directory entry  ok.
+    2 spiflush      \ Skip entry type and image type.size bytes  ok.
+    readloc          \ Read two byte block number  ok.
+;  ok.
+  ok.
+: image_addr ( block# sector16k -- sector16k )  ok.
+    \ Given directory location `sector16k` and the block number  ok.
+    \ where an image is stored in the directory, return the  ok.
+    \ absolute sector address number of the image.  ok.
+    + 2 +  ok.
+;  ok.
+  ok.
+  ok.
+  ok.
+\ ---------------------------------------------------------------------  ok.
+\ ######   Commands associated with directory initialization  ok.
+  ok.
+: dir_init ( nblocks sector16k -- )  ok.
+    \ Initialize the two 16K blocks of a directory. The argument is  ok.
+    \ the starting block number of the Forth or HP-71B image area,  ok.
+    \ either fthstart or romstart, and the number of 16K blocks in  ok.
+    \ the directory collection.  ok.
+    dup erase dup 1 + erase  \ First two blocks in collection  ok.
+    sect2addr spiwrite        \ Address the first directory entry  ok.
+    Valid >spi DIRSIZE >spi    \ Valid entry, type SIZE  ok.
+    0                           \ First image block offset  ok.
+    writeloc                     \ Output 0 image block number  ok.
+    writeloc                      \ Output nblocks size to name field  ok.
+    idle                           \ Must disable select after last byte  ok.
+    waitspi                         \ Wait for write to finish  ok.
+;  ok.
+  ok.
+: dir_size ( sector16k -- nblocks )  ok.
+    \ Return the number of 16k image sectors allocated to a directory.  ok.
+    \ Placed alongside dir_init due to where the size value is stored.  ok.
+    spiread16k        \ Read command to start of directory  ok.
+    spi> drop          \ Entry type (Valid, Reclaim, ...)  ok.
+    spi> drop           \ Image Type/Size  ok.
+    readloc drop         \ First image block  ok.
+    readloc idle          \ Stored directory size in name field  ok.
+;  ok.
+  ok.
+  ok.
+  ok.
+\ ---------------------------------------------------------------------  ok.
+\ ######   Commands associated with directory entries and images  ok.
+  ok.
+: strcmp ( string -- flag )  ok.
+    \ Compare a string to a string in flash. The read command pointer  ok.
+    \ addresses the first character of the string in flash.  ok.
+    \ Return True (1) or False (0) for string match.  ok.
+    1 rot rot       \ Assume success ( returnval string -- )  ok.
+    0 ?do            \ loop string length times  ok.
+        dup c@        \ Fetch string character  ok.
+        swap 1+ swap   \ Increment string pointer  ok.
+ spi> =          \ String match? ( flag addr flag -- )  ok.
+ rot and swap     \ AND result with return value ( flag addr -- )  ok.
+    loop  ok.
+    drop                   \ Drop pointer  ok.
+;  ok.
+  ok.
+: cmpname ( name -- flag )  ok.
+    \ Compares the name on the stack to the name in a directory entry  ok.
+    \ that the read command pointer is pointing to.  ok.
+    \ Returns true/false flag  ok.
+    \ 2drop  ok.
+    \ 15 spiflush     \ Advance to next directory entry  ok.
+    \ 0  ok.
+    dup spi> <> if       \ Are string lengths different?  ok.
+        2drop             \ Drop string  ok.
+ 11 spiflush        \ Skip to end of entry  ok.
+ 0                   \ Return fail  ok.
+    else  ok.
+ dup rot rot           \ Save string length on stack  ok.
+ strcmp swap            \ String match? ( flag length -- )  ok.
+ 12 swap - 1-            \ Remaining string characters  ok.
+ spiflush                 \ Skip, return string match result  ok.
+    then  ok.
+;  ok.
+  ok.
+: dir_find ( name sector16k -- entry# )  ok.
+    \ Given a dictionary address `sector16k` and a dictionary image  ok.
+    \ string name, return the `sector16k` location in flash. The return  ok.
+    \ value is used by the `load` command for Forth dictionaries or one  ok.
+    \ of the `ram2rom` commands for HP-71B images.  ok.
+    \ Failure to find name will return an invalid value of 1024.  ok.
+    spiread16k      \ Set read pointer to beginning of directory  ok.
+    16 spiflush      \ Skip DIRSIZE entry  ok.
+    1024 0            \ Loop count, iterates 0..1023  ok.
+    ?do    ok.
+ spi> Empty =    \ Empty directory entry?  ok.
+ if  ok.
+            2drop idle    \ String  ok.
+            1024 leave     \ Fail  ok.
+ then                \ Exit loop  ok.
+ 3 spiflush           \ Discard Type.Size, Blocks bytes  ok.
+ 2dup cmpname if       \ True if name found  ok.
+     2drop idle         \ String  ok.
+            i leave             \ Found match, return entry#  ok.
+        then  ok.
+    loop  ok.
+;  ok.
+  ok.
+: dir_insert ( string type.size sector16k -- block )  ok.
+    \ Given the directory sector number `sector16k` read  ok.
+    \ the next empty directory entry number and the next  ok.
+    \ free memory location for an image, then write the  ok.
+    \ directory entry value to the directory.  ok.
+    \ Return value: Where to store image  ok.
+    dup free_image    \ Find next flash block for image  ok.
+    swap               \ string type-size block sector16k  ok.
+    dup empty_entry     \ Next empty entry  ok.
+    swap                 \ string type-size block entry# sector16k  ok.
+    entry_addr spiwrite   \ Issue write command at start of entry  ok.
+    swap                   \ string block type-size  ok.
+    Valid >spi              \ Mark entry as `Valid`  ok.
+    >spi                     \ Type/Size byte  ok.
+    dup >r                    \ Save block number  ok.
+    writeloc                   \ Two byte image address  ok.
+    writestr                    \ Entry name  ok.
+    idle waitspi                 \ End of write sequence  ok.
+    r>                            \ Return image block number  ok.
+;  ok.
+  ok.
+  ok.
+  ok.
+  ok.
+  ok.
+\ ---------------------------------------------------------------------  ok.
+\ ######   Commands associated with directory status  ok.
+  ok.
+: dir_free ( sector16k -- number )  ok.
+    \ Return the number of free image blocks in the given Forth or HP-71B  ok.
+    \ directory. A zero value indicates the directory needs to be packed.  ok.
+    dup dir_size     \ Number of image blocks  ok.
+    free_image        \ Next empty image block  ok.
+    -                  \ Should be >= 0  ok.
+;  ok.
+  ok.
+: prtype ( Type.Size -- )  ok.
+    \ Print out the image type and size  ok.
+    dup $F0 and case  ok.
+        IRAM of ."     IRAM" endof  ok.
+        ROM of ."      ROM" endof  ok.
+        HARD of ."     HARD" endof  ok.
+ TAKEOVER of ." TAKEOVER" endof  ok.
+ ."  UNKNOWN"  ok.
+    endcase  ok.
+    $F and 16 * 6 .r ." K "  ok.
+;  ok.
+  ok.
+: prblock ( block -- )  ok.
+    \ Print out block size  ok.
+    6 .r $20 emit $20 emit   \ Print block number in an 8-wide field  ok.
+;  ok.
+  ok.
+  ok.
+: dir_list ( sector16k -- )  ok.
+    \ List the valid entries in a directory. The `sector16k` value is  ok.
+    \ either `forthdir` or `hp71dir`.  ok.
+      ok.
+    ."   Type    Size    Block    Name" cr  ok.
+      ok.
+    spiread16k        \ Set read pointer to beginning of directory  ok.
+    16 spiflush        \ First directory entry is DIRSIZE  ok.
+    1024 0              \ Loop count, iterate 0..1023  ok.
+    ?do  ok.
+        spi>             \ Entry type  ok.
+        dup Valid = if     \ If Valid entry, print it out  ok.
+     spi> prtype     \ Print object type  ok.
+     readloc prblock  \ Print block location  ok.
+     printstr cr       \ Print name  ok.
+ else  ok.
+     15 spiflush         \ Skip entry, get next entry type  ok.
+ then                     \ ( count entry-type -- )  ok.
+ Empty = if                \ Found an empty directory entry?  ok.
+            idle leave  ok.
+        then  ok.
+    loop  ok.
+    idle  ok.
+;  ok.
+  ok.
+: dir_copy ( from16k to16k -- )  ok.
+    \ Copy all of the directory entries from one directory block  ok.
+    \ to another.  ok.
+    \ cr ." to " . ."   from " .  ok.
+;  ok.
+  ok.
+: dir_resize ( nblocks sector16k -- new-blocks )  ok.
+    \ Resize a directory to a larger or smaller number of image  ok.
+    \ blocks. If reducing the size, the size can't be smaller than  ok.
+    \ the current number of existing image blocks.  ok.
+    \ The return value will be the same as the requested value if  ok.
+    \ successful, or equal to the lowest valid value.  ok.
+    \ The scratch block is erased when a directory is created, so  ok.
+    \ no need to erase it again.  ok.
+    ." Not Yet Implemented"  ok.
+    \ 2dup            \ ( nblocks sector16k nblocks sector16k -- )  ok.
+    \ free_image       \ ( nblocks sector16k nblocks free# -- )  ok.
+    \  < if             \ True if nblocks < free#  ok.
+    \     swap drop      \ ( sector16k -- )  ok.
+    \     dup free_image  \ ( sector16k free# -- )  ok.
+    \     swap             \ ( free# sector16k -- )  ok.
+    \  then  ok.
+    \ 2dup 1+ dir_init      \ Scratch is new directory  ok.
+    \ swap drop dup 1+       \ ( sector16k sector16k+1 -- )  ok.
+    \ 2dup dir_copy           \ Copy entries from sector16k to sector16k+1  ok.
+    \ swap dup erase16k        \ Erase old directory block  ok.
+    \ 2dup swap dir_copy        \ Copy new directory back to old directory  ok.
+    \ swap drop                  \ ( sector16k sector16k -- )  ok.
+    \ dup 1+ erase16k             \ Erase scratch block  ok.
+    \ swap drop free_image         \ New directory size  ok.
+;  ok.
+  ok.
+: dir_pack ( sector16k -- )  ok.
+    \ The `sector16k` value is either `fthstart` or `romstart`.  ok.
+    \ This command will pack both the directory and the image  ok.
+    \ storage associated with the directory.  ok.
+    ." Not Yet Implemented"  ok.
+;  ok.
+  ok.
+\ --------------------------------------------------------------------  ok.
+\ Forth Dictionary Images  ok.
+\ --------------------------------------------------------------------  ok.
+  ok.
+: forthsave ( name -- )  ok.
+    \ Save current Forth dictionary as `name` in Forth directory.  ok.
+    \ If name already exists, replace image content.  ok.
+    2dup forthdir @  \ ( name -- name name sector16k )  ok.
+    dir_find          \ ( name name sector16k -- name entry# )  ok.
+    dup 1024 = if      \ 1024 means not found  ok.
+        drop            \ ( name 1024 -- name )  ok.
+        ROM 1+           \ ( name type-size -- )  ok.
+        forthdir @        \ ( name type-size sector16k -- )  ok.
+        dir_insert         \ ( name type-size sector16k -- block# )  ok.
+        forthdir @          \ ( block# sector16k --  )  ok.
+        image_addr           \ ( block# sector16k -- sector16k )  ok.
+        save                  \ ( -- )  ok.
+    else                       \ ( name entry# -- )  ok.
+        forthdir @ entry_image  \ ( name entry# sector16k -- name block# )  ok.
+        forthdir @ image_addr    \ ( name block# sector16k -- name sector16k )  
+ok.
+        save                      \ ( name sector16k -- name )  ok.
+        2drop                      \ ( -- )  ok.
+    then  ok.
+;  ok.
+  ok.
+: forthload ( name -- )  ok.
+    \ Load specified Forth dictionary by name. Need to check for  ok.
+    \ error return value (1024) if name is not found.  ok.
+    forthdir @      \ ( name -- name sector16k )  ok.
+    dir_find         \ ( name sector16k -- entry# )  ok.
+    dup 1024 = if     \ ( entry# entry# -- entry# )  ok.
+        drop           \ ( entry# -- )  ok.
+        ." Name not found"  ok.
+    else  ok.
+ forthdir @       \ ( entry# -- entry# sector16k )  ok.
+ entry_image       \ ( entry# sector16k -- block# )  ok.
+ forthdir @         \ ( block# -- block# sector16k )  ok.
+        image_addr          \ ( block# sector16k -- sector16k )  ok.
+        load                 \ ( -- )  ok.
+    then  ok.
+;  ok.
+  ok.
+: forthlist ( -- )  ok.
+    \ List Forth directory entries.  ok.
+    forthdir @      \ ( sector16k -- )  ok.
+    cr dir_list      \ ( -- )  ok.
+;  ok.
+  ok.
+\ --------------------------------------------------------------------  ok.
+\ Serial Transfer Protocol Support  ok.
+\ These two commands can be modified to support whatever might be the  ok.
+\ standard transfer protocol. For the moment, that would be the old  ok.
+\ MultiMod hex file format.  ok.
+\ --------------------------------------------------------------------  ok.
+  ok.
+: send2host ( size -- )  ok.
+    \ Send the data in SPRAM to the host using selected protocol  ok.
+    case                 \ (size -- )  ok.
+        1 of 0 hexdump endof  ok.
+ 2 of 0 hexdump32 endof  ok.
+ 3 of 0 hexdump 1 hexdump32 endof  ok.
+        4 of 0 hexdump64 endof  ok.
+        ." Unknown image size"  ok.
+    endcase  ok.
+;  ok.
+  ok.
+: host2ram ( -- size )  ok.
+    \ Accept data from host and save to SPRAM.  ok.
+    \ Assumes that a full 16KB or multiple thereof is sent.  ok.
+    \ If lower 13 bits are non-zero, then add 1 after rshift.  ok.
+    0 hexload              \ Accept hex data, send to start of SPRAM  ok.
+    dup 13 rshift           \ 16KB = 8K Words  ok.
+    swap $1FFF and 0<> if    \ Lower 13 bits not zero?  ok.
+        1+  ok.
+    then  ok.
+;  ok.
+  ok.
+  ok.
+\ --------------------------------------------------------------------  ok.
+\ HP-71B ROM/IRAM Images  ok.
+\ --------------------------------------------------------------------  ok.
+  ok.
+: writeflash ( name type -- )  ok.
+    \ Download image to flash.  ok.
+    \ Should check to see if file already exists in the directory.  ok.
+    \ If so, update its image according to size in the entry.  ok.
+    >r              \ ( name type -- name )  ok.
+    2dup romdir @    \ ( name -- name name sector16k )  ok.
+    dir_find          \ ( name name sector16k -- name entry# )  ok.
+    dup 1024 = if      \ ( name entry#  -- name entry# )  ok.
+ drop host2ram   \ ( name 1024 -- name size )  ok.
+ dup r> +         \ ( name size -- name size type.size )  ok.
+ swap >r           \ ( name size type.size -- name type.size )  ok.
+ romdir @           \ ( name type.size -- name type.size sector16k )  ok.
+ dir_insert          \ ( name type.size sector16k -- block )  ok.
+ romdir @ image_addr  \ ( block sector16k -- sector16k )  ok.
+ r>                    \ ( sector16k -- sector16k size )  ok.
+ case  ok.
+     1 of 0 swap ram2rom endof  ok.
+     2 of 0 swap ram32k2rom endof  ok.
+     3 of 0 swap ram2rom 1 ram32k2rom endof  ok.
+     4 of 0 swap ram64k2rom endof  ok.
+            drop ." Unknown image size"  ok.
+ endcase  ok.
+    else               \ Replace entry image  ok.
+        -rot 2drop      \ ( name entry# -- entry# )  ok.
+        r> drop          \ Don't need supplied type.size  ok.
+        dup romdir @      \ ( entry# -- entry# entry# sector16k )  ok.
+        entry_type         \ ( entry# entry# sector16k -- entry# type.size )  ok
+.
+        $F and swap         \ ( entry# type.size -- size entry# )  ok.
+        romdir @             \ ( size entry# -- size entry# sector16k )  ok.
+        entry_image           \ ( size entry# sector16k -- size sector16k )  ok.
+
+        image_addr swap        \ ( size sector16k -- sector16k size )  ok.
+        case  ok.
+            1 of 0 swap ram2rom endof  ok.
+            2 of 0 swap ram32k2rom endof  ok.
+            3 of 0 swap ram2rom 1 ram32k2rom endof  ok.
+            4 of 0 swap ram64k2rom endof  ok.
+            drop ." Unknown image size"  ok.
+        endcase  ok.
+    then  ok.
+;  ok.
+  ok.
+: readflash ( name -- )  ok.
+    \ Upload image from flash.  ok.
+    \ Error if name doesn't appear in the ROM/IRAM directory.  ok.
+    romdir @        \ ( name -- name sector16k )  ok.
+    dir_find         \ ( name sector16k -- entry# )  ok.
+    dup 1024 = if     \ ( entry#  -- entry# )  ok.
+        drop           \ ( entry# -- )  ok.
+        ." Name not found"  ok.
+    else  ok.
+        dup romdir @     \ ( entry# -- entry# entry# sector16k )  ok.
+        entry_image       \ ( entry# entry# sector16k -- entry# block# )  ok.
+        swap romdir @      \ ( entry# block# -- block# entry# sector16k )  ok.
+        entry_type          \ ( block# entry# sector16k -- block# type.size )  o
+k.
+        $F and swap          \ ( block# type.size -- size block# )  ok.
+        romdir @              \ ( size block# -- size block# sector16k )  ok.
+        image_addr             \ ( size block# sector16k -- size sector16k )  ok
+.
+        over case               \ (size sector16k -- size sector16k size )  ok.
+            1 of 0 rom2ram endof  ok.
+            2 of 0 rom32k2ram endof  ok.
+            3 of dup 0 rom2ram 1+ 0 rom32k2ram endof  ok.
+            4 of 0 rom64k2ram endof  ok.
+            2drop ." Unknown image size"  ok.
+            leave  ok.
+        endcase                      \ (size -- )  ok.
+        send2host                     \ ( size -- )  ok.
+    then  ok.
+;  ok.
+  ok.
+: romlist ( -- )  ok.
+    \ List HP-71B directory entries.  ok.
+    romdir @      \ ( -- sector16k )  ok.
+    cr dir_list    \ List directory entries  ok.
+;  ok.
+  ok.
+  ok.
+\ --------------------------------------------------------------------  ok.
+\ FPGA Bitstream Images  ok.
+\ --------------------------------------------------------------------  ok.
+  ok.
+: bitstream ( slot -- )  ok.
+    \ Write FPGA bitstream to flash. Each image is aligned on  ok.
+    \ 0x020000 boundaries. Valid `slot` number is 1, 2, or 3.  ok.
+    \ Bitstreams start in sector16k: 8, 16, 24  ok.
+  ok.
+    dup 1 <        \ ( slot -- slot flag ) Less than 1?  ok.
+    over 3 >        \ ( slot flag -- slot flag flag ) Greater than 3?  ok.
+    or if            \  ok.
+        cr ." Out of range, Use 1, 2, or 3"  ok.
+        drop           \  ok.
+    else                \  ok.
+        bitfence *       \ slot * sector16k  ok.
+        8 0 ?do           \  ok.
+            i onesram      \ Set all of SPRAM to foxes  ok.
+        loop                \  ok.
+        host2ram             \ ( sector16k -- sector16k ncount ) Read bitstream 
+ ok.
+        drop dup              \ ( sector16k ncount -- sector16k sector16k )  ok.
+
+        0 swap ram64k2rom      \ Half of SPRAM to flash  ok.
+        4 swap ram32k2rom       \ Other half to flash  ok.
+    then  ok.
+;  ok.
+  ok.
+

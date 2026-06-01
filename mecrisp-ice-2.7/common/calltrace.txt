@@ -1,0 +1,28 @@
+
+\ -----------------------------------------------------------------------------
+\  Trace of the return stack entries
+\ -----------------------------------------------------------------------------
+
+: traceinside. ( addr -- )
+
+  >r
+  forth @
+  begin
+    dup r@ u>
+  while
+    link@
+  repeat
+  rdrop
+
+  ?dup if cell+ count 127 and type then
+;
+
+: ct ( -- )
+  cr .s cr
+  begin
+    rdepth
+  while
+    r> dup .x traceinside. cr
+  repeat
+  quit
+;

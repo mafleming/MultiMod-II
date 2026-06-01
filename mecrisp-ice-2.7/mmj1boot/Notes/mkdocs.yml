@@ -1,0 +1,35 @@
+site_name: MultiMod II Forth Bootloader
+nav:
+  - Home:
+    - Overview:  index.md
+    - About: about.md
+    - License: license.md
+  - Build Instructions:
+    - Instructions: build.md
+  - Build Files:
+    - j1a.v: j1a.md
+    - multimod-evt.pcf: pcf.md
+  - Functionality:
+    - Features: features.md
+    - Flash Memory: flash.md
+  - File System:
+    - Requirements: files.md
+    - Implementation: filedetail.md
+  - Forth System:
+    - j1a CPU: j1acpu.md
+    - Mecrisp Forth: mecrisp.md
+  - Forth Files:
+    - soft-spi.fs:     softspi.md
+    - multiboot.fs:    multiboot.md
+    - ramrom.fs:       ramrom.md
+    - xfer.fs:         xfer.md
+    - directory.fs:    directory.md
+    - transfer.fs:     transfer.md
+theme: 'readthedocs'
+plugins:
+    - with-pdf:
+        author: Mark A Fleming
+        copyright: BSD 3-Clause "New" or "Revised" License
+        back_cover: true
+        cover_title: MultiMod II Bootloader
+        cover_subtitle: A Forth CPU Based Customizable Bootloader

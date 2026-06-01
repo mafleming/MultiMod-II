@@ -1,0 +1,13 @@
+#!/bin/sh
+
+n=0
+
+case $1 in
+    -[0-9]*)
+	n=${1#-}
+	;;
+esac
+
+dfu-util -e -d 1209:5bf0
+sleep 1
+picocom -b 115200 /dev/ttyACM$n --imap lfcrlf,crcrlf --omap delbs,crlf --send-cmd "cat"

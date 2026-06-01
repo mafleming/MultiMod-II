@@ -1,0 +1,16 @@
+#!/bin/bash
+
+./compilenucleus
+
+echo "Synthesize design..."
+yosys  -q -p "synth_ice40 -top top -json build/j1a.json -blif build/j1a.blif" icestorm/j1a.v
+
+echo "Place and Route..."
+# arachne-pnr -p icestorm/j1a.pcf build/j1a.blif -o build/j1a.txt -d 8k
+nextpnr-ice40 --freq 12 --hx8k --package ct256 --asc build/j1a.txt --pcf icestorm/j1a.pcf --json build/j1a.json --ignore-loops --pcf-allow-unconstrained
+
+echo "Create Bitstream..."
+icepack build/j1a.txt build/j1a0.bin
+icemulti -p0 build/j1a0.bin > j1a.bin
+
+echo "Finished."

@@ -1,0 +1,34 @@
+
+Contributions:
+
+Port for TinyFPGA-BX by Bernard Mentink
+
+Hardware donations:
+
+Ulrich Hoffmann
+Russell Merrick
+Ken Boak
+Bruno Levy
+
+Testing and hints in alphabetical order:
+
+Ulrich Hoffmann
+Igor Mokos
+Jean-Claude Wippler
+Andrew Palm
+
+Inspiring projects:
+
+Swapforth by James Bowman
+Picosoc by Clifford Wolf
+openMSP430 by Olivier Girard
+
+USB logic by Luke Valenty, Lawrie Griffiths and David Williams:
+
+https://github.com/tinyfpga/TinyFPGA-Bootloader
+https://github.com/lawrie/tiny_usb_examples
+https://github.com/davidthings/tinyfpga_bx_usbserial
+
+USB-CDC implementation by ulixxe:
+
+https://github.com/ulixxe/usb_cdc/

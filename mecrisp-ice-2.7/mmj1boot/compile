@@ -1,0 +1,19 @@
+#!/bin/sh
+
+ ./compilenucleus
+
+echo "Synthesize design..."
+
+if
+  yosys  -q -p "synth_ice40 -top top -json build/j1a.json -blif build/j1a.blif" icestorm/j1a.v;
+then
+  echo "Place and Route..."
+  nextpnr-ice40 --freq 12 --up5k --package sg48 --asc build/j1a.txt --pcf icestorm/multimod-evt.pcf --json build/j1a.json --ignore-loops --pcf-allow-unconstrained --seed 11
+  echo "Create Bitstream..."
+  icepack build/j1a.txt build/j1a.bin -s
+  cp build/j1a.bin j1a.dfu
+  dfu-suffix -v 1209 -p 70b1 -a j1a.dfu
+  echo "Create multiboot, images aligned every 020000H"
+  icemulti -v -v -o build/multiboot.bin -a17 -p0 build/j1a.bin j1a-core.bin
+  echo "Finished."
+fi

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+rm -f obj_dir/*
+verilator --l2-name v -Wall --cc -DVERILATOR=1 j1a.v --top-module j1a --exe sim_main.cpp
+make -C obj_dir CXXFLAGS="-fPIC" OPT_FAST="-O2" -f Vj1a.mk Vj1a
+mv obj_dir/Vj1a ./
+
+./compilenucleus

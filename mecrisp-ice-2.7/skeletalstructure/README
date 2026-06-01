@@ -1,0 +1,5 @@
+
+This one is intended as a starting point for porting to new FPGAs and families, and contains common Verilog features only.
+
+Out of the box, it is configured to synthesise for Lattice HX8K, but stripped down as far as possible to simplify porting.
+

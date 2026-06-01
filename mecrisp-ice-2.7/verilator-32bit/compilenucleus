@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo "Tidy up..."
+rm -f build/*
+
+echo "Compile nucleus..."
+cp ../common-crosscompiler/cross-32bit.fs cross.fs
+cp ../common-crosscompiler/instructionset-32bit.fs instructionset.fs
+gforth cross.fs instructionset.fs nucleus.fs
+rm cross.fs instructionset.fs
+echo ""
+
+echo "Compile additional Forth sources..."
+cat ../common-forth/coredefinitions.fs basisdefinitions.fs ../common/double.fs ../common/fixpoint.fs ../common-forth/insight-32bit.fs > included.fs
+
+cp build/nucleus.hex build/iceimage.hex
+cat included.fs | ./Vj1a > build/log.txt
+mv coredump.hex build/iceimage.hex
+
+md5sum build/nucleus.hex build/iceimage.hex

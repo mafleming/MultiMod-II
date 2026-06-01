@@ -1,0 +1,8 @@
+#!/bin/bash
+
+./compilenucleus
+
+stty -icanon -echo
+./Vj1a
+stty sane
+

@@ -1,0 +1,264 @@
+\
+\  fix_fft.c - Fixed-point in-place Fast Fourier Transform
+\
+\  All data are fixed-point smallint integers, in which -32768
+\  to +32768 represent -1.0 to +1.0 respectively. Integer
+\  arithmetic is used for speed, instead of the more natural
+\  floating-point.
+\
+\  For the forward FFT (time -> freq), fixed scaling is
+\  performed to prevent arithmetic overflow, and to map a 0dB
+\  sine/cosine wave (i.e. amplitude = 32767) to two -6dB freq
+\  coefficients. The return value is always 0.
+\
+\  For the inverse FFT (freq -> time), fixed scaling cannot be
+\  done, as two 0dB coefficients would sum to a peak amplitude
+\  of 64K, overflowing the 32k range of the fixed-point integers.
+\  Thus, the fix_fft() routine performs variable scaling, and
+\  returns a value which is the number of bits LEFT by which
+\  the output must be shifted to get the actual amplitude
+\  (i.e. if fix_fft() returns 3, each value of fr[] and fi[]
+\  must be multiplied by 8 (2**3) for proper scaling.
+\  Clearly, this cannot be done within fixed-point smallint
+\  integers. In practice, if the result is to be used as a
+\  filter, the scale_shift can usually be ignored, as the
+\  result will be approximately correctly normalized as is.
+\
+\  Written by:  Tom Roberts  11/8/89
+\  Made portable:  Malcolm Slaney 12/15/94 malcolm@interval.com
+\  Enhanced:  Dimitrios P. Bouras  14 Jun 2006 dbouras@ieee.org
+\  Translated to Forth:  Matthias Koch, 22 Jan 2020 m.cook@gmx.net
+
+ 512 constant N_WAVE       \ full length of Sinewave[]
+   9 constant LOG2_N_WAVE  \ log2(N_WAVE)
+
+\  Henceforth "smallint" implies 16-bit word. If this is not
+\  the case in your architecture, please replace "smallint"
+\  with a type definition which *is* a 16-bit word.
+
+\  Since we only use 3/4 of N_WAVE, we define only
+\  this many samples, in order to conserve data space.
+\ 0 .. N_WAVE - (N_WAVE div 4) - 1]
+
+create sinewave
+      0 ,    402 ,    804 ,   1206 ,   1607 ,   2009 ,   2410 ,   2811 ,
+   3211 ,   3611 ,   4011 ,   4409 ,   4807 ,   5205 ,   5601 ,   5997 ,
+   6392 ,   6786 ,   7179 ,   7571 ,   7961 ,   8351 ,   8739 ,   9126 ,
+   9511 ,   9895 ,  10278 ,  10659 ,  11038 ,  11416 ,  11792 ,  12166 ,
+  12539 ,  12909 ,  13278 ,  13645 ,  14009 ,  14372 ,  14732 ,  15090 ,
+  15446 ,  15799 ,  16150 ,  16499 ,  16845 ,  17189 ,  17530 ,  17868 ,
+  18204 ,  18537 ,  18867 ,  19194 ,  19519 ,  19840 ,  20159 ,  20474 ,
+  20787 ,  21096 ,  21402 ,  21705 ,  22004 ,  22301 ,  22594 ,  22883 ,
+  23169 ,  23452 ,  23731 ,  24006 ,  24278 ,  24546 ,  24811 ,  25072 ,
+  25329 ,  25582 ,  25831 ,  26077 ,  26318 ,  26556 ,  26789 ,  27019 ,
+  27244 ,  27466 ,  27683 ,  27896 ,  28105 ,  28309 ,  28510 ,  28706 ,
+  28897 ,  29085 ,  29268 ,  29446 ,  29621 ,  29790 ,  29955 ,  30116 ,
+  30272 ,  30424 ,  30571 ,  30713 ,  30851 ,  30984 ,  31113 ,  31236 ,
+  31356 ,  31470 ,  31580 ,  31684 ,  31785 ,  31880 ,  31970 ,  32056 ,
+  32137 ,  32213 ,  32284 ,  32350 ,  32412 ,  32468 ,  32520 ,  32567 ,
+  32609 ,  32646 ,  32678 ,  32705 ,  32727 ,  32744 ,  32757 ,  32764 ,
+
+  32767 ,  32764 ,  32757 ,  32744 ,  32727 ,  32705 ,  32678 ,  32646 ,
+  32609 ,  32567 ,  32520 ,  32468 ,  32412 ,  32350 ,  32284 ,  32213 ,
+  32137 ,  32056 ,  31970 ,  31880 ,  31785 ,  31684 ,  31580 ,  31470 ,
+  31356 ,  31236 ,  31113 ,  30984 ,  30851 ,  30713 ,  30571 ,  30424 ,
+  30272 ,  30116 ,  29955 ,  29790 ,  29621 ,  29446 ,  29268 ,  29085 ,
+  28897 ,  28706 ,  28510 ,  28309 ,  28105 ,  27896 ,  27683 ,  27466 ,
+  27244 ,  27019 ,  26789 ,  26556 ,  26318 ,  26077 ,  25831 ,  25582 ,
+  25329 ,  25072 ,  24811 ,  24546 ,  24278 ,  24006 ,  23731 ,  23452 ,
+  23169 ,  22883 ,  22594 ,  22301 ,  22004 ,  21705 ,  21402 ,  21096 ,
+  20787 ,  20474 ,  20159 ,  19840 ,  19519 ,  19194 ,  18867 ,  18537 ,
+  18204 ,  17868 ,  17530 ,  17189 ,  16845 ,  16499 ,  16150 ,  15799 ,
+  15446 ,  15090 ,  14732 ,  14372 ,  14009 ,  13645 ,  13278 ,  12909 ,
+  12539 ,  12166 ,  11792 ,  11416 ,  11038 ,  10659 ,  10278 ,   9895 ,
+   9511 ,   9126 ,   8739 ,   8351 ,   7961 ,   7571 ,   7179 ,   6786 ,
+   6392 ,   5997 ,   5601 ,   5205 ,   4807 ,   4409 ,   4011 ,   3611 ,
+   3211 ,   2811 ,   2410 ,   2009 ,   1607 ,   1206 ,    804 ,    402 ,
+
+      0 ,   -402 ,   -804 ,  -1206 ,  -1607 ,  -2009 ,  -2410 ,  -2811 ,
+  -3211 ,  -3611 ,  -4011 ,  -4409 ,  -4807 ,  -5205 ,  -5601 ,  -5997 ,
+  -6392 ,  -6786 ,  -7179 ,  -7571 ,  -7961 ,  -8351 ,  -8739 ,  -9126 ,
+  -9511 ,  -9895 , -10278 , -10659 , -11038 , -11416 , -11792 , -12166 ,
+ -12539 , -12909 , -13278 , -13645 , -14009 , -14372 , -14732 , -15090 ,
+ -15446 , -15799 , -16150 , -16499 , -16845 , -17189 , -17530 , -17868 ,
+ -18204 , -18537 , -18867 , -19194 , -19519 , -19840 , -20159 , -20474 ,
+ -20787 , -21096 , -21402 , -21705 , -22004 , -22301 , -22594 , -22883 ,
+ -23169 , -23452 , -23731 , -24006 , -24278 , -24546 , -24811 , -25072 ,
+ -25329 , -25582 , -25831 , -26077 , -26318 , -26556 , -26789 , -27019 ,
+ -27244 , -27466 , -27683 , -27896 , -28105 , -28309 , -28510 , -28706 ,
+ -28897 , -29085 , -29268 , -29446 , -29621 , -29790 , -29955 , -30116 ,
+ -30272 , -30424 , -30571 , -30713 , -30851 , -30984 , -31113 , -31236 ,
+ -31356 , -31470 , -31580 , -31684 , -31785 , -31880 , -31970 , -32056 ,
+ -32137 , -32213 , -32284 , -32350 , -32412 , -32468 , -32520 , -32567 ,
+ -32609 , -32646 , -32678 , -32705 , -32727 , -32744 , -32757 , -32764 ,
+
+ sinewave constant sinewave
+
+: sinewave@ ( u -- n ) cells sinewave + @ ; 1 foldable
+
+\  FIX_MPY() - fixed-point multiplication & scaling.
+\  Substitute inline assembly for hardware-specific
+\  optimization suited to a particluar DSP processor.
+\  Scaling ensures that result remains 16-bit.
+
+: FIX_MPY ( a b -- c )
+  2dup xor >r ( a b R: sign )
+  abs swap abs
+  um*
+  1 lshift swap 15 rshift or
+  r> 0< if negate then
+; 2 foldable
+
+: 2/floored ( n -- n/2 ) dup 0< if negate 2/ negate else 2/ then ; 1 foldable
+
+\  fix_fft() - perform forward/inverse fast Fourier transform.
+\  fr[n],fi[n] are real and imaginary arrays, both INPUT AND
+\  RESULT (in-place FFT), with 0 <= n < 2**m; set inverse to
+\  0 for forward transform (FFT), or 1 for iFFT.
+
+N_WAVE cells buffer: fft-real
+N_WAVE cells buffer: fft-imag
+
+: fft-real! ( x u -- ) cells fft-real + ! ;
+: fft-real@ ( u -- x ) cells fft-real + @ ;
+
+: fft-imag! ( x u -- ) cells fft-imag + ! ;
+: fft-imag@ ( u -- x ) cells fft-imag + @ ;
+
+0 variable fft-inverse
+0 variable fft-n
+0 variable fft-mr
+0 variable fft-shift
+0 variable fft-scale
+0 variable fft-l
+0 variable fft-k
+0 variable fft-istep
+0 variable fft-tr
+0 variable fft-ti
+0 variable fft-wr
+0 variable fft-wi
+0 variable fft-i
+
+: fix-fft ( power inverse? -- scale )
+  fft-inverse ! 1 swap lshift fft-n !
+
+  \ max FFT size = N_WAVE
+  fft-n @ N_WAVE u> if -1 exit then
+
+  0 fft-mr !
+  0 fft-scale !
+
+  \ decimation in time - re-order data
+  fft-n @ 1 do
+
+    fft-n @ fft-l !
+
+    begin
+      fft-l @ 1 arshift fft-l !
+      fft-mr @ fft-l @ +   fft-n @  >=  not
+    until
+
+    fft-mr @   fft-l @ 1- and   fft-l @ +   fft-mr !
+
+    i fft-mr @ >
+    if
+      i fft-real@  fft-mr @ fft-real@  i fft-real! fft-mr @ fft-real!
+      i fft-imag@  fft-mr @ fft-imag@  i fft-imag! fft-mr @ fft-imag!
+    then
+
+  loop
+
+  1 fft-l !
+  LOG2_N_WAVE 1- fft-k !
+
+  begin
+    fft-l @ fft-n @ <
+  while
+    fft-inverse @
+    if \ variable scaling, depending upon data
+
+      false
+      fft-n @ 0 do
+        i dup fft-real@ abs $3FFF >
+         swap fft-imag@ abs $3FFF > or
+        or
+      loop
+      dup fft-shift !
+      if 1 fft-scale +! then
+
+    else
+      \ fixed scaling, for proper normalization --
+      \ there will be log2(n) passes, so this results
+      \ in an overall factor of 1/n, distributed to
+      \ maximize arithmetic accuracy.
+
+      true fft-shift !
+    then
+
+    \ it may not be obvious, but the shift will be
+    \ performed on each data point exactly once,
+    \ during this pass.
+
+    fft-l @ 1 lshift fft-istep !
+
+    fft-l @ 0 do
+
+      i fft-k @ lshift \ 0 <= j < N_WAVE/2
+
+      fft-shift @
+      if
+        dup  N_WAVE 2 rshift + sinewave@                                  2/floored fft-wr !
+                               sinewave@ fft-inverse @ not if negate then 2/floored fft-wi !
+      else
+        dup  N_WAVE 2 rshift + sinewave@                                            fft-wr !
+                               sinewave@ fft-inverse @ not if negate then           fft-wi !
+      then
+
+      i fft-i !
+
+      begin
+        fft-i @ fft-n @ <
+      while
+        fft-i @ fft-l @ + >r
+
+        fft-wr @   r@ fft-real@   FIX_MPY
+        fft-wi @   r@ fft-imag@   FIX_MPY  -  fft-tr !
+        fft-wr @   r@ fft-imag@   FIX_MPY
+        fft-wi @   r@ fft-real@   FIX_MPY  +  fft-ti !
+
+        fft-i @ dup fft-real@ swap fft-imag@
+
+        fft-shift @
+        if
+          2/floored swap 2/floored swap
+        then
+
+        ( qr qi )
+
+        2dup
+        fft-ti @ - r@ fft-imag!
+        fft-tr @ - r> fft-real!
+
+        fft-ti @ + fft-i @ fft-imag!
+        fft-tr @ + fft-i @ fft-real!
+
+        fft-istep @ fft-i +!
+      repeat
+
+    loop
+
+    -1 fft-k +!
+    fft-istep @ fft-l !
+
+  repeat
+
+  fft-scale @
+;
+
+: fftswap ( 2^m -- )
+  1- 1 swap lshift fft-n !
+  fft-n @ 0 do
+    i fft-real@  i fft-n @ + fft-real@  i fft-real!  i fft-n @ + fft-real!
+    i fft-imag@  i fft-n @ + fft-imag@  i fft-imag!  i fft-n @ + fft-imag!
+  loop
+;

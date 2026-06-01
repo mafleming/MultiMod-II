@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm -f obj_dir/*
+rm -f build/*

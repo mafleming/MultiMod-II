@@ -1,0 +1,9 @@
+
+\ -----------------------------------------------------------------------------
+\  Known issues
+\ -----------------------------------------------------------------------------
+
+Verilator 64 bit:
+
+Shifts wrap over instead of resulting in zero or sign as specified for Verilog.
+This affects lshift/rshift/arshift and especially 2lshift/2rshift/2arshift.

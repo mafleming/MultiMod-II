@@ -1,0 +1,22 @@
+
+
+: fft-test ( -- )
+  N_WAVE 0 do
+    i 16 * n_wave 2/ 1- and sinewave@ 2/floored  i fft-real!
+    0                                            i fft-imag!
+  loop
+
+  ." FFT Scale: " LOG2_N_WAVE false fix-fft . cr
+  LOG2_N_WAVE fftswap
+
+  \ LOG2_N_WAVE fftswap
+  \ ." iFFT Scale: " LOG2_N_WAVE true fix-fft . cr
+
+  N_WAVE 0 do
+    i 16 * n_wave 2/ 1- and sinewave@ 2/floored .  0           .
+    i                fft-real@                  .  i fft-imag@ .
+    cr
+  loop
+;
+
+fft-test

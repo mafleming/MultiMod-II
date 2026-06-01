@@ -1,0 +1,274 @@
+
+Original work:
+J1a processor and Swapforth by James Bowman
+
+19. September 2015: Mecrisp-Ice 0.1
+
+Equipped by Matthias Koch with:
+
+* MSP430 style IO
+* Ticks counter
+* Inline optimisations
+* Constant folding
+* Load & Save from and to SPI flash with init mechanism
+* More readable disassembler
+* Dictionary structure insight
+
+* Ledcomm
+* IrDA example
+
+22. September 2015: Mecrisp-Ice 0.2
+
+* .s will not crash anymore on deep stacks
+* Disassembler improved
+
+27. September 2015: Mecrisp-Ice 0.3
+
+* Clock speed increased to 48 MHz
+* Added randombit and random which use clock jitter
+  from a free running ring oscillator
+
+29. February 2016: Mecrisp-Ice 0.4
+
+* Minus opcode added to CPU
+* Small speed improvements
+* Ice Cream Machine emulates J1a and helps building the package in one step
+* Removed tethered mode
+
+07. March 2016: Mecrisp-Ice 0.5
+
+* Single cycle io@
+* Ticks counter overflow interrupt, $1FFE is vector. Place exit or a JMP opcode there.
+* Added eint and dint
+* Removed SB_Warmboot
+
+20. April 2016: Mecrisp-Ice 0.6
+
+* Fixed faulty logic for interrupts which happen in a memory fetch cycle.
+
+23. April 2016: Mecrisp-Ice 0.7
+
+* New binary image for HX8K !
+
+  + Double amount of memory: 16 kb instead of 8 kb
+  + Double stack depth: 32 elements each instead of 16
+  + Barrel shifter for single cycle lshift rshift arshift
+  + Single cycle multiplication
+  + Fast opcodes for 1+ and 1-
+  + rdepth
+  + 8 LEDs instead of 5
+  + Lots of gates free for experiments
+  - 36 MHz only
+  - No IrDA
+  - Variable @ needs 2 instructions and 5 cycles instead of 1 instruction and 2 cycles
+
+* Reentrant um* and do..loop for interrupt usage
+
+* Larger address range made a different dictionary header structure necessary
+  to still accomodate flags for foldability and immediate.
+
+* Tidied up nucleus Forth source code
+
+* Improved compatibility with Mecrisp for MSP430:
+
+  * Initialised variables
+  * LF only instead of CR+LF
+
+05. June 2016, Mecrisp-Ice 0.8
+
+* New target: Nandland Go board by Russell Merrick
+* Timer can be set to any value now
+* Improved interrupt handling, with dint and eint as opcodes
+* Added eint?
+
+10. July 2017, Mecrisp-Ice 0.9
+
+* Squeezed a handful of gates out of all ports:
+  This allows synthesis with recent Yosys 0.7 as in Debian Stretch.
+* Added VGA example for Nandlang Go
+* New target: Mystorm / Blackice board by Ken Boak
+
+22. November 2017, Mecrisp-Ice 1.0
+
+Just tidied up a few small things:
+
+* A few flaws less in documentation
+* Corrected timer set behaviour in "icecreammachine" emulators
+* Saved two bytes in each of the Forth cores
+* Updated the ARM core for Mystorm target to Mecrisp-Stellaris 2.3.9
+
+07. January 2018, Mecrisp-Ice 1.1
+
+* Exchanged UART to Clifford Wolfs implementation from
+    https://github.com/cliffordwolf/picorv32/tree/master/picosoc
+* Increased baudrate for Icestick and Nandland Go to 230400 baud
+* Added HX8K -8kb and -12kb targets for experiments and simplified porting
+* Fixed UNUSED
+* A few flaws less in documentation
+
+28. January 2018, Mecrisp-Ice 1.2
+
+* Bugfix for string literals when interrupts are enabled
+
+14. April 2018, Mecrisp-Ice 1.3
+
+* Bugfix for ['] and [char]
+* Contribution by Igor Mokos: Floating point library
+* Contribution by Lawrie Griffiths: Port for Blackice II board
+
+04. November 2018, Mecrisp-Ice 1.4
+
+* Interrupt lock & reenable logic
+* Improved processor core source for synthesis
+* Restructured Verilog sources
+
+12. December 2018, Mecrisp-Ice 1.4a
+
+* Restructured, cleaned up and commented the crosscompiler framework
+  for Forth nucleus image creation
+
+01. January 2019, Mecrisp-Ice 1.5, 35C3 edition
+
+* New target: Icebreaker with UP5K FPGA
+* Changed flow to use NextPNR for all targets
+
+12. October 2019, Mecrisp-Ice 1.6
+
+* Ret optimisation for 7xxx ALU opcodes
+* Code base improved for simplified porting
+* HX8K target now runs on 48 MHz instead of 36 MHz
+* Icebreaker target now uses 15 kb memory for execution instead of 12kb
+* Insight tools and disassembler keep in memory after NEW for targets with more than 8 kb
+* UART now includes a 7 character FIFO on the receive side for all targets except HX1K and Nandland
+* Updated the ARM core for Mystorm target to Mecrisp-Stellaris 2.5.2
+
+* Dropped experimental HX8K-8kb and HX8K-12kb targets
+* Removed Python scripts for memory initialisation - nicely done in Verilog now
+
+05. November 2019, Mecrisp-Ice 1.7
+
+* Icebreaker target now runs on 24 MHz instead of 12 MHz by using -dsp option
+* Added pin interrupts for Icebreaker
+
+16. March 2020, Mecrisp-Ice 1.8
+
+* Core optimisations for speed
+* Added s15.16 fixpoint input support to all cores
+* Added loadable fixpoint calculations (included in HX8K and ULX3S bitstreams)
+* Added loadable double tools (included in HX8K and ULX3S bitstreams)
+* Added loadable fixpoint math library
+* Added graphics library with 8x8 font and Bresenham line algorithm
+* New target: Radiona ULX3S v3.0.7 with ECP5 LFE5U-85F FPGA
+* New target: Verilator
+
+* Removed -abc2 option for Yosys on ICE40 targets
+
+28. June 2020, Mecrisp-Ice 1.8a
+
+* Fixed bug in SD-Card driver
+* Added graphics primitives for circles in Forth
+
+26. Juli 2020, Mecrisp-Ice 1.8b
+
+* Experimental ULX3S binary with USB logic
+
+17. September 2020, Mecrisp-Ice 1.8c
+
+* Skeletal structure to simplify porting
+
+03. January 2021, Mecrisp-Ice 1.9
+
+* Fixed calibration of millisecond delay routines
+
+11. January 2021, Mecrisp-Ice 2.0
+
+* Multitasking for large cores
+* Faster +!
+* A few bytes smaller
+
+01. April 2021, Mecrisp-Ice 2.0a
+
+* "Hello World" example for Icebreaker
+
+31. October 2021, Mecrisp-Ice 2.1
+
+* New target: Fomu
+
+07. November 2021, Mecrisp-Ice 2.2
+
+* Fixed overflow bug in ud/mod
+* Added test suite
+* Added buffer: to all cores
+* Changed source files to be cell size agnostic
+* New targets: Verilator and HX8K with 32 bits
+
+06. February 2022, Mecrisp-Ice 2.3
+
+* Flagged buffer: as 0-foldable
+* Added tool for finding never used definitions
+* Added special bitstream for Icebreaker with darkness measurement
+* Icebreaker "Hello World" example now with fading blinky
+* New target: Verilator with 64 bits
+
+03. April 2022, Mecrisp-Ice 2.4
+
+* New target: Quickstore 16 bit variant with single-cycle store
+* New target: Dualport 16 bit variant also with single-cycle fetch
+
+* Changed Icebreaker, FOMU and HX8K targets to use new quickstore variant
+* Changed ULX3S to use new dualport variant
+
+* More special opcodes used in nucleus to save space
+* Improved stack implementations
+* Faster abs routine for all targets with barrel shifters
+* More circle drawing algorithms
+* Flower artwork based on rotation cycles on integers
+* Renamed old verilator target to verilator-16bit
+* Updated the ARM core for Mystorm target to Mecrisp-Stellaris 2.6.2
+
+26. May 2022, Mecrisp-Ice 2.5
+
+* New target: MCH2022 badge
+* Added bitlog and bitexp functions
+* Fixed nextirq timing for quickstore & single-cycle targets
+
+Contribution by Bernard Mentink:
+
+* New target: TinyFPGA-BX
+
+26. May 2022, Mecrisp-Ice 2.6
+
+* Changed interrupt vector locations to the beginning of the memory
+* Updated the ARM core for Mystorm target to Mecrisp-Stellaris 2.6.3
+
+20. June 2022, Mecrisp-Ice 2.6a
+
+* Added Fourier transform
+* Fixed flaw in display init code for MCH2022
+
+27. June 2022, Mecrisp-Ice 2.6b
+
+* Added analog signal lab to ULX3S
+* Fixed MCH2022 textmode logic
+
+29. July 2022, Mecrisp-Ice 2.6c
+
+* Improved glossary
+* Added calltrace utility
+* Added bitflip
+* Fixed flaw in dualport memory fetch logic
+
+13. August 2023, Mecrisp-Ice 2.6d
+
+* Changed simulation code to compile with recent Verilator
+* Added 32 bit quickstore variant with single-cycle store
+
+31. October 2023, Mecrisp-Ice 2.6e
+
+* Added 32 bit singleport variant
+
+30. January 2024, Mecrisp-Ice 2.7
+
+* Fixed interrupt reenable logic in 32 and 64 bit targets
+* Cycle counter and improved delay routines for most targets
+* Skeletalstructure now uses 16 bit quickstore variant

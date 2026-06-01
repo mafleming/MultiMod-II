@@ -1,0 +1,4397 @@
+
+Mecrisp-Ice 2.7
+
+  ok.
+\ ------------------------------------------------------------------------  ok.
+\  These definitions have a different behaviour in Mecrisp-Ice:  ok.
+\ ------------------------------------------------------------------------  ok.
+  ok.
+:  variable ( -- ) 0 variable ;  ok.
+: 2variable ( -- ) 0. 2variable ;  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+\  These CORE definitions are not part of Mecrisp-Ice for default:  ok.
+\ ------------------------------------------------------------------------  ok.
+  ok.
+: word ( c -- c-addr )  ok.
+    begin  ok.
+        source >r >in @ + c@ over =  ok.
+        r> >in @ xor and  ok.
+    while  ok.
+        1 >in +!  ok.
+    repeat  ok.
+  ok.
+    parse  ok.
+    dup BUF0 c!  ok.
+    BUF0 1+ swap move  ok.
+    BUF0  ok.
+;  ok.
+  ok.
+\ : >number ( ud1 c-addr1 u1 -- ud2 c-addr2 u2 )  ok.
+\     begin  ok.
+\         dup  ok.
+\     while  ok.
+\         over c@ digit  ok.
+\         0= if drop exit then  ok.
+\         >r 2swap base @  ok.
+\         tuck * >r um* r> + \ Inlined Swapforth ud* ( ud1 u -- ud2 )  ok.
+\         r> s>d d+ 2swap  ok.
+\         1 /string  ok.
+\     repeat  ok.
+\ ;  ok.
+  ok.
+: chars ( u -- u ) ; 0 foldable  ok.
+: char+ ( u -- u+1 ) 1+ ; 1 foldable  ok.
+  ok.
+: erase ( addr u -- ) 0 fill ;  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+\  These CORE-EXT definitions are not part of Mecrisp-Ice for default:  ok.
+\ ------------------------------------------------------------------------  ok.
+  ok.
+: roll  ok.
+    ?dup if  ok.
+        swap >r  ok.
+        1- recurse  ok.
+        r> swap  ok.
+    then  ok.
+;  ok.
+  ok.
+: .( ( -- )  ok.
+    [char] ) parse type  ok.
+; immediate  ok.
+  ok.
+: pick  ok.
+    ?dup if  ok.
+        swap >r  ok.
+        1- recurse  ok.
+        r> swap  ok.
+    else  ok.
+        dup  ok.
+    then  ok.
+;  ok.
+  ok.
+: 2>r ( x1 x2 -- ) ( R: -- x1 x2 )  r> -rot swap >r >r >r ;  ok.
+  ok.
+: 2r> ( -- x1 x2 ) ( R: x1 x2 -- )  ok.
+    postpone r>  ok.
+    postpone r>  ok.
+    postpone swap  ok.
+; immediate  ok.
+  ok.
+: 2r@ ( -- x1 x2 ) ( R: x1 x2 -- x1 x2 ) r> 2r> 2dup 2>r rot >r ;  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+\  These DOUBLE definitions are not part of Mecrisp-Ice for default:  ok.
+\ ------------------------------------------------------------------------  ok.
+  ok.
+ 0 CONSTANT <FALSE>  ok.
+-1 CONSTANT <TRUE>  ok.
+  ok.
+: 2literal ( d -- )  ok.
+    swap postpone literal postpone literal  ok.
+; immediate  ok.
+  ok.
+: d>s ( d -- n ) drop ;  ok.
+  ok.
+\ From Wil Baden's "FPH Popular Extensions"  ok.
+\ http://www.wilbaden.com/neil_bawd/fphpop.txt  ok.
+  ok.
+: tnegate                           ( t . . -- -t . . )  ok.
+    >r  2dup or dup if drop  dnegate 1  then  ok.
+    r> +  negate ;  ok.
+  ok.
+: t*                                ( d . n -- t . . )  ok.
+                                    ( d0 d1 n)  ok.
+    2dup xor >r                     ( r: sign)  ok.
+    >r dabs r> abs  ok.
+    2>r                             ( d0)( r: sign d1 n)  ok.
+    r@ um* 0                        ( t0 d1 0)  ok.
+    2r> um*                         ( t0 d1 0 d1*n .)( r: sign)  ok.
+    d+                              ( t0 t1 t2)  ok.
+    r> 0< if tnegate then ;  ok.
+  ok.
+: t/                                ( t . . u -- d . )  ok.
+                                    ( t0 t1 t2 u)  ok.
+    over >r >r                      ( t0 t1 t2)( r: t2 u)  ok.
+    dup 0< if tnegate then  ok.
+    r@ um/mod                       ( t0 rem d1)  ok.
+    rot rot                         ( d1 t0 rem)  ok.
+    r> um/mod                       ( d1 rem' d0)( r: t2)  ok.
+    nip swap                        ( d0 d1)  ok.
+    r> 0< if dnegate then ;  ok.
+  ok.
+: m*/  ( d . n u -- d . )  >r t*  r> t/ ;  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+\ For testing of the ansification layer. Slightly changed, some parts are commen
+ted out.  ok.
+\ See original at https://github.com/gerryjackson/forth2012-test-suite/tree/mast
+er  ok.
+\ ------------------------------------------------------------------------  ok.
+  ok.
+\ From: John Hayes S1I  ok.
+\ Subject: tester.fr  ok.
+\ Date: Mon, 27 Nov 95 13:10:09 PST  ok.
+  ok.
+\ (C) 1995 JOHNS HOPKINS UNIVERSITY / APPLIED PHYSICS LABORATORY  ok.
+\ MAY BE DISTRIBUTED FREELY AS LONG AS THIS COPYRIGHT NOTICE REMAINS.  ok.
+\ VERSION 1.2  ok.
+  ok.
+\ 24/11/2015 Replaced Core Ext word <> with = 0=  ok.
+\ 31/3/2015 Variable #ERRORS added and incremented for each error reported.  ok.
+
+\ 22/1/09 The words { and } have been changed to T{ and }T respectively to  ok.
+\ agree with the Forth 200X file ttester.fs. This avoids clashes with  ok.
+\ locals using { ... } and the FSL use of }  ok.
+  ok.
+HEX  ok.
+  ok.
+\ SET THE FOLLOWING FLAG TO TRUE FOR MORE VERBOSE OUTPUT; THIS MAY  ok.
+\ ALLOW YOU TO TELL WHICH TEST CAUSED YOUR SYSTEM TO HANG.  ok.
+VARIABLE VERBOSE  ok.
+   FALSE VERBOSE !  ok.
+\   TRUE VERBOSE !  ok.
+  ok.
+: EMPTY-STACK   \ ( ... -- ) EMPTY STACK: HANDLES UNDERFLOWED STACK TOO.  ok.
+   DEPTH ?DUP IF DUP 0< IF NEGATE 0 DO 0 LOOP ELSE 0 DO DROP LOOP THEN THEN ;  o
+k.
+  ok.
+VARIABLE #ERRORS 0 #ERRORS !  ok.
+  ok.
+: ERROR      \ ( C-ADDR U -- ) DISPLAY AN ERROR MESSAGE FOLLOWED BY  ok.
+      \ THE LINE THAT HAD THE ERROR.  ok.
+   CR TYPE SOURCE TYPE       \ DISPLAY LINE CORRESPONDING TO ERROR  ok.
+   EMPTY-STACK               \ THROW AWAY EVERY THING ELSE  ok.
+   #ERRORS @ 1 + #ERRORS !  ok.
+\   QUIT  \ *** Uncomment this line to QUIT on an error  ok.
+;  ok.
+  ok.
+VARIABLE ACTUAL-DEPTH         \ STACK RECORD  ok.
+CREATE ACTUAL-RESULTS 20 CELLS ALLOT  ok.
+  ok.
+: T{      \ ( -- ) SYNTACTIC SUGAR.  ok.
+   ;  ok.
+  ok.
+: ->      \ ( ... -- ) RECORD DEPTH AND CONTENT OF STACK.  ok.
+   DEPTH DUP ACTUAL-DEPTH !      \ RECORD DEPTH  ok.
+   ?DUP IF            \ IF THERE IS SOMETHING ON STACK  ok.
+      0 DO ACTUAL-RESULTS I CELLS + ! LOOP \ SAVE THEM  ok.
+   THEN ;  ok.
+  ok.
+: }T      \ ( ... -- ) COMPARE STACK (EXPECTED) CONTENTS WITH SAVED  ok.
+      \ (ACTUAL) CONTENTS.  ok.
+   DEPTH ACTUAL-DEPTH @ = IF      \ IF DEPTHS MATCH  ok.
+      DEPTH ?DUP IF         \ IF THERE IS SOMETHING ON THE STACK  ok.
+         0  DO            \ FOR EACH STACK ITEM  ok.
+           ACTUAL-RESULTS I CELLS + @   \ COMPARE ACTUAL WITH EXPECTED  ok.
+           = 0= IF S" INCORRECT RESULT: " ERROR LEAVE THEN  ok.
+         LOOP  ok.
+      THEN  ok.
+   ELSE               \ DEPTH MISMATCH  ok.
+      S" WRONG NUMBER OF RESULTS: " ERROR  ok.
+   THEN ;  ok.
+  ok.
+: TESTING   \ ( -- ) TALKING COMMENT.  ok.
+  SOURCE VERBOSE @  ok.
+   IF DUP >R TYPE CR R> >IN !  ok.
+   ELSE >IN ! DROP [CHAR] * EMIT  ok.
+   THEN ;  ok.
+\ From: John Hayes S1I  ok.
+\ Subject: core.fr  ok.
+\ Date: Mon, 27 Nov 95 13:10  ok.
+  ok.
+\ (C) 1995 JOHNS HOPKINS UNIVERSITY / APPLIED PHYSICS LABORATORY  ok.
+\ MAY BE DISTRIBUTED FREELY AS LONG AS THIS COPYRIGHT NOTICE REMAINS.  ok.
+\ VERSION 1.2  ok.
+\ THIS PROGRAM TESTS THE CORE WORDS OF AN ANS FORTH SYSTEM.  ok.
+\ THE PROGRAM ASSUMES A TWO'S COMPLEMENT IMPLEMENTATION WHERE  ok.
+\ THE RANGE OF SIGNED NUMBERS IS -2^(N-1) ... 2^(N-1)-1 AND  ok.
+\ THE RANGE OF UNSIGNED NUMBERS IS 0 ... 2^(N)-1.  ok.
+\ I HAVEN'T FIGURED OUT HOW TO TEST KEY, QUIT, ABORT, OR ABORT"...  ok.
+\ I ALSO HAVEN'T THOUGHT OF A WAY TO TEST ENVIRONMENT?...  ok.
+  ok.
+CR 
+ ok.
+TESTING CORE WORDS * ok.
+HEX  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING BASIC ASSUMPTIONS * ok.
+  ok.
+T{ -> }T               \ START WITH CLEAN SLATE  ok.
+( TEST IF ANY BITS ARE SET; ANSWER IN BASE 1 )  ok.
+T{ : BITSSET? IF 0 0 ELSE 0 THEN ; -> }T  ok.
+T{  0 BITSSET? -> 0 }T      ( ZERO IS ALL BITS CLEAR )  ok.
+T{  1 BITSSET? -> 0 0 }T      ( OTHER NUMBER HAVE AT LEAST ONE BIT )  ok.
+T{ -1 BITSSET? -> 0 0 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING BOOLEANS: INVERT AND OR XOR * ok.
+  ok.
+T{ 0 0 AND -> 0 }T  ok.
+T{ 0 1 AND -> 0 }T  ok.
+T{ 1 0 AND -> 0 }T  ok.
+T{ 1 1 AND -> 1 }T  ok.
+  ok.
+T{ 0 INVERT 1 AND -> 1 }T  ok.
+T{ 1 INVERT 1 AND -> 0 }T  ok.
+  ok.
+0    CONSTANT 0S  ok.
+0 INVERT CONSTANT 1S  ok.
+  ok.
+T{ 0S INVERT -> 1S }T  ok.
+T{ 1S INVERT -> 0S }T  ok.
+  ok.
+T{ 0S 0S AND -> 0S }T  ok.
+T{ 0S 1S AND -> 0S }T  ok.
+T{ 1S 0S AND -> 0S }T  ok.
+T{ 1S 1S AND -> 1S }T  ok.
+  ok.
+T{ 0S 0S OR -> 0S }T  ok.
+T{ 0S 1S OR -> 1S }T  ok.
+T{ 1S 0S OR -> 1S }T  ok.
+T{ 1S 1S OR -> 1S }T  ok.
+  ok.
+T{ 0S 0S XOR -> 0S }T  ok.
+T{ 0S 1S XOR -> 1S }T  ok.
+T{ 1S 0S XOR -> 1S }T  ok.
+T{ 1S 1S XOR -> 0S }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING 2* 2/ LSHIFT RSHIFT * ok.
+  ok.
+( WE TRUST 1S, INVERT, AND BITSSET?; WE WILL CONFIRM RSHIFT LATER )  ok.
+1S 1 RSHIFT INVERT CONSTANT MSB  ok.
+T{ MSB BITSSET? -> 0 0 }T  ok.
+  ok.
+T{ 0S 2* -> 0S }T  ok.
+T{ 1 2* -> 2 }T  ok.
+T{ 4000 2* -> 8000 }T  ok.
+T{ 1S 2* 1 XOR -> 1S }T  ok.
+T{ MSB 2* -> 0S }T  ok.
+  ok.
+T{ 0S 2/ -> 0S }T  ok.
+T{ 1 2/ -> 0 }T  ok.
+T{ 4000 2/ -> 2000 }T  ok.
+T{ 1S 2/ -> 1S }T            \ MSB PROPOGATED  ok.
+T{ 1S 1 XOR 2/ -> 1S }T  ok.
+T{ MSB 2/ MSB AND -> MSB }T  ok.
+  ok.
+T{ 1 0 LSHIFT -> 1 }T  ok.
+T{ 1 1 LSHIFT -> 2 }T  ok.
+T{ 1 2 LSHIFT -> 4 }T  ok.
+T{ 1 F LSHIFT -> 8000 }T         \ BIGGEST GUARANTEED SHIFT  ok.
+T{ 1S 1 LSHIFT 1 XOR -> 1S }T  ok.
+T{ MSB 1 LSHIFT -> 0 }T  ok.
+  ok.
+T{ 1 0 RSHIFT -> 1 }T  ok.
+T{ 1 1 RSHIFT -> 0 }T  ok.
+T{ 2 1 RSHIFT -> 1 }T  ok.
+T{ 4 2 RSHIFT -> 1 }T  ok.
+T{ 8000 F RSHIFT -> 1 }T         \ BIGGEST  ok.
+T{ MSB 1 RSHIFT MSB AND -> 0 }T      \ RSHIFT ZERO FILLS MSBS  ok.
+T{ MSB 1 RSHIFT 2* -> MSB }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING COMPARISONS: 0= = 0< < > U< MIN MAX * ok.
+0 INVERT         CONSTANT MAX-UINT  ok.
+0 INVERT 1 RSHIFT      CONSTANT MAX-INT  ok.
+0 INVERT 1 RSHIFT INVERT   CONSTANT MIN-INT  ok.
+0 INVERT 1 RSHIFT      CONSTANT MID-UINT  ok.
+0 INVERT 1 RSHIFT INVERT   CONSTANT MID-UINT+1  ok.
+  ok.
+0S CONSTANT <FALSE>  ok.
+1S CONSTANT <TRUE>  ok.
+  ok.
+T{ 0 0= -> <TRUE> }T  ok.
+T{ 1 0= -> <FALSE> }T  ok.
+T{ 2 0= -> <FALSE> }T  ok.
+T{ -1 0= -> <FALSE> }T  ok.
+T{ MAX-UINT 0= -> <FALSE> }T  ok.
+T{ MIN-INT 0= -> <FALSE> }T  ok.
+T{ MAX-INT 0= -> <FALSE> }T  ok.
+  ok.
+T{ 0 0 = -> <TRUE> }T  ok.
+T{ 1 1 = -> <TRUE> }T  ok.
+T{ -1 -1 = -> <TRUE> }T  ok.
+T{ 1 0 = -> <FALSE> }T  ok.
+T{ -1 0 = -> <FALSE> }T  ok.
+T{ 0 1 = -> <FALSE> }T  ok.
+T{ 0 -1 = -> <FALSE> }T  ok.
+  ok.
+T{ 0 0< -> <FALSE> }T  ok.
+T{ -1 0< -> <TRUE> }T  ok.
+T{ MIN-INT 0< -> <TRUE> }T  ok.
+T{ 1 0< -> <FALSE> }T  ok.
+T{ MAX-INT 0< -> <FALSE> }T  ok.
+  ok.
+T{ 0 1 < -> <TRUE> }T  ok.
+T{ 1 2 < -> <TRUE> }T  ok.
+T{ -1 0 < -> <TRUE> }T  ok.
+T{ -1 1 < -> <TRUE> }T  ok.
+T{ MIN-INT 0 < -> <TRUE> }T  ok.
+T{ MIN-INT MAX-INT < -> <TRUE> }T  ok.
+T{ 0 MAX-INT < -> <TRUE> }T  ok.
+T{ 0 0 < -> <FALSE> }T  ok.
+T{ 1 1 < -> <FALSE> }T  ok.
+T{ 1 0 < -> <FALSE> }T  ok.
+T{ 2 1 < -> <FALSE> }T  ok.
+T{ 0 -1 < -> <FALSE> }T  ok.
+T{ 1 -1 < -> <FALSE> }T  ok.
+T{ 0 MIN-INT < -> <FALSE> }T  ok.
+T{ MAX-INT MIN-INT < -> <FALSE> }T  ok.
+T{ MAX-INT 0 < -> <FALSE> }T  ok.
+  ok.
+T{ 0 1 > -> <FALSE> }T  ok.
+T{ 1 2 > -> <FALSE> }T  ok.
+T{ -1 0 > -> <FALSE> }T  ok.
+T{ -1 1 > -> <FALSE> }T  ok.
+T{ MIN-INT 0 > -> <FALSE> }T  ok.
+T{ MIN-INT MAX-INT > -> <FALSE> }T  ok.
+T{ 0 MAX-INT > -> <FALSE> }T  ok.
+T{ 0 0 > -> <FALSE> }T  ok.
+T{ 1 1 > -> <FALSE> }T  ok.
+T{ 1 0 > -> <TRUE> }T  ok.
+T{ 2 1 > -> <TRUE> }T  ok.
+T{ 0 -1 > -> <TRUE> }T  ok.
+T{ 1 -1 > -> <TRUE> }T  ok.
+T{ 0 MIN-INT > -> <TRUE> }T  ok.
+T{ MAX-INT MIN-INT > -> <TRUE> }T  ok.
+T{ MAX-INT 0 > -> <TRUE> }T  ok.
+  ok.
+T{ 0 1 U< -> <TRUE> }T  ok.
+T{ 1 2 U< -> <TRUE> }T  ok.
+T{ 0 MID-UINT U< -> <TRUE> }T  ok.
+T{ 0 MAX-UINT U< -> <TRUE> }T  ok.
+T{ MID-UINT MAX-UINT U< -> <TRUE> }T  ok.
+T{ 0 0 U< -> <FALSE> }T  ok.
+T{ 1 1 U< -> <FALSE> }T  ok.
+T{ 1 0 U< -> <FALSE> }T  ok.
+T{ 2 1 U< -> <FALSE> }T  ok.
+T{ MID-UINT 0 U< -> <FALSE> }T  ok.
+T{ MAX-UINT 0 U< -> <FALSE> }T  ok.
+T{ MAX-UINT MID-UINT U< -> <FALSE> }T  ok.
+  ok.
+T{ 0 1 MIN -> 0 }T  ok.
+T{ 1 2 MIN -> 1 }T  ok.
+T{ -1 0 MIN -> -1 }T  ok.
+T{ -1 1 MIN -> -1 }T  ok.
+T{ MIN-INT 0 MIN -> MIN-INT }T  ok.
+T{ MIN-INT MAX-INT MIN -> MIN-INT }T  ok.
+T{ 0 MAX-INT MIN -> 0 }T  ok.
+T{ 0 0 MIN -> 0 }T  ok.
+T{ 1 1 MIN -> 1 }T  ok.
+T{ 1 0 MIN -> 0 }T  ok.
+T{ 2 1 MIN -> 1 }T  ok.
+T{ 0 -1 MIN -> -1 }T  ok.
+T{ 1 -1 MIN -> -1 }T  ok.
+T{ 0 MIN-INT MIN -> MIN-INT }T  ok.
+T{ MAX-INT MIN-INT MIN -> MIN-INT }T  ok.
+T{ MAX-INT 0 MIN -> 0 }T  ok.
+  ok.
+T{ 0 1 MAX -> 1 }T  ok.
+T{ 1 2 MAX -> 2 }T  ok.
+T{ -1 0 MAX -> 0 }T  ok.
+T{ -1 1 MAX -> 1 }T  ok.
+T{ MIN-INT 0 MAX -> 0 }T  ok.
+T{ MIN-INT MAX-INT MAX -> MAX-INT }T  ok.
+T{ 0 MAX-INT MAX -> MAX-INT }T  ok.
+T{ 0 0 MAX -> 0 }T  ok.
+T{ 1 1 MAX -> 1 }T  ok.
+T{ 1 0 MAX -> 1 }T  ok.
+T{ 2 1 MAX -> 2 }T  ok.
+T{ 0 -1 MAX -> 0 }T  ok.
+T{ 1 -1 MAX -> 1 }T  ok.
+T{ 0 MIN-INT MAX -> 0 }T  ok.
+T{ MAX-INT MIN-INT MAX -> MAX-INT }T  ok.
+T{ MAX-INT 0 MAX -> MAX-INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING STACK OPS: 2DROP 2DUP 2OVER 2SWAP ?DUP DEPTH DROP DUP OVER ROT SWAP * ok
+.
+  ok.
+T{ 1 2 2DROP -> }T  ok.
+T{ 1 2 2DUP -> 1 2 1 2 }T  ok.
+T{ 1 2 3 4 2OVER -> 1 2 3 4 1 2 }T  ok.
+T{ 1 2 3 4 2SWAP -> 3 4 1 2 }T  ok.
+T{ 0 ?DUP -> 0 }T  ok.
+T{ 1 ?DUP -> 1 1 }T  ok.
+T{ -1 ?DUP -> -1 -1 }T  ok.
+T{ DEPTH -> 0 }T  ok.
+T{ 0 DEPTH -> 0 1 }T  ok.
+T{ 0 1 DEPTH -> 0 1 2 }T  ok.
+T{ 0 DROP -> }T  ok.
+T{ 1 2 DROP -> 1 }T  ok.
+T{ 1 DUP -> 1 1 }T  ok.
+T{ 1 2 OVER -> 1 2 1 }T  ok.
+T{ 1 2 3 ROT -> 2 3 1 }T  ok.
+T{ 1 2 SWAP -> 2 1 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING >R R> R@ * ok.
+  ok.
+T{ : GR1 >R R> ; -> }T  ok.
+T{ : GR2 >R R@ R> DROP ; -> }T  ok.
+T{ 123 GR1 -> 123 }T  ok.
+T{ 123 GR2 -> 123 }T  ok.
+T{ 1S GR1 -> 1S }T   ( RETURN STACK HOLDS CELLS )  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING ADD/SUBTRACT: + - 1+ 1- ABS NEGATE * ok.
+  ok.
+T{ 0 5 + -> 5 }T  ok.
+T{ 5 0 + -> 5 }T  ok.
+T{ 0 -5 + -> -5 }T  ok.
+T{ -5 0 + -> -5 }T  ok.
+T{ 1 2 + -> 3 }T  ok.
+T{ 1 -2 + -> -1 }T  ok.
+T{ -1 2 + -> 1 }T  ok.
+T{ -1 -2 + -> -3 }T  ok.
+T{ -1 1 + -> 0 }T  ok.
+T{ MID-UINT 1 + -> MID-UINT+1 }T  ok.
+  ok.
+T{ 0 5 - -> -5 }T  ok.
+T{ 5 0 - -> 5 }T  ok.
+T{ 0 -5 - -> 5 }T  ok.
+T{ -5 0 - -> -5 }T  ok.
+T{ 1 2 - -> -1 }T  ok.
+T{ 1 -2 - -> 3 }T  ok.
+T{ -1 2 - -> -3 }T  ok.
+T{ -1 -2 - -> 1 }T  ok.
+T{ 0 1 - -> -1 }T  ok.
+T{ MID-UINT+1 1 - -> MID-UINT }T  ok.
+  ok.
+T{ 0 1+ -> 1 }T  ok.
+T{ -1 1+ -> 0 }T  ok.
+T{ 1 1+ -> 2 }T  ok.
+T{ MID-UINT 1+ -> MID-UINT+1 }T  ok.
+  ok.
+T{ 2 1- -> 1 }T  ok.
+T{ 1 1- -> 0 }T  ok.
+T{ 0 1- -> -1 }T  ok.
+T{ MID-UINT+1 1- -> MID-UINT }T  ok.
+  ok.
+T{ 0 NEGATE -> 0 }T  ok.
+T{ 1 NEGATE -> -1 }T  ok.
+T{ -1 NEGATE -> 1 }T  ok.
+T{ 2 NEGATE -> -2 }T  ok.
+T{ -2 NEGATE -> 2 }T  ok.
+  ok.
+T{ 0 ABS -> 0 }T  ok.
+T{ 1 ABS -> 1 }T  ok.
+T{ -1 ABS -> 1 }T  ok.
+T{ MIN-INT ABS -> MID-UINT+1 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING MULTIPLY: S>D * M* UM* * ok.
+  ok.
+T{ 0 S>D -> 0 0 }T  ok.
+T{ 1 S>D -> 1 0 }T  ok.
+T{ 2 S>D -> 2 0 }T  ok.
+T{ -1 S>D -> -1 -1 }T  ok.
+T{ -2 S>D -> -2 -1 }T  ok.
+T{ MIN-INT S>D -> MIN-INT -1 }T  ok.
+T{ MAX-INT S>D -> MAX-INT 0 }T  ok.
+  ok.
+T{ 0 0 M* -> 0 S>D }T  ok.
+T{ 0 1 M* -> 0 S>D }T  ok.
+T{ 1 0 M* -> 0 S>D }T  ok.
+T{ 1 2 M* -> 2 S>D }T  ok.
+T{ 2 1 M* -> 2 S>D }T  ok.
+T{ 3 3 M* -> 9 S>D }T  ok.
+T{ -3 3 M* -> -9 S>D }T  ok.
+T{ 3 -3 M* -> -9 S>D }T  ok.
+T{ -3 -3 M* -> 9 S>D }T  ok.
+T{ 0 MIN-INT M* -> 0 S>D }T  ok.
+T{ 1 MIN-INT M* -> MIN-INT S>D }T  ok.
+T{ 2 MIN-INT M* -> 0 1S }T  ok.
+T{ 0 MAX-INT M* -> 0 S>D }T  ok.
+T{ 1 MAX-INT M* -> MAX-INT S>D }T  ok.
+T{ 2 MAX-INT M* -> MAX-INT 1 LSHIFT 0 }T  ok.
+T{ MIN-INT MIN-INT M* -> 0 MSB 1 RSHIFT }T  ok.
+T{ MAX-INT MIN-INT M* -> MSB MSB 2/ }T  ok.
+T{ MAX-INT MAX-INT M* -> 1 MSB 2/ INVERT }T  ok.
+  ok.
+T{ 0 0 * -> 0 }T            \ TEST IDENTITIES  ok.
+T{ 0 1 * -> 0 }T  ok.
+T{ 1 0 * -> 0 }T  ok.
+T{ 1 2 * -> 2 }T  ok.
+T{ 2 1 * -> 2 }T  ok.
+T{ 3 3 * -> 9 }T  ok.
+T{ -3 3 * -> -9 }T  ok.
+T{ 3 -3 * -> -9 }T  ok.
+T{ -3 -3 * -> 9 }T  ok.
+  ok.
+T{ MID-UINT+1 1 RSHIFT 2 * -> MID-UINT+1 }T  ok.
+T{ MID-UINT+1 2 RSHIFT 4 * -> MID-UINT+1 }T  ok.
+T{ MID-UINT+1 1 RSHIFT MID-UINT+1 OR 2 * -> MID-UINT+1 }T  ok.
+  ok.
+T{ 0 0 UM* -> 0 0 }T  ok.
+T{ 0 1 UM* -> 0 0 }T  ok.
+T{ 1 0 UM* -> 0 0 }T  ok.
+T{ 1 2 UM* -> 2 0 }T  ok.
+T{ 2 1 UM* -> 2 0 }T  ok.
+T{ 3 3 UM* -> 9 0 }T  ok.
+  ok.
+T{ MID-UINT+1 1 RSHIFT 2 UM* -> MID-UINT+1 0 }T  ok.
+T{ MID-UINT+1 2 UM* -> 0 1 }T  ok.
+T{ MID-UINT+1 4 UM* -> 0 2 }T  ok.
+T{ 1S 2 UM* -> 1S 1 LSHIFT 1 }T  ok.
+T{ MAX-UINT MAX-UINT UM* -> 1 1 INVERT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING DIVIDE: FM/MOD SM/REM UM/MOD */ */MOD / /MOD MOD * ok.
+  ok.
+T{ 0 S>D 1 FM/MOD -> 0 0 }T  ok.
+T{ 1 S>D 1 FM/MOD -> 0 1 }T  ok.
+T{ 2 S>D 1 FM/MOD -> 0 2 }T  ok.
+T{ -1 S>D 1 FM/MOD -> 0 -1 }T  ok.
+T{ -2 S>D 1 FM/MOD -> 0 -2 }T  ok.
+T{ 0 S>D -1 FM/MOD -> 0 0 }T  ok.
+T{ 1 S>D -1 FM/MOD -> 0 -1 }T  ok.
+T{ 2 S>D -1 FM/MOD -> 0 -2 }T  ok.
+T{ -1 S>D -1 FM/MOD -> 0 1 }T  ok.
+T{ -2 S>D -1 FM/MOD -> 0 2 }T  ok.
+T{ 2 S>D 2 FM/MOD -> 0 1 }T  ok.
+T{ -1 S>D -1 FM/MOD -> 0 1 }T  ok.
+T{ -2 S>D -2 FM/MOD -> 0 1 }T  ok.
+T{  7 S>D  3 FM/MOD -> 1 2 }T  ok.
+T{  7 S>D -3 FM/MOD -> -2 -3 }T  ok.
+T{ -7 S>D  3 FM/MOD -> 2 -3 }T  ok.
+T{ -7 S>D -3 FM/MOD -> -1 2 }T  ok.
+T{ MAX-INT S>D 1 FM/MOD -> 0 MAX-INT }T  ok.
+T{ MIN-INT S>D 1 FM/MOD -> 0 MIN-INT }T  ok.
+T{ MAX-INT S>D MAX-INT FM/MOD -> 0 1 }T  ok.
+T{ MIN-INT S>D MIN-INT FM/MOD -> 0 1 }T  ok.
+T{ 1S 1 4 FM/MOD -> 3 MAX-INT }T  ok.
+T{ 1 MIN-INT M* 1 FM/MOD -> 0 MIN-INT }T  ok.
+T{ 1 MIN-INT M* MIN-INT FM/MOD -> 0 1 }T  ok.
+T{ 2 MIN-INT M* 2 FM/MOD -> 0 MIN-INT }T  ok.
+T{ 2 MIN-INT M* MIN-INT FM/MOD -> 0 2 }T  ok.
+T{ 1 MAX-INT M* 1 FM/MOD -> 0 MAX-INT }T  ok.
+T{ 1 MAX-INT M* MAX-INT FM/MOD -> 0 1 }T  ok.
+T{ 2 MAX-INT M* 2 FM/MOD -> 0 MAX-INT }T  ok.
+T{ 2 MAX-INT M* MAX-INT FM/MOD -> 0 2 }T  ok.
+T{ MIN-INT MIN-INT M* MIN-INT FM/MOD -> 0 MIN-INT }T  ok.
+T{ MIN-INT MAX-INT M* MIN-INT FM/MOD -> 0 MAX-INT }T  ok.
+T{ MIN-INT MAX-INT M* MAX-INT FM/MOD -> 0 MIN-INT }T  ok.
+T{ MAX-INT MAX-INT M* MAX-INT FM/MOD -> 0 MAX-INT }T  ok.
+  ok.
+T{ 0 S>D 1 SM/REM -> 0 0 }T  ok.
+T{ 1 S>D 1 SM/REM -> 0 1 }T  ok.
+T{ 2 S>D 1 SM/REM -> 0 2 }T  ok.
+T{ -1 S>D 1 SM/REM -> 0 -1 }T  ok.
+T{ -2 S>D 1 SM/REM -> 0 -2 }T  ok.
+T{ 0 S>D -1 SM/REM -> 0 0 }T  ok.
+T{ 1 S>D -1 SM/REM -> 0 -1 }T  ok.
+T{ 2 S>D -1 SM/REM -> 0 -2 }T  ok.
+T{ -1 S>D -1 SM/REM -> 0 1 }T  ok.
+T{ -2 S>D -1 SM/REM -> 0 2 }T  ok.
+T{ 2 S>D 2 SM/REM -> 0 1 }T  ok.
+T{ -1 S>D -1 SM/REM -> 0 1 }T  ok.
+T{ -2 S>D -2 SM/REM -> 0 1 }T  ok.
+T{  7 S>D  3 SM/REM -> 1 2 }T  ok.
+T{  7 S>D -3 SM/REM -> 1 -2 }T  ok.
+T{ -7 S>D  3 SM/REM -> -1 -2 }T  ok.
+T{ -7 S>D -3 SM/REM -> -1 2 }T  ok.
+T{ MAX-INT S>D 1 SM/REM -> 0 MAX-INT }T  ok.
+T{ MIN-INT S>D 1 SM/REM -> 0 MIN-INT }T  ok.
+T{ MAX-INT S>D MAX-INT SM/REM -> 0 1 }T  ok.
+T{ MIN-INT S>D MIN-INT SM/REM -> 0 1 }T  ok.
+T{ 1S 1 4 SM/REM -> 3 MAX-INT }T  ok.
+T{ 2 MIN-INT M* 2 SM/REM -> 0 MIN-INT }T  ok.
+T{ 2 MIN-INT M* MIN-INT SM/REM -> 0 2 }T  ok.
+T{ 2 MAX-INT M* 2 SM/REM -> 0 MAX-INT }T  ok.
+T{ 2 MAX-INT M* MAX-INT SM/REM -> 0 2 }T  ok.
+T{ MIN-INT MIN-INT M* MIN-INT SM/REM -> 0 MIN-INT }T  ok.
+T{ MIN-INT MAX-INT M* MIN-INT SM/REM -> 0 MAX-INT }T  ok.
+T{ MIN-INT MAX-INT M* MAX-INT SM/REM -> 0 MIN-INT }T  ok.
+T{ MAX-INT MAX-INT M* MAX-INT SM/REM -> 0 MAX-INT }T  ok.
+  ok.
+T{ 0 0 1 UM/MOD -> 0 0 }T  ok.
+T{ 1 0 1 UM/MOD -> 0 1 }T  ok.
+T{ 1 0 2 UM/MOD -> 1 0 }T  ok.
+T{ 3 0 2 UM/MOD -> 1 1 }T  ok.
+T{ MAX-UINT 2 UM* 2 UM/MOD -> 0 MAX-UINT }T  ok.
+T{ MAX-UINT 2 UM* MAX-UINT UM/MOD -> 0 2 }T  ok.
+T{ MAX-UINT MAX-UINT UM* MAX-UINT UM/MOD -> 0 MAX-UINT }T  ok.
+  ok.
+: IFFLOORED  ok.
+   [ -3 2 / -2 = INVERT ] LITERAL IF POSTPONE \ THEN ;  ok.
+  ok.
+: IFSYM  ok.
+   [ -3 2 / -1 = INVERT ] LITERAL IF POSTPONE \ THEN ;  ok.
+  ok.
+\ THE SYSTEM MIGHT DO EITHER FLOORED OR SYMMETRIC DIVISION.  ok.
+\ SINCE WE HAVE ALREADY TESTED M*, FM/MOD, AND SM/REM WE CAN USE THEM IN TEST.  
+ok.
+  ok.
+IFFLOORED : T/MOD  >R S>D R> FM/MOD ;  ok.
+IFFLOORED : T/     T/MOD SWAP DROP ;  ok.
+IFFLOORED : TMOD   T/MOD DROP ;  ok.
+IFFLOORED : T*/MOD >R M* R> FM/MOD ;  ok.
+IFFLOORED : T*/    T*/MOD SWAP DROP ;  ok.
+IFSYM     : T/MOD  >R S>D R> SM/REM ;  ok.
+IFSYM     : T/     T/MOD SWAP DROP ;  ok.
+IFSYM     : TMOD   T/MOD DROP ;  ok.
+IFSYM     : T*/MOD >R M* R> SM/REM ;  ok.
+IFSYM     : T*/    T*/MOD SWAP DROP ;  ok.
+  ok.
+T{ 0 1 /MOD -> 0 1 T/MOD }T  ok.
+T{ 1 1 /MOD -> 1 1 T/MOD }T  ok.
+T{ 2 1 /MOD -> 2 1 T/MOD }T  ok.
+T{ -1 1 /MOD -> -1 1 T/MOD }T  ok.
+T{ -2 1 /MOD -> -2 1 T/MOD }T  ok.
+T{ 0 -1 /MOD -> 0 -1 T/MOD }T  ok.
+T{ 1 -1 /MOD -> 1 -1 T/MOD }T  ok.
+T{ 2 -1 /MOD -> 2 -1 T/MOD }T  ok.
+T{ -1 -1 /MOD -> -1 -1 T/MOD }T  ok.
+T{ -2 -1 /MOD -> -2 -1 T/MOD }T  ok.
+T{ 2 2 /MOD -> 2 2 T/MOD }T  ok.
+T{ -1 -1 /MOD -> -1 -1 T/MOD }T  ok.
+T{ -2 -2 /MOD -> -2 -2 T/MOD }T  ok.
+T{ 7 3 /MOD -> 7 3 T/MOD }T  ok.
+T{ 7 -3 /MOD -> 7 -3 T/MOD }T  ok.
+T{ -7 3 /MOD -> -7 3 T/MOD }T  ok.
+T{ -7 -3 /MOD -> -7 -3 T/MOD }T  ok.
+T{ MAX-INT 1 /MOD -> MAX-INT 1 T/MOD }T  ok.
+T{ MIN-INT 1 /MOD -> MIN-INT 1 T/MOD }T  ok.
+T{ MAX-INT MAX-INT /MOD -> MAX-INT MAX-INT T/MOD }T  ok.
+T{ MIN-INT MIN-INT /MOD -> MIN-INT MIN-INT T/MOD }T  ok.
+  ok.
+T{ 0 1 / -> 0 1 T/ }T  ok.
+T{ 1 1 / -> 1 1 T/ }T  ok.
+T{ 2 1 / -> 2 1 T/ }T  ok.
+T{ -1 1 / -> -1 1 T/ }T  ok.
+T{ -2 1 / -> -2 1 T/ }T  ok.
+T{ 0 -1 / -> 0 -1 T/ }T  ok.
+T{ 1 -1 / -> 1 -1 T/ }T  ok.
+T{ 2 -1 / -> 2 -1 T/ }T  ok.
+T{ -1 -1 / -> -1 -1 T/ }T  ok.
+T{ -2 -1 / -> -2 -1 T/ }T  ok.
+T{ 2 2 / -> 2 2 T/ }T  ok.
+T{ -1 -1 / -> -1 -1 T/ }T  ok.
+T{ -2 -2 / -> -2 -2 T/ }T  ok.
+T{ 7 3 / -> 7 3 T/ }T  ok.
+T{ 7 -3 / -> 7 -3 T/ }T  ok.
+T{ -7 3 / -> -7 3 T/ }T  ok.
+T{ -7 -3 / -> -7 -3 T/ }T  ok.
+T{ MAX-INT 1 / -> MAX-INT 1 T/ }T  ok.
+T{ MIN-INT 1 / -> MIN-INT 1 T/ }T  ok.
+T{ MAX-INT MAX-INT / -> MAX-INT MAX-INT T/ }T  ok.
+T{ MIN-INT MIN-INT / -> MIN-INT MIN-INT T/ }T  ok.
+  ok.
+T{ 0 1 MOD -> 0 1 TMOD }T  ok.
+T{ 1 1 MOD -> 1 1 TMOD }T  ok.
+T{ 2 1 MOD -> 2 1 TMOD }T  ok.
+T{ -1 1 MOD -> -1 1 TMOD }T  ok.
+T{ -2 1 MOD -> -2 1 TMOD }T  ok.
+T{ 0 -1 MOD -> 0 -1 TMOD }T  ok.
+T{ 1 -1 MOD -> 1 -1 TMOD }T  ok.
+T{ 2 -1 MOD -> 2 -1 TMOD }T  ok.
+T{ -1 -1 MOD -> -1 -1 TMOD }T  ok.
+T{ -2 -1 MOD -> -2 -1 TMOD }T  ok.
+T{ 2 2 MOD -> 2 2 TMOD }T  ok.
+T{ -1 -1 MOD -> -1 -1 TMOD }T  ok.
+T{ -2 -2 MOD -> -2 -2 TMOD }T  ok.
+T{ 7 3 MOD -> 7 3 TMOD }T  ok.
+T{ 7 -3 MOD -> 7 -3 TMOD }T  ok.
+T{ -7 3 MOD -> -7 3 TMOD }T  ok.
+T{ -7 -3 MOD -> -7 -3 TMOD }T  ok.
+T{ MAX-INT 1 MOD -> MAX-INT 1 TMOD }T  ok.
+T{ MIN-INT 1 MOD -> MIN-INT 1 TMOD }T  ok.
+T{ MAX-INT MAX-INT MOD -> MAX-INT MAX-INT TMOD }T  ok.
+T{ MIN-INT MIN-INT MOD -> MIN-INT MIN-INT TMOD }T  ok.
+  ok.
+T{ 0 2 1 */ -> 0 2 1 T*/ }T  ok.
+T{ 1 2 1 */ -> 1 2 1 T*/ }T  ok.
+T{ 2 2 1 */ -> 2 2 1 T*/ }T  ok.
+T{ -1 2 1 */ -> -1 2 1 T*/ }T  ok.
+T{ -2 2 1 */ -> -2 2 1 T*/ }T  ok.
+T{ 0 2 -1 */ -> 0 2 -1 T*/ }T  ok.
+T{ 1 2 -1 */ -> 1 2 -1 T*/ }T  ok.
+T{ 2 2 -1 */ -> 2 2 -1 T*/ }T  ok.
+T{ -1 2 -1 */ -> -1 2 -1 T*/ }T  ok.
+T{ -2 2 -1 */ -> -2 2 -1 T*/ }T  ok.
+T{ 2 2 2 */ -> 2 2 2 T*/ }T  ok.
+T{ -1 2 -1 */ -> -1 2 -1 T*/ }T  ok.
+T{ -2 2 -2 */ -> -2 2 -2 T*/ }T  ok.
+T{ 7 2 3 */ -> 7 2 3 T*/ }T  ok.
+T{ 7 2 -3 */ -> 7 2 -3 T*/ }T  ok.
+T{ -7 2 3 */ -> -7 2 3 T*/ }T  ok.
+T{ -7 2 -3 */ -> -7 2 -3 T*/ }T  ok.
+T{ MAX-INT 2 MAX-INT */ -> MAX-INT 2 MAX-INT T*/ }T  ok.
+T{ MIN-INT 2 MIN-INT */ -> MIN-INT 2 MIN-INT T*/ }T  ok.
+  ok.
+T{ 0 2 1 */MOD -> 0 2 1 T*/MOD }T  ok.
+T{ 1 2 1 */MOD -> 1 2 1 T*/MOD }T  ok.
+T{ 2 2 1 */MOD -> 2 2 1 T*/MOD }T  ok.
+T{ -1 2 1 */MOD -> -1 2 1 T*/MOD }T  ok.
+T{ -2 2 1 */MOD -> -2 2 1 T*/MOD }T  ok.
+T{ 0 2 -1 */MOD -> 0 2 -1 T*/MOD }T  ok.
+T{ 1 2 -1 */MOD -> 1 2 -1 T*/MOD }T  ok.
+T{ 2 2 -1 */MOD -> 2 2 -1 T*/MOD }T  ok.
+T{ -1 2 -1 */MOD -> -1 2 -1 T*/MOD }T  ok.
+T{ -2 2 -1 */MOD -> -2 2 -1 T*/MOD }T  ok.
+T{ 2 2 2 */MOD -> 2 2 2 T*/MOD }T  ok.
+T{ -1 2 -1 */MOD -> -1 2 -1 T*/MOD }T  ok.
+T{ -2 2 -2 */MOD -> -2 2 -2 T*/MOD }T  ok.
+T{ 7 2 3 */MOD -> 7 2 3 T*/MOD }T  ok.
+T{ 7 2 -3 */MOD -> 7 2 -3 T*/MOD }T  ok.
+T{ -7 2 3 */MOD -> -7 2 3 T*/MOD }T  ok.
+T{ -7 2 -3 */MOD -> -7 2 -3 T*/MOD }T  ok.
+T{ MAX-INT 2 MAX-INT */MOD -> MAX-INT 2 MAX-INT T*/MOD }T  ok.
+T{ MIN-INT 2 MIN-INT */MOD -> MIN-INT 2 MIN-INT T*/MOD }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING HERE , @ ! CELL+ CELLS C, C@ C! CHARS 2@ 2! ALIGN ALIGNED +! ALLOT * ok.
+
+  ok.
+HERE 1 ALLOT  ok.
+HERE  ok.
+CONSTANT 2NDA  ok.
+CONSTANT 1STA  ok.
+T{ 1STA 2NDA U< -> <TRUE> }T      \ HERE MUST GROW WITH ALLOT  ok.
+T{ 1STA 1+ -> 2NDA }T         \ ... BY ONE ADDRESS UNIT  ok.
+( MISSING TEST: NEGATIVE ALLOT )  ok.
+  ok.
+\ Added by GWJ so that ALIGN can be used before , (comma) is tested  ok.
+1 ALIGNED CONSTANT ALMNT   \ -- 1|2|4|8 for 8|16|32|64 bit alignment  ok.
+ALIGN  ok.
+T{ HERE 1 ALLOT ALIGN HERE SWAP - ALMNT = -> <TRUE> }T  ok.
+\ End of extra test  ok.
+  ok.
+HERE 1 ,  ok.
+HERE 2 ,  ok.
+CONSTANT 2ND  ok.
+CONSTANT 1ST  ok.
+T{ 1ST 2ND U< -> <TRUE> }T         \ HERE MUST GROW WITH ALLOT  ok.
+T{ 1ST CELL+ -> 2ND }T         \ ... BY ONE CELL  ok.
+T{ 1ST 1 CELLS + -> 2ND }T  ok.
+T{ 1ST @ 2ND @ -> 1 2 }T  ok.
+T{ 5 1ST ! -> }T  ok.
+T{ 1ST @ 2ND @ -> 5 2 }T  ok.
+T{ 6 2ND ! -> }T  ok.
+T{ 1ST @ 2ND @ -> 5 6 }T  ok.
+T{ 1ST 2@ -> 6 5 }T  ok.
+T{ 2 1 1ST 2! -> }T  ok.
+T{ 1ST 2@ -> 2 1 }T  ok.
+T{ 1S 1ST !  1ST @ -> 1S }T      \ CAN STORE CELL-WIDE VALUE  ok.
+  ok.
+HERE 1 C,  ok.
+HERE 2 C,  ok.
+CONSTANT 2NDC  ok.
+CONSTANT 1STC  ok.
+T{ 1STC 2NDC U< -> <TRUE> }T      \ HERE MUST GROW WITH ALLOT  ok.
+T{ 1STC CHAR+ -> 2NDC }T         \ ... BY ONE CHAR  ok.
+T{ 1STC 1 CHARS + -> 2NDC }T  ok.
+T{ 1STC C@ 2NDC C@ -> 1 2 }T  ok.
+T{ 3 1STC C! -> }T  ok.
+T{ 1STC C@ 2NDC C@ -> 3 2 }T  ok.
+T{ 4 2NDC C! -> }T  ok.
+T{ 1STC C@ 2NDC C@ -> 3 4 }T  ok.
+  ok.
+ALIGN 1 ALLOT HERE ALIGN HERE 3 CELLS ALLOT  ok.
+CONSTANT A-ADDR  CONSTANT UA-ADDR  ok.
+T{ UA-ADDR ALIGNED -> A-ADDR }T  ok.
+T{    1 A-ADDR C!  A-ADDR C@ ->    1 }T  ok.
+T{ 1234 A-ADDR  !  A-ADDR  @ -> 1234 }T  ok.
+T{ 123 456 A-ADDR 2!  A-ADDR 2@ -> 123 456 }T  ok.
+T{ 2 A-ADDR CHAR+ C!  A-ADDR CHAR+ C@ -> 2 }T  ok.
+T{ 3 A-ADDR CELL+ C!  A-ADDR CELL+ C@ -> 3 }T  ok.
+T{ 1234 A-ADDR CELL+ !  A-ADDR CELL+ @ -> 1234 }T  ok.
+T{ 123 456 A-ADDR CELL+ 2!  A-ADDR CELL+ 2@ -> 123 456 }T  ok.
+  ok.
+: BITS ( X -- U )  ok.
+   0 SWAP BEGIN DUP WHILE DUP MSB AND IF >R 1+ R> THEN 2* REPEAT DROP ;  ok.
+( CHARACTERS >= 1 AU, <= SIZE OF CELL, >= 8 BITS )  ok.
+T{ 1 CHARS 1 < -> <FALSE> }T  ok.
+T{ 1 CHARS 1 CELLS > -> <FALSE> }T  ok.
+( TBD: HOW TO FIND NUMBER OF BITS? )  ok.
+  ok.
+( CELLS >= 1 AU, INTEGRAL MULTIPLE OF CHAR SIZE, >= 16 BITS )  ok.
+T{ 1 CELLS 1 < -> <FALSE> }T  ok.
+T{ 1 CELLS 1 CHARS MOD -> 0 }T  ok.
+T{ 1S BITS 10 < -> <FALSE> }T  ok.
+  ok.
+T{ 0 1ST ! -> }T  ok.
+T{ 1 1ST +! -> }T  ok.
+T{ 1ST @ -> 1 }T  ok.
+T{ -1 1ST +! 1ST @ -> 0 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING CHAR [CHAR] [ ] BL S" * ok.
+  ok.
+T{ BL -> 20 }T  ok.
+T{ CHAR X -> 58 }T  ok.
+T{ CHAR HELLO -> 48 }T  ok.
+T{ : GC1 [CHAR] X ; -> }T  ok.
+T{ : GC2 [CHAR] HELLO ; -> }T  ok.
+T{ GC1 -> 58 }T  ok.
+T{ GC2 -> 48 }T  ok.
+T{ : GC3 [ GC1 ] LITERAL ; -> }T  ok.
+T{ GC3 -> 58 }T  ok.
+T{ : GC4 S" XY" ; -> }T  ok.
+T{ GC4 SWAP DROP -> 2 }T  ok.
+T{ GC4 DROP DUP C@ SWAP CHAR+ C@ -> 58 59 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING ' ['] FIND EXECUTE IMMEDIATE COUNT LITERAL POSTPONE STATE * ok.
+  ok.
+T{ : GT1 123 ; -> }T  ok.
+T{ ' GT1 EXECUTE -> 123 }T  ok.
+T{ : GT2 ['] GT1 ; IMMEDIATE -> }T  ok.
+T{ GT2 EXECUTE -> 123 }T  ok.
+  ok.
+\ HERE 3 C, CHAR G C, CHAR T C, CHAR 1 C, CONSTANT GT1STRING  ok.
+\ HERE 3 C, CHAR G C, CHAR T C, CHAR 2 C, CONSTANT GT2STRING  ok.
+\ T{ GT1STRING FIND -> ' GT1 -1 }T  ok.
+\ T{ GT2STRING FIND -> ' GT2 1 }T  ok.
+\ ( HOW TO SEARCH FOR NON-EXISTENT WORD? )  ok.
+\ T{ : GT3 GT2 LITERAL ; -> }T  ok.
+\ T{ GT3 -> ' GT1 }T  ok.
+\ T{ GT1STRING COUNT -> GT1STRING CHAR+ 3 }T  ok.
+  ok.
+T{ : GT4 POSTPONE GT1 ; IMMEDIATE -> }T  ok.
+T{ : GT5 GT4 ; -> }T  ok.
+T{ GT5 -> 123 }T  ok.
+T{ : GT6 345 ; IMMEDIATE -> }T  ok.
+T{ : GT7 POSTPONE GT6 ; -> }T  ok.
+T{ GT7 -> 345 }T  ok.
+  ok.
+T{ : GT8 STATE @ ; IMMEDIATE -> }T  ok.
+T{ GT8 -> 0 }T  ok.
+T{ : GT9 GT8 LITERAL ; -> }T  ok.
+T{ GT9 0= -> <FALSE> }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING IF ELSE THEN BEGIN WHILE REPEAT UNTIL RECURSE * ok.
+  ok.
+T{ : GI1 IF 123 THEN ; -> }T  ok.
+T{ : GI2 IF 123 ELSE 234 THEN ; -> }T  ok.
+T{ 0 GI1 -> }T  ok.
+T{ 1 GI1 -> 123 }T  ok.
+T{ -1 GI1 -> 123 }T  ok.
+T{ 0 GI2 -> 234 }T  ok.
+T{ 1 GI2 -> 123 }T  ok.
+T{ -1 GI1 -> 123 }T  ok.
+  ok.
+T{ : GI3 BEGIN DUP 5 < WHILE DUP 1+ REPEAT ; -> }T  ok.
+T{ 0 GI3 -> 0 1 2 3 4 5 }T  ok.
+T{ 4 GI3 -> 4 5 }T  ok.
+T{ 5 GI3 -> 5 }T  ok.
+T{ 6 GI3 -> 6 }T  ok.
+  ok.
+T{ : GI4 BEGIN DUP 1+ DUP 5 > UNTIL ; -> }T  ok.
+T{ 3 GI4 -> 3 4 5 6 }T  ok.
+T{ 5 GI4 -> 5 6 }T  ok.
+T{ 6 GI4 -> 6 7 }T  ok.
+  ok.
+T{ : GI5 BEGIN DUP 2 >  ok.
+         WHILE DUP 5 < WHILE DUP 1+ REPEAT 123 ELSE 345 THEN ; -> }T  ok.
+T{ 1 GI5 -> 1 345 }T  ok.
+T{ 2 GI5 -> 2 345 }T  ok.
+T{ 3 GI5 -> 3 4 5 123 }T  ok.
+T{ 4 GI5 -> 4 5 123 }T  ok.
+T{ 5 GI5 -> 5 123 }T  ok.
+  ok.
+T{ : GI6 ( N -- 0,1,..N ) DUP IF DUP >R 1- RECURSE R> THEN ; -> }T  ok.
+T{ 0 GI6 -> 0 }T  ok.
+T{ 1 GI6 -> 0 1 }T  ok.
+T{ 2 GI6 -> 0 1 2 }T  ok.
+T{ 3 GI6 -> 0 1 2 3 }T  ok.
+T{ 4 GI6 -> 0 1 2 3 4 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING DO LOOP +LOOP I J UNLOOP LEAVE EXIT * ok.
+  ok.
+T{ : GD1 DO I LOOP ; -> }T  ok.
+T{ 4 1 GD1 -> 1 2 3 }T  ok.
+T{ 2 -1 GD1 -> -1 0 1 }T  ok.
+T{ MID-UINT+1 MID-UINT GD1 -> MID-UINT }T  ok.
+  ok.
+T{ : GD2 DO I -1 +LOOP ; -> }T  ok.
+T{ 1 4 GD2 -> 4 3 2 1 }T  ok.
+T{ -1 2 GD2 -> 2 1 0 -1 }T  ok.
+T{ MID-UINT MID-UINT+1 GD2 -> MID-UINT+1 MID-UINT }T  ok.
+  ok.
+T{ : GD3 DO 1 0 DO J LOOP LOOP ; -> }T  ok.
+T{ 4 1 GD3 -> 1 2 3 }T  ok.
+T{ 2 -1 GD3 -> -1 0 1 }T  ok.
+T{ MID-UINT+1 MID-UINT GD3 -> MID-UINT }T  ok.
+  ok.
+T{ : GD4 DO 1 0 DO J LOOP -1 +LOOP ; -> }T  ok.
+T{ 1 4 GD4 -> 4 3 2 1 }T  ok.
+T{ -1 2 GD4 -> 2 1 0 -1 }T  ok.
+T{ MID-UINT MID-UINT+1 GD4 -> MID-UINT+1 MID-UINT }T  ok.
+  ok.
+T{ : GD5 123 SWAP 0 DO I 4 > IF DROP 234 LEAVE THEN LOOP ; -> }T  ok.
+T{ 1 GD5 -> 123 }T  ok.
+T{ 5 GD5 -> 123 }T  ok.
+T{ 6 GD5 -> 234 }T  ok.
+  ok.
+T{ : GD6  ( PAT: T{0 0},{0 0}{1 0}{1 1},{0 0}{1 0}{1 1}{2 0}{2 1}{2 2} )  ok.
+   0 SWAP 0 DO  ok.
+      I 1+ 0 DO I J + 3 = IF I UNLOOP I UNLOOP EXIT THEN 1+ LOOP  ok.
+    LOOP ; -> }T  ok.
+T{ 1 GD6 -> 1 }T  ok.
+T{ 2 GD6 -> 3 }T  ok.
+T{ 3 GD6 -> 4 1 2 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING DEFINING WORDS: : ; CONSTANT VARIABLE CREATE DOES> >BODY * ok.
+  ok.
+T{ 123 CONSTANT X123 -> }T  ok.
+T{ X123 -> 123 }T  ok.
+T{ : EQU CONSTANT ; -> }T  ok.
+T{ X123 EQU Y123 -> }T  ok.
+T{ Y123 -> 123 }T  ok.
+  ok.
+T{ VARIABLE V1 -> }T  ok.
+T{ 123 V1 ! -> }T  ok.
+T{ V1 @ -> 123 }T  ok.
+  ok.
+T{ : NOP : POSTPONE ; ; -> }T  ok.
+T{ NOP NOP1 NOP NOP2 -> }T  ok.
+T{ NOP1 -> }T  ok.
+T{ NOP2 -> }T  ok.
+  ok.
+T{ : DOES1 DOES> @ 1 + ; -> }T  ok.
+T{ : DOES2 DOES> @ 2 + ; -> }T  ok.
+T{ CREATE CR1 -> }T  ok.
+T{ CR1 -> HERE }T  ok.
+T{ ' CR1 >BODY -> HERE }T  ok.
+T{ 1 , -> }T  ok.
+T{ CR1 @ -> 1 }T  ok.
+T{ DOES1 -> }T  ok.
+T{ CR1 -> 2 }T  ok.
+T{ DOES2 -> }T  ok.
+T{ CR1 -> 3 }T  ok.
+  ok.
+T{ : WEIRD: CREATE DOES> 1 + DOES> 2 + ; -> }T  ok.
+T{ WEIRD: W1 -> }T  ok.
+T{ ' W1 >BODY -> HERE }T  ok.
+T{ W1 -> HERE 1 + }T  ok.
+T{ W1 -> HERE 2 + }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING EVALUATE * ok.
+  ok.
+: GE1 S" 123" ; IMMEDIATE  ok.
+: GE2 S" 123 1+" ; IMMEDIATE  ok.
+: GE3 S" : GE4 345 ;" ;  ok.
+: GE5 EVALUATE ; IMMEDIATE  ok.
+  ok.
+T{ GE1 EVALUATE -> 123 }T         ( TEST EVALUATE IN INTERP. STATE )  ok.
+T{ GE2 EVALUATE -> 124 }T  ok.
+T{ GE3 EVALUATE -> }T  ok.
+T{ GE4 -> 345 }T  ok.
+  ok.
+T{ : GE6 GE1 GE5 ; -> }T         ( TEST EVALUATE IN COMPILE STATE )  ok.
+T{ GE6 -> 123 }T  ok.
+T{ : GE7 GE2 GE5 ; -> }T  ok.
+T{ GE7 -> 124 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING SOURCE >IN WORD * ok.
+  ok.
+: GS1 S" SOURCE" 2DUP EVALUATE  ok.
+       >R SWAP >R = R> R> = ;  ok.
+T{ GS1 -> <TRUE> <TRUE> }T  ok.
+  ok.
+VARIABLE SCANS  ok.
+: RESCAN?  -1 SCANS +! SCANS @ IF 0 >IN ! THEN ;  ok.
+  ok.
+T{ 2 SCANS !  ok.
+345 RESCAN?  ok.
+-> 345 345 }T  ok.
+  ok.
+: GS2  5 SCANS ! S" 123 RESCAN?" EVALUATE ;  ok.
+T{ GS2 -> 123 123 123 123 123 }T  ok.
+  ok.
+: GS3 WORD COUNT SWAP C@ ;  ok.
+T{ BL GS3 HELLO -> 5 CHAR H }T  ok.
+T{ CHAR " GS3 GOODBYE" -> 7 CHAR G }T  ok.
+T{ BL GS3  ok.
+DROP -> 0 }T            \ BLANK LINE RETURN ZERO-LENGTH STRING  ok.
+  ok.
+: GS4 SOURCE >IN ! DROP ;  ok.
+T{ GS4 123 456  ok.
+-> }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING <# # #S #> HOLD SIGN BASE >NUMBER HEX DECIMAL * ok.
+  ok.
+: S=  \ ( ADDR1 C1 ADDR2 C2 -- T/F ) COMPARE TWO STRINGS.  ok.
+   >R SWAP R@ = IF         \ MAKE SURE STRINGS HAVE SAME LENGTH  ok.
+      R> ?DUP IF         \ IF NON-EMPTY STRINGS  ok.
+    0 DO  ok.
+       OVER C@ OVER C@ - IF 2DROP <FALSE> UNLOOP EXIT THEN  ok.
+       SWAP CHAR+ SWAP CHAR+  ok.
+         LOOP  ok.
+      THEN  ok.
+      2DROP <TRUE>         \ IF WE GET HERE, STRINGS MATCH  ok.
+   ELSE  ok.
+      R> DROP 2DROP <FALSE>      \ LENGTHS MISMATCH  ok.
+   THEN ;  ok.
+  ok.
+: GP1  <# 41 HOLD 42 HOLD 0 0 #> S" BA" S= ;  ok.
+T{ GP1 -> <TRUE> }T  ok.
+  ok.
+: GP2  <# -1 SIGN 0 SIGN -1 SIGN 0 0 #> S" --" S= ;  ok.
+T{ GP2 -> <TRUE> }T  ok.
+  ok.
+: GP3  <# 1 0 # # #> S" 01" S= ;  ok.
+T{ GP3 -> <TRUE> }T  ok.
+  ok.
+: GP4  <# 1 0 #S #> S" 1" S= ;  ok.
+T{ GP4 -> <TRUE> }T  ok.
+  ok.
+24 CONSTANT MAX-BASE         \ BASE 2 .. 36  ok.
+: COUNT-BITS  ok.
+   0 0 INVERT BEGIN DUP WHILE >R 1+ R> 2* REPEAT DROP ;  ok.
+COUNT-BITS 2* CONSTANT #BITS-UD      \ NUMBER OF BITS IN UD  ok.
+  ok.
+: GP5  ok.
+   BASE @ <TRUE>  ok.
+   MAX-BASE 1+ 2 DO         \ FOR EACH POSSIBLE BASE  ok.
+      I BASE !            \ TBD: ASSUMES BASE WORKS  ok.
+      I 0 <# #S #> S" 10" S= AND  ok.
+   LOOP  ok.
+   SWAP BASE ! ;  ok.
+T{ GP5 -> <TRUE> }T  ok.
+  ok.
+: GP6  ok.
+   BASE @ >R  2 BASE !  ok.
+   MAX-UINT MAX-UINT <# #S #>      \ MAXIMUM UD TO BINARY  ok.
+   R> BASE !            \ S: C-ADDR U  ok.
+   DUP #BITS-UD = SWAP  ok.
+   0 DO               \ S: C-ADDR FLAG  ok.
+      OVER C@ [CHAR] 1 = AND      \ ALL ONES  ok.
+      >R CHAR+ R>  ok.
+   LOOP SWAP DROP ;  ok.
+T{ GP6 -> <TRUE> }T  ok.
+  ok.
+: GP7  ok.
+   BASE @ >R    MAX-BASE BASE !  ok.
+   <TRUE>  ok.
+   A 0 DO  ok.
+      I 0 <# #S #>  ok.
+      1 = SWAP C@ I 30 + = AND AND  ok.
+   LOOP  ok.
+   MAX-BASE A DO  ok.
+      I 0 <# #S #>  ok.
+      1 = SWAP C@ 41 I A - + = AND AND  ok.
+   LOOP  ok.
+   R> BASE ! ;  ok.
+  ok.
+T{ GP7 -> <TRUE> }T  ok.
+  ok.
+\  \ >NUMBER TESTS  ok.
+\  CREATE GN-BUF 0 C,  ok.
+\  : GN-STRING   GN-BUF 1 ;  ok.
+\  : GN-CONSUMED   GN-BUF CHAR+ 0 ;  ok.
+\  : GN'      [CHAR] ' WORD CHAR+ C@ GN-BUF C!  GN-STRING ;  ok.
+\  ok.
+\  T{ 0 0 GN' 0' >NUMBER -> 0 0 GN-CONSUMED }T  ok.
+\  T{ 0 0 GN' 1' >NUMBER -> 1 0 GN-CONSUMED }T  ok.
+\  T{ 1 0 GN' 1' >NUMBER -> BASE @ 1+ 0 GN-CONSUMED }T  ok.
+\  T{ 0 0 GN' -' >NUMBER -> 0 0 GN-STRING }T   \ SHOULD FAIL TO CONVERT THESE  o
+k.
+\  T{ 0 0 GN' +' >NUMBER -> 0 0 GN-STRING }T  ok.
+\  T{ 0 0 GN' .' >NUMBER -> 0 0 GN-STRING }T  ok.
+\  ok.
+\  : >NUMBER-BASED  ok.
+\     BASE @ >R BASE ! >NUMBER R> BASE ! ;  ok.
+\  ok.
+\  T{ 0 0 GN' 2' 10 >NUMBER-BASED -> 2 0 GN-CONSUMED }T  ok.
+\  T{ 0 0 GN' 2'  2 >NUMBER-BASED -> 0 0 GN-STRING }T  ok.
+\  T{ 0 0 GN' F' 10 >NUMBER-BASED -> F 0 GN-CONSUMED }T  ok.
+\  T{ 0 0 GN' G' 10 >NUMBER-BASED -> 0 0 GN-STRING }T  ok.
+\  T{ 0 0 GN' G' MAX-BASE >NUMBER-BASED -> 10 0 GN-CONSUMED }T  ok.
+\  T{ 0 0 GN' Z' MAX-BASE >NUMBER-BASED -> 23 0 GN-CONSUMED }T  ok.
+\  ok.
+\  : GN1   \ ( UD BASE -- UD' LEN ) UD SHOULD EQUAL UD' AND LEN SHOULD BE ZERO. 
+ ok.
+\     BASE @ >R BASE !  ok.
+\     <# #S #>  ok.
+\     0 0 2SWAP >NUMBER SWAP DROP      \ RETURN LENGTH ONLY  ok.
+\     R> BASE ! ;  ok.
+\  T{ 0 0 2 GN1 -> 0 0 0 }T  ok.
+\  T{ MAX-UINT 0 2 GN1 -> MAX-UINT 0 0 }T  ok.
+\  T{ MAX-UINT DUP 2 GN1 -> MAX-UINT DUP 0 }T  ok.
+\  T{ 0 0 MAX-BASE GN1 -> 0 0 0 }T  ok.
+\  T{ MAX-UINT 0 MAX-BASE GN1 -> MAX-UINT 0 0 }T  ok.
+\  T{ MAX-UINT DUP MAX-BASE GN1 -> MAX-UINT DUP 0 }T  ok.
+  ok.
+: GN2   \ ( -- 16 10 )  ok.
+   BASE @ >R  HEX BASE @  DECIMAL BASE @  R> BASE ! ;  ok.
+T{ GN2 -> 10 A }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING FILL MOVE * ok.
+  ok.
+CREATE FBUF 00 C, 00 C, 00 C,  ok.
+CREATE SBUF 12 C, 34 C, 56 C,  ok.
+: SEEBUF FBUF C@  FBUF CHAR+ C@  FBUF CHAR+ CHAR+ C@ ;  ok.
+  ok.
+T{ FBUF 0 20 FILL -> }T  ok.
+T{ SEEBUF -> 00 00 00 }T  ok.
+  ok.
+T{ FBUF 1 20 FILL -> }T  ok.
+T{ SEEBUF -> 20 00 00 }T  ok.
+  ok.
+T{ FBUF 3 20 FILL -> }T  ok.
+T{ SEEBUF -> 20 20 20 }T  ok.
+  ok.
+T{ FBUF FBUF 3 CHARS MOVE -> }T      \ BIZARRE SPECIAL CASE  ok.
+T{ SEEBUF -> 20 20 20 }T  ok.
+  ok.
+T{ SBUF FBUF 0 CHARS MOVE -> }T  ok.
+T{ SEEBUF -> 20 20 20 }T  ok.
+  ok.
+T{ SBUF FBUF 1 CHARS MOVE -> }T  ok.
+T{ SEEBUF -> 12 20 20 }T  ok.
+  ok.
+T{ SBUF FBUF 3 CHARS MOVE -> }T  ok.
+T{ SEEBUF -> 12 34 56 }T  ok.
+  ok.
+T{ FBUF FBUF CHAR+ 2 CHARS MOVE -> }T  ok.
+T{ SEEBUF -> 12 12 34 }T  ok.
+  ok.
+T{ FBUF CHAR+ FBUF 2 CHARS MOVE -> }T  ok.
+T{ SEEBUF -> 12 34 34 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING OUTPUT: . ." CR EMIT SPACE SPACES TYPE U. * ok.
+  ok.
+: OUTPUT-TEST  ok.
+   ." YOU SHOULD SEE THE STANDARD GRAPHIC CHARACTERS:" CR  ok.
+   41 BL DO I EMIT LOOP CR  ok.
+   61 41 DO I EMIT LOOP CR  ok.
+   7F 61 DO I EMIT LOOP CR  ok.
+   ." YOU SHOULD SEE 0-9 SEPARATED BY A SPACE:" CR  ok.
+   9 1+ 0 DO I . LOOP CR  ok.
+   ." YOU SHOULD SEE 0-9 (WITH NO SPACES):" CR  ok.
+   [CHAR] 9 1+ [CHAR] 0 DO I 0 SPACES EMIT LOOP CR  ok.
+   ." YOU SHOULD SEE A-G SEPARATED BY A SPACE:" CR  ok.
+   [CHAR] G 1+ [CHAR] A DO I EMIT SPACE LOOP CR  ok.
+   ." YOU SHOULD SEE 0-5 SEPARATED BY TWO SPACES:" CR  ok.
+   5 1+ 0 DO I [CHAR] 0 + EMIT 2 SPACES LOOP CR  ok.
+   ." YOU SHOULD SEE TWO SEPARATE LINES:" CR  ok.
+   S" LINE 1" TYPE CR S" LINE 2" TYPE CR  ok.
+   ." YOU SHOULD SEE THE NUMBER RANGES OF SIGNED AND UNSIGNED NUMBERS:" CR  ok.
+   ."   SIGNED: " MIN-INT . MAX-INT . CR  ok.
+   ." UNSIGNED: " 0 U. MAX-UINT U. CR  ok.
+;  ok.
+  ok.
+T{ OUTPUT-TEST -> }T YOU SHOULD SEE THE STANDARD GRAPHIC CHARACTERS:
+ !"#$%&'()*+,-./0123456789:;<=>?@
+ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`
+abcdefghijklmnopqrstuvwxyz{|}~
+YOU SHOULD SEE 0-9 SEPARATED BY A SPACE:
+0 1 2 3 4 5 6 7 8 9 
+YOU SHOULD SEE 0-9 (WITH NO SPACES):
+0123456789
+YOU SHOULD SEE A-G SEPARATED BY A SPACE:
+A B C D E F G 
+YOU SHOULD SEE 0-5 SEPARATED BY TWO SPACES:
+0  1  2  3  4  5  
+YOU SHOULD SEE TWO SEPARATE LINES:
+LINE 1
+LINE 2
+YOU SHOULD SEE THE NUMBER RANGES OF SIGNED AND UNSIGNED NUMBERS:
+  SIGNED: -8000 7FFF 
+UNSIGNED: 0 FFFF 
+ ok.
+  ok.
+  ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING INPUT: ACCEPT * ok.
+  ok.
+CREATE ABUF 50 CHARS ALLOT  ok.
+  ok.
+: ACCEPT-TEST  ok.
+   CR ." PLEASE TYPE UP TO 80 CHARACTERS:" CR  ok.
+   ABUF 50 ACCEPT  ok.
+   CR ." RECEIVED: " [CHAR] " EMIT  ok.
+   ABUF SWAP TYPE [CHAR] " EMIT CR  ok.
+;  ok.
+  ok.
+T{ ACCEPT-TEST -> }T 
+PLEASE TYPE UP TO 80 CHARACTERS:
+ 
+RECEIVED: ""
+ ok.
+\ ------------------------------------------------------------------------  ok.
+TESTING DICTIONARY SEARCH RULES * ok.
+  ok.
+T{ : GDX   123 ; : GDX   GDX 234 ; -> }T  ok.
+  ok.
+T{ GDX -> 123 234 }T  ok.
+  ok.
+CR .( End of Core word set tests) CR 
+End of Core word set tests
+ ok.
+  ok.
+  ok.
+\ To test the ANS Forth Core Extension word set  ok.
+  ok.
+\ This program was written by Gerry Jackson in 2006, with contributions from  ok
+.
+\ others where indicated, and is in the public domain - it can be distributed  o
+k.
+\ and/or modified in any way but please retain this notice.  ok.
+  ok.
+\ This program is distributed in the hope that it will be useful,  ok.
+\ but WITHOUT ANY WARRANTY; without even the implied warranty of  ok.
+\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  ok.
+  ok.
+\ The tests are not claimed to be comprehensive or correct   ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ Version 0.13 28 October 2015  ok.
+\              Replace <FALSE> and <TRUE> with FALSE and TRUE to avoid  ok.
+\              dependence on Core tests  ok.
+\              Moved SAVE-INPUT and RESTORE-INPUT tests in a file to filetest.ft
+h  ok.
+\              Use of 2VARIABLE (from optional wordset) replaced with CREATE.  o
+k.
+\              Minor lower to upper case conversions.  ok.
+\              Calls to COMPARE replaced by S= (in utilities.fth) to avoid use  
+ok.
+\              of a word from an optional word set.  ok.
+\              UNUSED tests revised as UNUSED UNUSED = may return FALSE when an 
+ ok.
+\              implementation has the data stack sharing unused dataspace.  ok.
+\              Double number input dependency removed from the HOLDS tests.  ok.
+
+\              Minor case sensitivities removed in definition names.  ok.
+\         0.11 25 April 2015  ok.
+\              Added tests for PARSE-NAME HOLDS BUFFER:  ok.
+\              S\" tests added  ok.
+\              DEFER IS ACTION-OF DEFER! DEFER@ tests added  ok.
+\              Empty CASE statement test added  ok.
+\              [COMPILE] tests removed because it is obsolescent in Forth 2012  
+ok.
+\         0.10 1 August 2014  ok.
+\             Added tests contributed by James Bowman for:  ok.
+\                <> U> 0<> 0> NIP TUCK ROLL PICK 2>R 2R@ 2R>  ok.
+\                HEX WITHIN UNUSED AGAIN MARKER  ok.
+\             Added tests for:  ok.
+\                .R U.R ERASE PAD REFILL SOURCE-ID   ok.
+\             Removed ABORT from NeverExecuted to enable Win32  ok.
+\             to continue after failure of RESTORE-INPUT.  ok.
+\             Removed max-intx which is no longer used.  ok.
+\         0.7 6 June 2012 Extra CASE test added  ok.
+\         0.6 1 April 2012 Tests placed in the public domain.  ok.
+\             SAVE-INPUT & RESTORE-INPUT tests, position  ok.
+\             of T{ moved so that tests work with ttester.fs  ok.
+\             CONVERT test deleted - obsolete word removed from Forth 200X  ok.
+\             IMMEDIATE VALUEs tested  ok.
+\             RECURSE with :NONAME tested  ok.
+\             PARSE and .( tested  ok.
+\             Parsing behaviour of C" added  ok.
+\         0.5 14 September 2011 Removed the double [ELSE] from the  ok.
+\             initial SAVE-INPUT & RESTORE-INPUT test  ok.
+\         0.4 30 November 2009  max-int replaced with max-intx to  ok.
+\             avoid redefinition warnings.  ok.
+\         0.3  6 March 2009 { and } replaced with T{ and }T  ok.
+\                           CONVERT test now independent of cell size  ok.
+\         0.2  20 April 2007 ANS Forth words changed to upper case  ok.
+\                            Tests qd3 to qd6 by Reinhold Straub  ok.
+\         0.1  Oct 2006 First version released  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+\ The tests are based on John Hayes test program for the core word set  ok.
+  ok.
+\ Words tested in this file are:  ok.
+\     .( .R 0<> 0> 2>R 2R> 2R@ :NONAME <> ?DO AGAIN C" CASE COMPILE, ENDCASE  ok
+.
+\     ENDOF ERASE FALSE HEX MARKER NIP OF PAD PARSE PICK REFILL  ok.
+\     RESTORE-INPUT ROLL SAVE-INPUT SOURCE-ID TO TRUE TUCK U.R U> UNUSED  ok.
+\     VALUE WITHIN [COMPILE]  ok.
+  ok.
+\ Words not tested or partially tested:  ok.
+\     \ because it has been extensively used already and is, hence, unnecessary 
+ ok.
+\     REFILL and SOURCE-ID from the user input device which are not possible  ok
+.
+\     when testing from a file such as this one  ok.
+\     UNUSED (partially tested) as the value returned is system dependent  ok.
+\     Obsolescent words #TIB CONVERT EXPECT QUERY SPAN TIB as they have been  ok
+.
+\     removed from the Forth 2012 standard  ok.
+  ok.
+\ Results from words that output to the user output device have to visually  ok.
+
+\ checked for correctness. These are .R U.R .(  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+\ Assumptions & dependencies:  ok.
+\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been  
+ok.
+\       included prior to this file  ok.
+\     - the Core word set available  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING Core Extension words * ok.
+  ok.
+DECIMAL  ok.
+  ok.
+TESTING TRUE FALSE * ok.
+  ok.
+T{ TRUE  -> 0 INVERT }T  ok.
+T{ FALSE -> 0 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING <> U>   (contributed by James Bowman) * ok.
+  ok.
+T{ 0 0 <> -> FALSE }T  ok.
+T{ 1 1 <> -> FALSE }T  ok.
+T{ -1 -1 <> -> FALSE }T  ok.
+T{ 1 0 <> -> TRUE }T  ok.
+T{ -1 0 <> -> TRUE }T  ok.
+T{ 0 1 <> -> TRUE }T  ok.
+T{ 0 -1 <> -> TRUE }T  ok.
+  ok.
+T{ 0 1 U> -> FALSE }T  ok.
+T{ 1 2 U> -> FALSE }T  ok.
+T{ 0 MID-UINT U> -> FALSE }T  ok.
+T{ 0 MAX-UINT U> -> FALSE }T  ok.
+T{ MID-UINT MAX-UINT U> -> FALSE }T  ok.
+T{ 0 0 U> -> FALSE }T  ok.
+T{ 1 1 U> -> FALSE }T  ok.
+T{ 1 0 U> -> TRUE }T  ok.
+T{ 2 1 U> -> TRUE }T  ok.
+T{ MID-UINT 0 U> -> TRUE }T  ok.
+T{ MAX-UINT 0 U> -> TRUE }T  ok.
+T{ MAX-UINT MID-UINT U> -> TRUE }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING 0<> 0>   (contributed by James Bowman) * ok.
+  ok.
+T{ 0 0<> -> FALSE }T  ok.
+T{ 1 0<> -> TRUE }T  ok.
+T{ 2 0<> -> TRUE }T  ok.
+T{ -1 0<> -> TRUE }T  ok.
+T{ MAX-UINT 0<> -> TRUE }T  ok.
+T{ MIN-INT 0<> -> TRUE }T  ok.
+T{ MAX-INT 0<> -> TRUE }T  ok.
+  ok.
+T{ 0 0> -> FALSE }T  ok.
+T{ -1 0> -> FALSE }T  ok.
+T{ MIN-INT 0> -> FALSE }T  ok.
+T{ 1 0> -> TRUE }T  ok.
+T{ MAX-INT 0> -> TRUE }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING NIP TUCK ROLL PICK   (contributed by James Bowman) * ok.
+  ok.
+T{ 1 2 NIP -> 2 }T  ok.
+T{ 1 2 3 NIP -> 1 3 }T  ok.
+  ok.
+T{ 1 2 TUCK -> 2 1 2 }T  ok.
+T{ 1 2 3 TUCK -> 1 3 2 3 }T  ok.
+  ok.
+T{ : RO5 100 200 300 400 500 ; -> }T  ok.
+T{ RO5 3 ROLL -> 100 300 400 500 200 }T  ok.
+T{ RO5 2 ROLL -> RO5 ROT }T  ok.
+T{ RO5 1 ROLL -> RO5 SWAP }T  ok.
+T{ RO5 0 ROLL -> RO5 }T  ok.
+  ok.
+T{ RO5 2 PICK -> 100 200 300 400 500 300 }T  ok.
+T{ RO5 1 PICK -> RO5 OVER }T  ok.
+T{ RO5 0 PICK -> RO5 DUP }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING 2>R 2R@ 2R>   (contributed by James Bowman) * ok.
+  ok.
+T{ : RR0 2>R 100 R> R> ; -> }T  ok.
+T{ 300 400 RR0 -> 100 400 300 }T  ok.
+T{ 200 300 400 RR0 -> 200 100 400 300 }T  ok.
+  ok.
+T{ : RR1 2>R 100 2R@ R> R> ; -> }T  ok.
+T{ 300 400 RR1 -> 100 300 400 400 300 }T  ok.
+T{ 200 300 400 RR1 -> 200 100 300 400 400 300 }T  ok.
+  ok.
+T{ : RR2 2>R 100 2R> ; -> }T  ok.
+T{ 300 400 RR2 -> 100 300 400 }T  ok.
+T{ 200 300 400 RR2 -> 200 100 300 400 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING HEX   (contributed by James Bowman) * ok.
+  ok.
+T{ BASE @ HEX BASE @ DECIMAL BASE @ - SWAP BASE ! -> 6 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING WITHIN   (contributed by James Bowman) * ok.
+  ok.
+T{ 0 0 0 WITHIN -> FALSE }T  ok.
+T{ 0 0 MID-UINT WITHIN -> TRUE }T  ok.
+T{ 0 0 MID-UINT+1 WITHIN -> TRUE }T  ok.
+T{ 0 0 MAX-UINT WITHIN -> TRUE }T  ok.
+T{ 0 MID-UINT 0 WITHIN -> FALSE }T  ok.
+T{ 0 MID-UINT MID-UINT WITHIN -> FALSE }T  ok.
+T{ 0 MID-UINT MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ 0 MID-UINT MAX-UINT WITHIN -> FALSE }T  ok.
+T{ 0 MID-UINT+1 0 WITHIN -> FALSE }T  ok.
+T{ 0 MID-UINT+1 MID-UINT WITHIN -> TRUE }T  ok.
+T{ 0 MID-UINT+1 MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ 0 MID-UINT+1 MAX-UINT WITHIN -> FALSE }T  ok.
+T{ 0 MAX-UINT 0 WITHIN -> FALSE }T  ok.
+T{ 0 MAX-UINT MID-UINT WITHIN -> TRUE }T  ok.
+T{ 0 MAX-UINT MID-UINT+1 WITHIN -> TRUE }T  ok.
+T{ 0 MAX-UINT MAX-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT 0 0 WITHIN -> FALSE }T  ok.
+T{ MID-UINT 0 MID-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT 0 MID-UINT+1 WITHIN -> TRUE }T  ok.
+T{ MID-UINT 0 MAX-UINT WITHIN -> TRUE }T  ok.
+T{ MID-UINT MID-UINT 0 WITHIN -> TRUE }T  ok.
+T{ MID-UINT MID-UINT MID-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT MID-UINT MID-UINT+1 WITHIN -> TRUE }T  ok.
+T{ MID-UINT MID-UINT MAX-UINT WITHIN -> TRUE }T  ok.
+T{ MID-UINT MID-UINT+1 0 WITHIN -> FALSE }T  ok.
+T{ MID-UINT MID-UINT+1 MID-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT MID-UINT+1 MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ MID-UINT MID-UINT+1 MAX-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT MAX-UINT 0 WITHIN -> FALSE }T  ok.
+T{ MID-UINT MAX-UINT MID-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT MAX-UINT MID-UINT+1 WITHIN -> TRUE }T  ok.
+T{ MID-UINT MAX-UINT MAX-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 0 0 WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 0 MID-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 0 MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 0 MAX-UINT WITHIN -> TRUE }T  ok.
+T{ MID-UINT+1 MID-UINT 0 WITHIN -> TRUE }T  ok.
+T{ MID-UINT+1 MID-UINT MID-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 MID-UINT MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 MID-UINT MAX-UINT WITHIN -> TRUE }T  ok.
+T{ MID-UINT+1 MID-UINT+1 0 WITHIN -> TRUE }T  ok.
+T{ MID-UINT+1 MID-UINT+1 MID-UINT WITHIN -> TRUE }T  ok.
+T{ MID-UINT+1 MID-UINT+1 MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 MID-UINT+1 MAX-UINT WITHIN -> TRUE }T  ok.
+T{ MID-UINT+1 MAX-UINT 0 WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 MAX-UINT MID-UINT WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 MAX-UINT MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ MID-UINT+1 MAX-UINT MAX-UINT WITHIN -> FALSE }T  ok.
+T{ MAX-UINT 0 0 WITHIN -> FALSE }T  ok.
+T{ MAX-UINT 0 MID-UINT WITHIN -> FALSE }T  ok.
+T{ MAX-UINT 0 MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ MAX-UINT 0 MAX-UINT WITHIN -> FALSE }T  ok.
+T{ MAX-UINT MID-UINT 0 WITHIN -> TRUE }T  ok.
+T{ MAX-UINT MID-UINT MID-UINT WITHIN -> FALSE }T  ok.
+T{ MAX-UINT MID-UINT MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ MAX-UINT MID-UINT MAX-UINT WITHIN -> FALSE }T  ok.
+T{ MAX-UINT MID-UINT+1 0 WITHIN -> TRUE }T  ok.
+T{ MAX-UINT MID-UINT+1 MID-UINT WITHIN -> TRUE }T  ok.
+T{ MAX-UINT MID-UINT+1 MID-UINT+1 WITHIN -> FALSE }T  ok.
+T{ MAX-UINT MID-UINT+1 MAX-UINT WITHIN -> FALSE }T  ok.
+T{ MAX-UINT MAX-UINT 0 WITHIN -> TRUE }T  ok.
+T{ MAX-UINT MAX-UINT MID-UINT WITHIN -> TRUE }T  ok.
+T{ MAX-UINT MAX-UINT MID-UINT+1 WITHIN -> TRUE }T  ok.
+T{ MAX-UINT MAX-UINT MAX-UINT WITHIN -> FALSE }T  ok.
+  ok.
+T{ MIN-INT MIN-INT MIN-INT WITHIN -> FALSE }T  ok.
+T{ MIN-INT MIN-INT 0 WITHIN -> TRUE }T  ok.
+T{ MIN-INT MIN-INT 1 WITHIN -> TRUE }T  ok.
+T{ MIN-INT MIN-INT MAX-INT WITHIN -> TRUE }T  ok.
+T{ MIN-INT 0 MIN-INT WITHIN -> FALSE }T  ok.
+T{ MIN-INT 0 0 WITHIN -> FALSE }T  ok.
+T{ MIN-INT 0 1 WITHIN -> FALSE }T  ok.
+T{ MIN-INT 0 MAX-INT WITHIN -> FALSE }T  ok.
+T{ MIN-INT 1 MIN-INT WITHIN -> FALSE }T  ok.
+T{ MIN-INT 1 0 WITHIN -> TRUE }T  ok.
+T{ MIN-INT 1 1 WITHIN -> FALSE }T  ok.
+T{ MIN-INT 1 MAX-INT WITHIN -> FALSE }T  ok.
+T{ MIN-INT MAX-INT MIN-INT WITHIN -> FALSE }T  ok.
+T{ MIN-INT MAX-INT 0 WITHIN -> TRUE }T  ok.
+T{ MIN-INT MAX-INT 1 WITHIN -> TRUE }T  ok.
+T{ MIN-INT MAX-INT MAX-INT WITHIN -> FALSE }T  ok.
+T{ 0 MIN-INT MIN-INT WITHIN -> FALSE }T  ok.
+T{ 0 MIN-INT 0 WITHIN -> FALSE }T  ok.
+T{ 0 MIN-INT 1 WITHIN -> TRUE }T  ok.
+T{ 0 MIN-INT MAX-INT WITHIN -> TRUE }T  ok.
+T{ 0 0 MIN-INT WITHIN -> TRUE }T  ok.
+T{ 0 0 0 WITHIN -> FALSE }T  ok.
+T{ 0 0 1 WITHIN -> TRUE }T  ok.
+T{ 0 0 MAX-INT WITHIN -> TRUE }T  ok.
+T{ 0 1 MIN-INT WITHIN -> FALSE }T  ok.
+T{ 0 1 0 WITHIN -> FALSE }T  ok.
+T{ 0 1 1 WITHIN -> FALSE }T  ok.
+T{ 0 1 MAX-INT WITHIN -> FALSE }T  ok.
+T{ 0 MAX-INT MIN-INT WITHIN -> FALSE }T  ok.
+T{ 0 MAX-INT 0 WITHIN -> FALSE }T  ok.
+T{ 0 MAX-INT 1 WITHIN -> TRUE }T  ok.
+T{ 0 MAX-INT MAX-INT WITHIN -> FALSE }T  ok.
+T{ 1 MIN-INT MIN-INT WITHIN -> FALSE }T  ok.
+T{ 1 MIN-INT 0 WITHIN -> FALSE }T  ok.
+T{ 1 MIN-INT 1 WITHIN -> FALSE }T  ok.
+T{ 1 MIN-INT MAX-INT WITHIN -> TRUE }T  ok.
+T{ 1 0 MIN-INT WITHIN -> TRUE }T  ok.
+T{ 1 0 0 WITHIN -> FALSE }T  ok.
+T{ 1 0 1 WITHIN -> FALSE }T  ok.
+T{ 1 0 MAX-INT WITHIN -> TRUE }T  ok.
+T{ 1 1 MIN-INT WITHIN -> TRUE }T  ok.
+T{ 1 1 0 WITHIN -> TRUE }T  ok.
+T{ 1 1 1 WITHIN -> FALSE }T  ok.
+T{ 1 1 MAX-INT WITHIN -> TRUE }T  ok.
+T{ 1 MAX-INT MIN-INT WITHIN -> FALSE }T  ok.
+T{ 1 MAX-INT 0 WITHIN -> FALSE }T  ok.
+T{ 1 MAX-INT 1 WITHIN -> FALSE }T  ok.
+T{ 1 MAX-INT MAX-INT WITHIN -> FALSE }T  ok.
+T{ MAX-INT MIN-INT MIN-INT WITHIN -> FALSE }T  ok.
+T{ MAX-INT MIN-INT 0 WITHIN -> FALSE }T  ok.
+T{ MAX-INT MIN-INT 1 WITHIN -> FALSE }T  ok.
+T{ MAX-INT MIN-INT MAX-INT WITHIN -> FALSE }T  ok.
+T{ MAX-INT 0 MIN-INT WITHIN -> TRUE }T  ok.
+T{ MAX-INT 0 0 WITHIN -> FALSE }T  ok.
+T{ MAX-INT 0 1 WITHIN -> FALSE }T  ok.
+T{ MAX-INT 0 MAX-INT WITHIN -> FALSE }T  ok.
+T{ MAX-INT 1 MIN-INT WITHIN -> TRUE }T  ok.
+T{ MAX-INT 1 0 WITHIN -> TRUE }T  ok.
+T{ MAX-INT 1 1 WITHIN -> FALSE }T  ok.
+T{ MAX-INT 1 MAX-INT WITHIN -> FALSE }T  ok.
+T{ MAX-INT MAX-INT MIN-INT WITHIN -> TRUE }T  ok.
+T{ MAX-INT MAX-INT 0 WITHIN -> TRUE }T  ok.
+T{ MAX-INT MAX-INT 1 WITHIN -> TRUE }T  ok.
+T{ MAX-INT MAX-INT MAX-INT WITHIN -> FALSE }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING UNUSED  (contributed by James Bowman & Peter Knaggs) * ok.
+  ok.
+VARIABLE UNUSED0  ok.
+T{ UNUSED DROP -> }T                    ok.
+T{ ALIGN UNUSED UNUSED0 ! 0 , UNUSED CELL+ UNUSED0 @ = -> TRUE }T  ok.
+T{ UNUSED UNUSED0 ! 0 C, UNUSED CHAR+ UNUSED0 @ =  ok.
+         -> TRUE }T  \ aligned -> unaligned  ok.
+T{ UNUSED UNUSED0 ! 0 C, UNUSED CHAR+ UNUSED0 @ = -> TRUE }T  \ unaligned -> ?  
+ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING AGAIN   (contributed by James Bowman) * ok.
+  ok.
+T{ : AG0 701 BEGIN DUP 7 MOD 0= IF EXIT THEN 1+ AGAIN ; -> }T  ok.
+T{ AG0 -> 707 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+\          TESTING MARKER   (contributed by James Bowman)  ok.
+\  ok.
+\          T{ : MA? BL WORD FIND NIP 0<> ; -> }T  ok.
+\          T{ MARKER MA0 -> }T  ok.
+\          T{ : MA1 111 ; -> }T  ok.
+\          T{ MARKER MA2 -> }T  ok.
+\          T{ : MA1 222 ; -> }T  ok.
+\          T{ MA? MA0 MA? MA1 MA? MA2 -> TRUE TRUE TRUE }T  ok.
+\          T{ MA1 MA2 MA1 -> 222 111 }T  ok.
+\          T{ MA? MA0 MA? MA1 MA? MA2 -> TRUE TRUE FALSE }T  ok.
+\          T{ MA0 -> }T  ok.
+\          T{ MA? MA0 MA? MA1 MA? MA2 -> FALSE FALSE FALSE }T  ok.
+\  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING ?DO * ok.
+  ok.
+: QD ?DO I LOOP ;  ok.
+T{ 789 789 QD -> }T  ok.
+T{ -9876 -9876 QD -> }T  ok.
+T{ 5 0 QD -> 0 1 2 3 4 }T  ok.
+  ok.
+: QD1 ?DO I 10 +LOOP ;  ok.
+T{ 50 1 QD1 -> 1 11 21 31 41 }T  ok.
+T{ 50 0 QD1 -> 0 10 20 30 40 }T  ok.
+  ok.
+: QD2 ?DO I 3 > IF LEAVE ELSE I THEN LOOP ;  ok.
+T{ 5 -1 QD2 -> -1 0 1 2 3 }T  ok.
+  ok.
+: QD3 ?DO I 1 +LOOP ;  ok.
+T{ 4  4 QD3 -> }T  ok.
+T{ 4  1 QD3 -> 1 2 3 }T  ok.
+T{ 2 -1 QD3 -> -1 0 1 }T  ok.
+  ok.
+: QD4 ?DO I -1 +LOOP ;  ok.
+T{  4 4 QD4 -> }T  ok.
+T{  1 4 QD4 -> 4 3 2 1 }T  ok.
+T{ -1 2 QD4 -> 2 1 0 -1 }T  ok.
+  ok.
+: QD5 ?DO I -10 +LOOP ;  ok.
+T{   1 50 QD5 -> 50 40 30 20 10 }T  ok.
+T{   0 50 QD5 -> 50 40 30 20 10 0 }T  ok.
+T{ -25 10 QD5 -> 10 0 -10 -20 }T  ok.
+  ok.
+VARIABLE ITERS  ok.
+VARIABLE INCRMNT  ok.
+  ok.
+: QD6 ( limit start increment -- )  ok.
+   INCRMNT !  ok.
+   0 ITERS !  ok.
+   ?DO  ok.
+      1 ITERS +!  ok.
+      I  ok.
+      ITERS @  6 = IF LEAVE THEN  ok.
+      INCRMNT @  ok.
+   +LOOP ITERS @  ok.
+;  ok.
+  ok.
+T{  4  4 -1 QD6 -> 0 }T  ok.
+T{  1  4 -1 QD6 -> 4 3 2 1 4 }T  ok.
+T{  4  1 -1 QD6 -> 1 0 -1 -2 -3 -4 6 }T  ok.
+T{  4  1  0 QD6 -> 1 1 1 1 1 1 6 }T  ok.
+T{  0  0  0 QD6 -> 0 }T  ok.
+T{  1  4  0 QD6 -> 4 4 4 4 4 4 6 }T  ok.
+T{  1  4  1 QD6 -> 4 5 6 7 8 9 6 }T  ok.
+T{  4  1  1 QD6 -> 1 2 3 3 }T  ok.
+T{  4  4  1 QD6 -> 0 }T  ok.
+T{  2 -1 -1 QD6 -> -1 -2 -3 -4 -5 -6 6 }T  ok.
+T{ -1  2 -1 QD6 -> 2 1 0 -1 4 }T  ok.
+T{  2 -1  0 QD6 -> -1 -1 -1 -1 -1 -1 6 }T  ok.
+T{ -1  2  0 QD6 -> 2 2 2 2 2 2 6 }T  ok.
+T{ -1  2  1 QD6 -> 2 3 4 5 6 7 6 }T  ok.
+T{  2 -1  1 QD6 -> -1 0 1 3 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING BUFFER: * ok.
+  ok.
+T{ 8 BUFFER: BUF:TEST -> }T  ok.
+T{ BUF:TEST DUP ALIGNED = -> TRUE }T  ok.
+T{ 111 BUF:TEST ! 222 BUF:TEST CELL+ ! -> }T  ok.
+T{ BUF:TEST @ BUF:TEST CELL+ @ -> 111 222 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+\    TESTING VALUE TO  ok.
+\  ok.
+\    T{ 111 VALUE VAL1 -999 VALUE VAL2 -> }T  ok.
+\    T{ VAL1 -> 111 }T  ok.
+\    T{ VAL2 -> -999 }T  ok.
+\    T{ 222 TO VAL1 -> }T  ok.
+\    T{ VAL1 -> 222 }T  ok.
+\    T{ : VD1 VAL1 ; -> }T  ok.
+\    T{ VD1 -> 222 }T  ok.
+\    T{ : VD2 TO VAL2 ; -> }T  ok.
+\    T{ VAL2 -> -999 }T  ok.
+\    T{ -333 VD2 -> }T  ok.
+\    T{ VAL2 -> -333 }T  ok.
+\    T{ VAL1 -> 222 }T  ok.
+\    T{ 123 VALUE VAL3 IMMEDIATE VAL3 -> 123 }T  ok.
+\    T{ : VD3 VAL3 LITERAL ; VD3 -> 123 }T  ok.
+\  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING CASE OF ENDOF ENDCASE * ok.
+  ok.
+: CS1 CASE 1 OF 111 ENDOF  ok.
+           2 OF 222 ENDOF  ok.
+           3 OF 333 ENDOF  ok.
+           >R 999 R>  ok.
+      ENDCASE  ok.
+;  ok.
+  ok.
+T{ 1 CS1 -> 111 }T  ok.
+T{ 2 CS1 -> 222 }T  ok.
+T{ 3 CS1 -> 333 }T  ok.
+T{ 4 CS1 -> 999 }T  ok.
+  ok.
+\ Nested CASE's  ok.
+  ok.
+: CS2 >R CASE -1 OF CASE R@ 1 OF 100 ENDOF  ok.
+                            2 OF 200 ENDOF  ok.
+                           >R -300 R>  ok.
+                    ENDCASE  ok.
+                 ENDOF  ok.
+              -2 OF CASE R@ 1 OF -99  ENDOF  ok.
+                            >R -199 R>  ok.
+                    ENDCASE  ok.
+                 ENDOF  ok.
+                 >R 299 R>  ok.
+         ENDCASE R> DROP  ok.
+;  ok.
+  ok.
+T{ -1 1 CS2 ->  100 }T  ok.
+T{ -1 2 CS2 ->  200 }T  ok.
+T{ -1 3 CS2 -> -300 }T  ok.
+T{ -2 1 CS2 -> -99  }T  ok.
+T{ -2 2 CS2 -> -199 }T  ok.
+T{  0 2 CS2 ->  299 }T  ok.
+  ok.
+\ Boolean short circuiting using CASE  ok.
+  ok.
+: CS3  ( N1 -- N2 )  ok.
+   CASE 1- FALSE OF 11 ENDOF  ok.
+        1- FALSE OF 22 ENDOF  ok.
+        1- FALSE OF 33 ENDOF  ok.
+        44 SWAP  ok.
+   ENDCASE  ok.
+;  ok.
+  ok.
+T{ 1 CS3 -> 11 }T  ok.
+T{ 2 CS3 -> 22 }T  ok.
+T{ 3 CS3 -> 33 }T  ok.
+T{ 9 CS3 -> 44 }T  ok.
+  ok.
+\ Empty CASE statements with/without default  ok.
+  ok.
+T{ : CS4 CASE ENDCASE ; 1 CS4 -> }T  ok.
+T{ : CS5 CASE 2 SWAP ENDCASE ; 1 CS5 -> 2 }T  ok.
+T{ : CS6 CASE 1 OF ENDOF 2 ENDCASE ; 1 CS6 -> }T  ok.
+T{ : CS7 CASE 3 OF ENDOF 2 ENDCASE ; 1 CS7 -> 1 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING :NONAME RECURSE * ok.
+  ok.
+VARIABLE NN1  ok.
+VARIABLE NN2  ok.
+:NONAME 1234 ; NN1 !  ok.
+:NONAME 9876 ; NN2 !  ok.
+T{ NN1 @ EXECUTE -> 1234 }T  ok.
+T{ NN2 @ EXECUTE -> 9876 }T  ok.
+  ok.
+T{ :NONAME ( n -- 0,1,..n ) DUP IF DUP >R 1- RECURSE R> THEN ;  ok.
+   CONSTANT RN1 -> }T  ok.
+T{ 0 RN1 EXECUTE -> 0 }T  ok.
+T{ 4 RN1 EXECUTE -> 0 1 2 3 4 }T  ok.
+  ok.
+:NONAME  ( n -- n1 )    \ Multiple RECURSEs in one definition  ok.
+   1- DUP  ok.
+   CASE 0 OF EXIT ENDOF  ok.
+        1 OF 11 SWAP RECURSE ENDOF  ok.
+        2 OF 22 SWAP RECURSE ENDOF  ok.
+        3 OF 33 SWAP RECURSE ENDOF  ok.
+        DROP ABS RECURSE EXIT  ok.
+   ENDCASE  ok.
+; CONSTANT RN2  ok.
+  ok.
+T{  1 RN2 EXECUTE -> 0 }T  ok.
+T{  2 RN2 EXECUTE -> 11 0 }T  ok.
+T{  4 RN2 EXECUTE -> 33 22 11 0 }T  ok.
+T{ 25 RN2 EXECUTE -> 33 22 11 0 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+\           TESTING C"  ok.
+\  ok.
+\           T{ : CQ1 C" 123" ; -> }T  ok.
+\           T{ CQ1 COUNT EVALUATE -> 123 }T  ok.
+\           T{ : CQ2 C" " ; -> }T  ok.
+\           T{ CQ2 COUNT EVALUATE -> }T  ok.
+\           T{ : CQ3 C" 2345"COUNT EVALUATE ; CQ3 -> 2345 }T  ok.
+\  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING COMPILE, * ok.
+  ok.
+:NONAME DUP + ; CONSTANT DUP+  ok.
+T{ : Q DUP+ COMPILE, ; -> }T  ok.
+T{ : AS1 [ Q ] ; -> }T  ok.
+T{ 123 AS1 -> 246 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+\ Cannot automatically test SAVE-INPUT and RESTORE-INPUT from a console source  
+ok.
+  ok.
+\           TESTING SAVE-INPUT and RESTORE-INPUT with a string source  ok.
+\  ok.
+\           VARIABLE SI_INC 0 SI_INC !  ok.
+\  ok.
+\           : SI1  ok.
+\              SI_INC @ >IN +!  ok.
+\              15 SI_INC !  ok.
+\           ;  ok.
+\  ok.
+\           : S$ S" SAVE-INPUT SI1 RESTORE-INPUT 12345" ;  ok.
+\  ok.
+\           T{ S$ EVALUATE SI_INC @ -> 0 2345 15 }T  ok.
+\  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING .( * ok.
+  ok.
+CR CR .( Output from .()  
+
+Output from .( ok.
+T{ CR .( You should see -9876: ) -9876 . -> }T 
+You should see -9876: -9876  ok.
+T{ CR .( and again: ).( -9876)CR -> }T 
+and again: -9876
+ ok.
+  ok.
+CR CR .( On the next 2 lines you should see First then Second messages:) 
+
+On the next 2 lines you should see First then Second messages: ok.
+T{ : DOTP  CR ." Second message via ." [CHAR] " EMIT    \ Check .( is immediate 
+ ok.
+     [ CR ] .( First message via .( ) ; DOTP -> }T 
+First message via .( 
+Second message via ." ok.
+CR CR 
+
+ ok.
+\ T{ : IMM? BL WORD FIND NIP ; IMM? .( -> 1 }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING .R and U.R - has to handle different cell sizes * ok.
+  ok.
+\ Create some large integers just below/above MAX and Min INTs  ok.
+MAX-INT 73 79 */ CONSTANT LI1  ok.
+MIN-INT 71 73 */ CONSTANT LI2  ok.
+  ok.
+LI1 0 <# #S #> NIP CONSTANT LENLI1  ok.
+  ok.
+: (.R&U.R)  ( u1 u2 -- )  \ u1 <= string length, u2 is required indentation  ok.
+
+   TUCK + >R  ok.
+   LI1 OVER SPACES  . CR R@    LI1 SWAP  .R CR  ok.
+   LI2 OVER SPACES  . CR R@ 1+ LI2 SWAP  .R CR  ok.
+   LI1 OVER SPACES U. CR R@    LI1 SWAP U.R CR  ok.
+   LI2 SWAP SPACES U. CR R>    LI2 SWAP U.R CR  ok.
+;  ok.
+  ok.
+: .R&U.R  ( -- )  ok.
+   CR ." You should see lines duplicated:" CR  ok.
+   ." indented by 0 spaces" CR 0      0 (.R&U.R) CR  ok.
+   ." indented by 0 spaces" CR LENLI1 0 (.R&U.R) CR \ Just fits required width  
+ok.
+   ." indented by 5 spaces" CR LENLI1 5 (.R&U.R) CR  ok.
+;  ok.
+  ok.
+CR CR .( Output from .R and U.R) 
+
+Output from .R and U.R ok.
+T{ .R&U.R -> }T 
+You should see lines duplicated:
+indented by 0 spaces
+30278 
+30278
+-31870 
+-31870
+30278 
+30278
+33666 
+33666
+
+indented by 0 spaces
+30278 
+30278
+-31870 
+-31870
+30278 
+30278
+33666 
+33666
+
+indented by 5 spaces
+     30278 
+     30278
+     -31870 
+     -31870
+     30278 
+     30278
+     33666 
+     33666
+
+ ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING PAD ERASE * ok.
+\ Must handle different size characters i.e. 1 CHARS >= 1   ok.
+  ok.
+84 CONSTANT CHARS/PAD      \ Minimum size of PAD in chars  ok.
+CHARS/PAD CHARS CONSTANT AUS/PAD  ok.
+: CHECKPAD  ( caddr u ch -- f )  \ f = TRUE if u chars = ch  ok.
+   SWAP 0  ok.
+   ?DO  ok.
+      OVER I CHARS + C@ OVER <>  ok.
+      IF 2DROP UNLOOP FALSE EXIT THEN  ok.
+   LOOP    ok.
+   2DROP TRUE  ok.
+;  ok.
+  ok.
+T{ PAD DROP -> }T  ok.
+T{ 0 INVERT PAD C! -> }T  ok.
+T{ PAD C@ CONSTANT MAXCHAR -> }T  ok.
+T{ PAD CHARS/PAD 2DUP MAXCHAR FILL MAXCHAR CHECKPAD -> TRUE }T  ok.
+T{ PAD CHARS/PAD 2DUP CHARS ERASE 0 CHECKPAD -> TRUE }T  ok.
+T{ PAD CHARS/PAD 2DUP MAXCHAR FILL PAD 0 ERASE MAXCHAR CHECKPAD -> TRUE }T  ok.
+T{ PAD 43 CHARS + 9 CHARS ERASE -> }T  ok.
+T{ PAD 43 MAXCHAR CHECKPAD -> TRUE }T  ok.
+T{ PAD 43 CHARS + 9 0 CHECKPAD -> TRUE }T  ok.
+T{ PAD 52 CHARS + CHARS/PAD 52 - MAXCHAR CHECKPAD -> TRUE }T  ok.
+  ok.
+\ Check that use of WORD and pictured numeric output do not corrupt PAD  ok.
+\ Minimum size of buffers for these are 33 chars and (2*n)+2 chars respectively 
+ ok.
+\ where n is number of bits per cell  ok.
+  ok.
+PAD CHARS/PAD ERASE  ok.
+2 BASE !  ok.
+MAX-UINT MAX-UINT <# #S CHAR 1 DUP HOLD HOLD #> 2DROP  ok.
+DECIMAL  ok.
+BL WORD 12345678123456781234567812345678 DROP  ok.
+T{ PAD CHARS/PAD 0 CHECKPAD -> TRUE }T  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING PARSE * ok.
+  ok.
+T{ CHAR | PARSE 1234| DUP ROT ROT EVALUATE -> 4 1234 }T  ok.
+T{ CHAR ^ PARSE  23 45 ^ DUP ROT ROT EVALUATE -> 7 23 45 }T  ok.
+: PA1 [CHAR] $ PARSE DUP >R PAD SWAP CHARS MOVE PAD R> ;  ok.
+T{ PA1 3456  ok.
+   DUP ROT ROT EVALUATE -> 4 3456 }T  ok.
+T{ CHAR A PARSE A SWAP DROP -> 0 }T  ok.
+T{ CHAR Z PARSE  ok.
+   SWAP DROP -> 0 }T  ok.
+T{ CHAR " PARSE 4567 "DUP ROT ROT EVALUATE -> 5 4567 }T  ok.
+   ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+TESTING PARSE-NAME  (Forth 2012) * ok.
+\ Adapted from the PARSE-NAME RfD tests  ok.
+  ok.
+T{ PARSE-NAME abcd  STR1  S= -> TRUE }T        \ No leading spaces ?
+T{ PARSE-NAME      abcde STR2 S= -> TRUE }T    \ Leading spaces ?
+  ok.
+\ Test empty parse area, new lines are necessary  ok.
+T{ PARSE-NAME  ok.
+  NIP -> 0 }T  ok.
+\ Empty parse area with spaces after PARSE-NAME  ok.
+T{ PARSE-NAME           ok.
+  NIP -> 0 }T  ok.
+  ok.
+T{ : PARSE-NAME-TEST ( "name1" "name2" -- n )  ok.
+    PARSE-NAME PARSE-NAME S= ; -> }T  ok.
+T{ PARSE-NAME-TEST abcd abcd  -> TRUE }T  ok.
+T{ PARSE-NAME-TEST abcd   abcd  -> TRUE }T  \ Leading spaces  ok.
+T{ PARSE-NAME-TEST abcde abcdf -> FALSE }T  ok.
+T{ PARSE-NAME-TEST abcdf abcde -> FALSE }T  ok.
+T{ PARSE-NAME-TEST abcde abcde  ok.
+   -> TRUE }T         \ Parse to end of line  ok.
+T{ PARSE-NAME-TEST abcde           abcde           ok.
+   -> TRUE }T         \ Leading and trailing spaces  ok.
+  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+\           TESTING DEFER DEFER@ DEFER! IS ACTION-OF (Forth 2012)  ok.
+\           \ Adapted from the Forth 200X RfD tests  ok.
+\  ok.
+\           T{ DEFER DEFER1 -> }T  ok.
+\           T{ : MY-DEFER DEFER ; -> }T  ok.
+\           T{ : IS-DEFER1 IS DEFER1 ; -> }T  ok.
+\           T{ : ACTION-DEFER1 ACTION-OF DEFER1 ; -> }T  ok.
+\           T{ : DEF! DEFER! ; -> }T  ok.
+\           T{ : DEF@ DEFER@ ; -> }T  ok.
+\  ok.
+\           T{ ' * ' DEFER1 DEFER! -> }T  ok.
+\           T{ 2 3 DEFER1 -> 6 }T  ok.
+\           T{ ' DEFER1 DEFER@ -> ' * }T  ok.
+\           T{ ' DEFER1 DEF@ -> ' * }T  ok.
+\           T{ ACTION-OF DEFER1 -> ' * }T  ok.
+\           T{ ACTION-DEFER1 -> ' * }T  ok.
+\           T{ ' + IS DEFER1 -> }T  ok.
+\           T{ 1 2 DEFER1 -> 3 }T  ok.
+\           T{ ' DEFER1 DEFER@ -> ' + }T  ok.
+\           T{ ' DEFER1 DEF@ -> ' + }T  ok.
+\           T{ ACTION-OF DEFER1 -> ' + }T  ok.
+\           T{ ACTION-DEFER1 -> ' + }T  ok.
+\           T{ ' - IS-DEFER1 -> }T  ok.
+\           T{ 1 2 DEFER1 -> -1 }T  ok.
+\           T{ ' DEFER1 DEFER@ -> ' - }T  ok.
+\           T{ ' DEFER1 DEF@ -> ' - }T  ok.
+\           T{ ACTION-OF DEFER1 -> ' - }T  ok.
+\           T{ ACTION-DEFER1 -> ' - }T  ok.
+\  ok.
+\           T{ MY-DEFER DEFER2 -> }T  ok.
+\           T{ ' DUP IS DEFER2 -> }T  ok.
+\           T{ 1 DEFER2 -> 1 1 }T  ok.
+\  ok.
+\           \ ------------------------------------------------------------------
+-----------  ok.
+\           TESTING HOLDS  (Forth 2012)  ok.
+\  ok.
+\           : HTEST S" Testing HOLDS" ;  ok.
+\           : HTEST2 S" works" ;  ok.
+\           : HTEST3 S" Testing HOLDS works 123" ;  ok.
+\           T{ 0 0 <#  HTEST HOLDS #> HTEST S= -> TRUE }T  ok.
+\           T{ 123 0 <# #S BL HOLD HTEST2 HOLDS BL HOLD HTEST HOLDS #>  ok.
+\              HTEST3 S= -> TRUE }T  ok.
+\           T{ : HLD HOLDS ; -> }T  ok.
+\           T{ 0 0 <#  HTEST HLD #> HTEST S= -> TRUE }T  ok.
+\  ok.
+\           \ ------------------------------------------------------------------
+-----------  ok.
+\           TESTING REFILL SOURCE-ID  ok.
+\           \ REFILL and SOURCE-ID from the user input device can't be tested fr
+om a file,  ok.
+\           \ can only be tested from a string via EVALUATE  ok.
+\  ok.
+\           T{ : RF1  S" REFILL" EVALUATE ; RF1 -> FALSE }T  ok.
+\           T{ : SID1  S" SOURCE-ID" EVALUATE ; SID1 -> -1 }T  ok.
+\  ok.
+\           \ ------------------------------------------------------------------
+------------  ok.
+\           TESTING S\"  (Forth 2012 compilation mode)  ok.
+\           \ Extended the Forth 200X RfD tests  ok.
+\           \ Note this tests the Core Ext definition of S\" which has unedfined
+  ok.
+\           \ interpretation semantics. S\" in interpretation mode is tested in 
+the tests on  ok.
+\           \ the File-Access word set  ok.
+\  ok.
+\           T{ : SSQ1 S\" abc" S" abc" S= ; -> }T  \ No escapes  ok.
+\           T{ SSQ1 -> TRUE }T  ok.
+\           T{ : SSQ2 S\" " ; SSQ2 SWAP DROP -> 0 }T    \ Empty string  ok.
+\  ok.
+\           T{ : SSQ3 S\" \a\b\e\f\l\m\q\r\t\v\x0F0\x1Fa\xaBx\z\"\\" ; -> }T  ok
+.
+\           T{ SSQ3 SWAP DROP          ->  20 }T    \ String length  ok.
+\           T{ SSQ3 DROP            C@ ->   7 }T    \ \a   BEL  Bell  ok.
+\           T{ SSQ3 DROP  1 CHARS + C@ ->   8 }T    \ \b   BS   Backspace  ok.
+\           T{ SSQ3 DROP  2 CHARS + C@ ->  27 }T    \ \e   ESC  Escape  ok.
+\           T{ SSQ3 DROP  3 CHARS + C@ ->  12 }T    \ \f   FF   Form feed  ok.
+\           T{ SSQ3 DROP  4 CHARS + C@ ->  10 }T    \ \l   LF   Line feed  ok.
+\           T{ SSQ3 DROP  5 CHARS + C@ ->  13 }T    \ \m        CR of CR/LF pair
+  ok.
+\           T{ SSQ3 DROP  6 CHARS + C@ ->  10 }T    \           LF of CR/LF pair
+  ok.
+\           T{ SSQ3 DROP  7 CHARS + C@ ->  34 }T    \ \q   "    Double Quote  ok
+.
+\           T{ SSQ3 DROP  8 CHARS + C@ ->  13 }T    \ \r   CR   Carriage Return 
+ ok.
+\           T{ SSQ3 DROP  9 CHARS + C@ ->   9 }T    \ \t   TAB  Horizontal Tab  
+ok.
+\           T{ SSQ3 DROP 10 CHARS + C@ ->  11 }T    \ \v   VT   Vertical Tab  ok
+.
+\           T{ SSQ3 DROP 11 CHARS + C@ ->  15 }T    \ \x0F      Given Char  ok.
+\           T{ SSQ3 DROP 12 CHARS + C@ ->  48 }T    \ 0    0    Digit follow on 
+ ok.
+\           T{ SSQ3 DROP 13 CHARS + C@ ->  31 }T    \ \x1F      Given Char  ok.
+\           T{ SSQ3 DROP 14 CHARS + C@ ->  97 }T    \ a    a    Hex follow on  o
+k.
+\           T{ SSQ3 DROP 15 CHARS + C@ -> 171 }T    \ \xaB      Insensitive Give
+n Char  ok.
+\           T{ SSQ3 DROP 16 CHARS + C@ -> 120 }T    \ x    x    Non hex follow o
+n  ok.
+\           T{ SSQ3 DROP 17 CHARS + C@ ->   0 }T    \ \z   NUL  No Character  ok
+.
+\           T{ SSQ3 DROP 18 CHARS + C@ ->  34 }T    \ \"   "    Double Quote  ok
+.
+\           T{ SSQ3 DROP 19 CHARS + C@ ->  92 }T    \ \\   \    Back Slash  ok.
+\  ok.
+\           \ The above does not test \n as this is a system dependent value.  o
+k.
+\           \ Check it displays a new line  ok.
+\           CR .( The next test should display:)  ok.
+\           CR .( One line...)  ok.
+\           CR .( another line)  ok.
+\           T{ : SSQ4 S\" \nOne line...\nanotherLine\n" type ; SSQ4 -> }T  ok.
+\  ok.
+\           \ Test bare escapable characters appear as themselves  ok.
+\           T{ : SSQ5 S\" abeflmnqrtvxz" S" abeflmnqrtvxz" S= ; SSQ5 -> TRUE }T 
+ ok.
+\  ok.
+\           T{ : SSQ6 S\" a\""2DROP 1111 ; SSQ6 -> 1111 }T \ Parsing behaviour  
+ok.
+\  ok.
+\           T{ : SSQ7  S\" 111 : SSQ8 s\\\" 222\" EVALUATE ; SSQ8 333" EVALUATE 
+; -> }T  ok.
+\           T{ SSQ7 -> 111 222 333 }T  ok.
+\           T{ : SSQ9  S\" 11 : SSQ10 s\\\" \\x32\\x32\" EVALUATE ; SSQ10 33" EV
+ALUATE ; -> }T  ok.
+\           T{ SSQ9 -> 11 22 33 }T  ok.
+\  ok.
+\ ----------------------------------------------------------------------------- 
+ ok.
+\ CORE-EXT-ERRORS SET-ERROR-COUNT  ok.
+  ok.
+CR .( End of Core Extension word tests) CR 
+End of Core Extension word tests
+ ok.
+  ok.
+  ok.
+\ Additional tests on the the ANS Forth Core word set  ok.
+  ok.
+\ This program was written by Gerry Jackson in 2007, with contributions from  ok
+.
+\ others where indicated, and is in the public domain - it can be distributed  o
+k.
+\ and/or modified in any way but please retain this notice.  ok.
+  ok.
+\ This program is distributed in the hope that it will be useful,  ok.
+\ but WITHOUT ANY WARRANTY; without even the implied warranty of  ok.
+\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  ok.
+  ok.
+\ The tests are not claimed to be comprehensive or correct   ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ The tests are based on John Hayes test program for the core word set  ok.
+\  ok.
+\ This file provides some more tests on Core words where the original Hayes  ok.
+
+\ tests are thought to be incomplete  ok.
+\  ok.
+\ Words tested in this file are:  ok.
+\     DO I +LOOP RECURSE ELSE >IN IMMEDIATE FIND IF...BEGIN...REPEAT ALLOT DOES>
+  ok.
+\ and  ok.
+\     Parsing behaviour  ok.
+\     Number prefixes # $ % and 'A' character input  ok.
+\     Definition names  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ Assumptions and dependencies:  ok.
+\     - tester.fr or ttester.fs has been loaded prior to this file  ok.
+\     - core.fr has been loaded so that constants <TRUE> MAX-INT, MIN-INT and  o
+k.
+\       MAX-UINT are defined  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+  ok.
+DECIMAL  ok.
+  ok.
+TESTING DO +LOOP with run-time increment, negative increment, infinite loop * ok
+.
+\ Contributed by Reinhold Straub  ok.
+  ok.
+VARIABLE ITERATIONS  ok.
+VARIABLE INCREMENT  ok.
+: GD7 ( LIMIT START INCREMENT -- )  ok.
+   INCREMENT !  ok.
+   0 ITERATIONS !  ok.
+   DO  ok.
+      1 ITERATIONS +!  ok.
+      I  ok.
+      ITERATIONS @  6 = IF LEAVE THEN  ok.
+      INCREMENT @  ok.
+   +LOOP ITERATIONS @  ok.
+;  ok.
+  ok.
+T{  4  4 -1 GD7 -> 4 1 }T  ok.
+T{  1  4 -1 GD7 -> 4 3 2 1 4 }T  ok.
+T{  4  1 -1 GD7 -> 1 0 -1 -2 -3 -4 6 }T  ok.
+T{  4  1  0 GD7 -> 1 1 1 1 1 1 6 }T  ok.
+T{  0  0  0 GD7 -> 0 0 0 0 0 0 6 }T  ok.
+T{  1  4  0 GD7 -> 4 4 4 4 4 4 6 }T  ok.
+T{  1  4  1 GD7 -> 4 5 6 7 8 9 6 }T  ok.
+T{  4  1  1 GD7 -> 1 2 3 3 }T  ok.
+T{  4  4  1 GD7 -> 4 5 6 7 8 9 6 }T  ok.
+T{  2 -1 -1 GD7 -> -1 -2 -3 -4 -5 -6 6 }T  ok.
+T{ -1  2 -1 GD7 -> 2 1 0 -1 4 }T  ok.
+T{  2 -1  0 GD7 -> -1 -1 -1 -1 -1 -1 6 }T  ok.
+T{ -1  2  0 GD7 -> 2 2 2 2 2 2 6 }T  ok.
+T{ -1  2  1 GD7 -> 2 3 4 5 6 7 6 }T  ok.
+T{  2 -1  1 GD7 -> -1 0 1 3 }T  ok.
+T{ -20 30 -10 GD7 -> 30 20 10 0 -10 -20 6 }T  ok.
+T{ -20 31 -10 GD7 -> 31 21 11 1 -9 -19 6 }T  ok.
+T{ -20 29 -10 GD7 -> 29 19 9 -1 -11 5 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING DO +LOOP with large and small increments * ok.
+  ok.
+\ Contributed by Andrew Haley  ok.
+  ok.
+MAX-UINT 8 RSHIFT 1+ CONSTANT USTEP  ok.
+USTEP NEGATE CONSTANT -USTEP  ok.
+MAX-INT 7 RSHIFT 1+ CONSTANT STEP  ok.
+STEP NEGATE CONSTANT -STEP  ok.
+  ok.
+VARIABLE BUMP  ok.
+  ok.
+T{ : GD8 BUMP ! DO 1+ BUMP @ +LOOP ; -> }T  ok.
+  ok.
+T{ 0 MAX-UINT 0 USTEP GD8 -> 256 }T  ok.
+T{ 0 0 MAX-UINT -USTEP GD8 -> 256 }T  ok.
+  ok.
+T{ 0 MAX-INT MIN-INT STEP GD8 -> 256 }T  ok.
+T{ 0 MIN-INT MAX-INT -STEP GD8 -> 256 }T  ok.
+  ok.
+\ Two's complement arithmetic, wraps around modulo wordsize  ok.
+\ Only tested if the Forth system does wrap around, use of conditional  ok.
+\ compilation deliberately avoided  ok.
+  ok.
+MAX-INT 1+ MIN-INT = CONSTANT +WRAP?  ok.
+MIN-INT 1- MAX-INT = CONSTANT -WRAP?  ok.
+MAX-UINT 1+ 0=       CONSTANT +UWRAP?  ok.
+0 1- MAX-UINT =      CONSTANT -UWRAP?  ok.
+  ok.
+: GD9  ( n limit start step f result -- )  ok.
+   >R IF GD8 ELSE 2DROP 2DROP R@ THEN -> R> }T  ok.
+;  ok.
+  ok.
+T{ 0 0 0  USTEP +UWRAP? 256 GD9  ok.
+T{ 0 0 0 -USTEP -UWRAP?   1 GD9  ok.
+T{ 0 MIN-INT MAX-INT  STEP +WRAP? 1 GD9  ok.
+T{ 0 MAX-INT MIN-INT -STEP -WRAP? 1 GD9  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING DO +LOOP with maximum and minimum increments * ok.
+  ok.
+: (-MI) MAX-INT DUP NEGATE + 0= IF MAX-INT NEGATE ELSE -32767 THEN ;  ok.
+(-MI) CONSTANT -MAX-INT  ok.
+  ok.
+T{ 0 1 0 MAX-INT GD8  -> 1 }T  ok.
+T{ 0 -MAX-INT NEGATE -MAX-INT OVER GD8  -> 2 }T  ok.
+  ok.
+T{ 0 MAX-INT  0 MAX-INT GD8  -> 1 }T  ok.
+T{ 0 MAX-INT  1 MAX-INT GD8  -> 1 }T  ok.
+T{ 0 MAX-INT -1 MAX-INT GD8  -> 2 }T  ok.
+T{ 0 MAX-INT DUP 1- MAX-INT GD8  -> 1 }T  ok.
+  ok.
+T{ 0 MIN-INT 1+   0 MIN-INT GD8  -> 1 }T  ok.
+T{ 0 MIN-INT 1+  -1 MIN-INT GD8  -> 1 }T  ok.
+T{ 0 MIN-INT 1+   1 MIN-INT GD8  -> 2 }T  ok.
+T{ 0 MIN-INT 1+ DUP MIN-INT GD8  -> 1 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ TESTING +LOOP setting I to an arbitrary value  ok.
+  ok.
+\ The specification for +LOOP permits the loop index I to be set to any value  o
+k.
+\ including a value outside the range given to the corresponding  DO.  ok.
+  ok.
+\ SET-I is a helper to set I in a DO ... +LOOP to a given value  ok.
+\ n2 is the value of I in a DO ... +LOOP  ok.
+\ n3 is a test value  ok.
+\ If n2=n3 then return n1-n2 else return 1  ok.
+: SET-I  ( n1 n2 n3 -- n1-n2 | 1 )   ok.
+   OVER = IF - ELSE 2DROP 1 THEN  ok.
+;  ok.
+  ok.
+: -SET-I ( n1 n2 n3 -- n1-n2 | -1 )  ok.
+   SET-I DUP 1 = IF NEGATE THEN  ok.
+;  ok.
+  ok.
+: PL1 20 1 DO I 18 I 3 SET-I +LOOP ;  ok.
+T{ PL1 -> 1 2 3 18 19 }T  ok.
+: PL2 20 1 DO I 20 I 2 SET-I +LOOP ;  ok.
+T{ PL2 -> 1 2 }T  ok.
+: PL3 20 5 DO I 19 I 2 SET-I DUP 1 = IF DROP 0 I 6 SET-I THEN +LOOP ;  ok.
+T{ PL3 -> 5 6 0 1 2 19 }T  ok.
+: PL4 20 1 DO I MAX-INT I 4 SET-I +LOOP ;  ok.
+T{ PL4 -> 1 2 3 4 }T  ok.
+: PL5 -20 -1 DO I -19 I -3 -SET-I +LOOP ;  ok.
+T{ PL5 -> -1 -2 -3 -19 -20 }T  ok.
+: PL6 -20 -1 DO I -21 I -4 -SET-I +LOOP ;  ok.
+T{ PL6 -> -1 -2 -3 -4 }T  ok.
+: PL7 -20 -1 DO I MIN-INT I -5 -SET-I +LOOP ;  ok.
+T{ PL7 -> -1 -2 -3 -4 -5 }T  ok.
+: PL8 -20 -5 DO I -20 I -2 -SET-I DUP -1 = IF DROP 0 I -6 -SET-I THEN +LOOP ;  o
+k.
+T{ PL8 -> -5 -6 0 -1 -2 -20 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING multiple RECURSEs in one colon definition * ok.
+  ok.
+: ACK ( m n -- u )    \ Ackermann function, from Rosetta Code  ok.
+   OVER 0= IF  NIP 1+ EXIT  THEN       \ ack(0, n) = n+1  ok.
+   SWAP 1- SWAP                        ( -- m-1 n )  ok.
+   DUP  0= IF  1+  RECURSE EXIT  THEN  \ ack(m, 0) = ack(m-1, 1)  ok.
+   1- OVER 1+ SWAP RECURSE RECURSE     \ ack(m, n) = ack(m-1, ack(m,n-1))  ok.
+;  ok.
+  ok.
+T{ 0 0 ACK ->  1 }T  ok.
+T{ 3 0 ACK ->  5 }T  ok.
+T{ 2 4 ACK -> 11 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING multiple ELSE's in an IF statement * ok.
+\ Discussed on comp.lang.forth and accepted as valid ANS Forth  ok.
+  ok.
+: MELSE IF 1 ELSE 2 ELSE 3 ELSE 4 ELSE 5 THEN ;  ok.
+T{ 0 MELSE -> 2 4 }T  ok.
+T{ -1 MELSE -> 1 3 5 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING manipulation of >IN in interpreter mode * ok.
+  ok.
+T{ 12345 DEPTH OVER 9 < 34 AND + 3 + >IN ! -> 12345 2345 345 45 5 }T  ok.
+T{ 14145 8115 ?DUP 0= 34 AND >IN +! TUCK MOD 14 >IN ! GCD CALCULATION -> 15 }T  
+ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\           TESTING IMMEDIATE with CONSTANT  VARIABLE and CREATE [ ... DOES> ]  
+ok.
+\  ok.
+\           T{ 123 CONSTANT IW1 IMMEDIATE IW1 -> 123 }T  ok.
+\           T{ : IW2 IW1 LITERAL ; IW2 -> 123 }T  ok.
+\           T{ VARIABLE IW3 IMMEDIATE 234 IW3 ! IW3 @ -> 234 }T  ok.
+\           T{ : IW4 IW3 [ @ ] LITERAL ; IW4 -> 234 }T  ok.
+\           T{ :NONAME [ 345 ] IW3 [ ! ] ; DROP IW3 @ -> 345 }T  ok.
+\           T{ CREATE IW5 456 , IMMEDIATE -> }T  ok.
+\           T{ :NONAME IW5 [ @ IW3 ! ] ; DROP IW3 @ -> 456 }T  ok.
+\           T{ : IW6 CREATE , IMMEDIATE DOES> @ 1+ ; -> }T  ok.
+\           T{ 111 IW6 IW7 IW7 -> 112 }T  ok.
+\           T{ : IW8 IW7 LITERAL 1+ ; IW8 -> 113 }T  ok.
+\           T{ : IW9 CREATE , DOES> @ 2 + IMMEDIATE ; -> }T  ok.
+\           : FIND-IW BL WORD FIND NIP ;  ( -- 0 | 1 | -1 )  ok.
+\           T{ 222 IW9 IW10 FIND-IW IW10 -> -1 }T   \ IW10 is not immediate  ok.
+
+\           T{ IW10 FIND-IW IW10 -> 224 1 }T        \ IW10 becomes immediate  ok
+.
+\  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING that IMMEDIATE doesn't toggle a flag * ok.
+  ok.
+VARIABLE IT1 0 IT1 !  ok.
+: IT2 1234 IT1 ! ; IMMEDIATE IMMEDIATE  ok.
+T{ : IT3 IT2 ; IT1 @ -> 1234 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING parsing behaviour of S" ." and ( * ok.
+\ which should parse to just beyond the terminating character no space needed  o
+k.
+  ok.
+T{ : GC5 S" A string"2DROP ; GC5 -> }T  ok.
+T{ ( A comment)1234 -> 1234 }T  ok.
+T{ : PB1 CR ." You should see 2345: "." 2345"( A comment) CR ; PB1 -> }T 
+You should see 2345: 2345
+ ok.
+   ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING number prefixes # $ % and 'c' character input * ok.
+\ Adapted from the Forth 200X Draft 14.5 document  ok.
+  ok.
+VARIABLE OLD-BASE  ok.
+DECIMAL BASE @ OLD-BASE !  ok.
+T{ #1289 -> 1289 }T  ok.
+T{ #-1289 -> -1289 }T  ok.
+T{ $12eF -> 4847 }T  ok.
+T{ $-12eF -> -4847 }T  ok.
+T{ %10010110 -> 150 }T  ok.
+T{ %-10010110 -> -150 }T  ok.
+T{ 'z' -> 122 }T  ok.
+T{ 'Z' -> 90 }T  ok.
+\ Check BASE is unchanged  ok.
+T{ BASE @ OLD-BASE @ = -> <TRUE> }T  ok.
+  ok.
+\ Repeat in Hex mode  ok.
+16 OLD-BASE ! 16 BASE !  ok.
+T{ #1289 -> 509 }T  ok.
+T{ #-1289 -> -509 }T  ok.
+T{ $12eF -> 12EF }T  ok.
+T{ $-12eF -> -12EF }T  ok.
+T{ %10010110 -> 96 }T  ok.
+T{ %-10010110 -> -96 }T  ok.
+T{ 'z' -> 7a }T  ok.
+T{ 'Z' -> 5a }T  ok.
+\ Check BASE is unchanged  ok.
+T{ BASE @ OLD-BASE @ = -> <TRUE> }T   \ 2  ok.
+  ok.
+DECIMAL  ok.
+\ Check number prefixes in compile mode  ok.
+T{ : nmp  #8327 $-2cbe %011010111 ''' ; nmp -> 8327 -11454 215 39 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING definition names * ok.
+\ should support {1..31} graphical characters  ok.
+: !"#$%&'()*+,-./0123456789:;<=>? 1 ;  ok.
+T{ !"#$%&'()*+,-./0123456789:;<=>? -> 1 }T  ok.
+: @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^ 2 ;  ok.
+T{ @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^ -> 2 }T  ok.
+: _`abcdefghijklmnopqrstuvwxyz{|} 3 ;  ok.
+T{ _`abcdefghijklmnopqrstuvwxyz{|} -> 3 }T  ok.
+: _`abcdefghijklmnopqrstuvwxyz{|~ 4 ;     \ Last character different  ok.
+T{ _`abcdefghijklmnopqrstuvwxyz{|~ -> 4 }T  ok.
+T{ _`abcdefghijklmnopqrstuvwxyz{|} -> 3 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING FIND with a zero length string and a non-existent word * ok.
+  ok.
+CREATE EMPTYSTRING 0 C,  ok.
+: EMPTYSTRING-FIND-CHECK ( c-addr 0 | xt 1 | xt -1 -- t|f )  ok.
+    DUP IF ." FIND returns a TRUE value for an empty string!" CR THEN  ok.
+    0= SWAP EMPTYSTRING = = ;  ok.
+T{ EMPTYSTRING FIND EMPTYSTRING-FIND-CHECK -> <TRUE> }T ?
+  ok.
+CREATE NON-EXISTENT-WORD   \ Same as in exceptiontest.fth  ok.
+       15 C, CHAR $ C, CHAR $ C, CHAR Q C, CHAR W C, CHAR E C, CHAR Q C,  ok.
+   CHAR W C, CHAR E C, CHAR Q C, CHAR W C, CHAR E C, CHAR R C, CHAR T C,  ok.
+   CHAR $ C, CHAR $ C,  ok.
+T{ NON-EXISTENT-WORD FIND -> NON-EXISTENT-WORD 0 }T ?
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING IF ... BEGIN ... REPEAT (unstructured) * ok.
+  ok.
+T{ : UNS1 DUP 0 > IF 9 SWAP BEGIN 1+ DUP 3 > IF EXIT THEN REPEAT ; -> }T  ok.
+T{ -6 UNS1 -> -6 }T  ok.
+T{  1 UNS1 -> 9 4 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING DOES> doesn't cause a problem with a CREATEd address * ok.
+  ok.
+: MAKE-2CONST DOES> 2@ ;  ok.
+T{ CREATE 2K 3 , 2K , MAKE-2CONST 2K -> ' 2K >BODY 3 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING ALLOT ( n -- ) where n <= 0 * ok.
+  ok.
+T{ HERE 5 ALLOT -5 ALLOT HERE = -> <TRUE> }T  ok.
+T{ HERE 0 ALLOT HERE = -> <TRUE> }T  ok.
+   ok.
+\ ------------------------------------------------------------------------------
+  ok.
+  ok.
+CR .( End of additional Core tests) CR 
+End of additional Core tests
+ ok.
+\ To test the ANS Forth Double-Number word set and double number extensions  ok.
+
+  ok.
+\ This program was written by Gerry Jackson in 2006, with contributions from  ok
+.
+\ others where indicated, and is in the public domain - it can be distributed  o
+k.
+\ and/or modified in any way but please retain this notice.  ok.
+  ok.
+\ This program is distributed in the hope that it will be useful,  ok.
+\ but WITHOUT ANY WARRANTY; without even the implied warranty of  ok.
+\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  ok.
+  ok.
+\ The tests are not claimed to be comprehensive or correct  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ Version 0.13  Assumptions and dependencies changed  ok.
+\         0.12  1 August 2015 test D< acts on MS cells of double word  ok.
+\         0.11  7 April 2015 2VALUE tested  ok.
+\         0.6   1 April 2012 Tests placed in the public domain.  ok.
+\               Immediate 2CONSTANTs and 2VARIABLEs tested  ok.
+\         0.5   20 November 2009 Various constants renamed to avoid  ok.
+\               redefinition warnings. <TRUE> and <FALSE> replaced  ok.
+\               with TRUE and FALSE  ok.
+\         0.4   6 March 2009 { and } replaced with T{ and }T  ok.
+\               Tests rewritten to be independent of word size and  ok.
+\               tests re-ordered  ok.
+\         0.3   20 April 2007 ANS Forth words changed to upper case  ok.
+\         0.2   30 Oct 2006 Updated following GForth test to include  ok.
+\               various constants from core.fr  ok.
+\         0.1   Oct 2006 First version released  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ The tests are based on John Hayes test program for the core word set  ok.
+  ok.
+\ Words tested in this file are:  ok.
+\     2CONSTANT 2LITERAL 2VARIABLE D+ D- D. D.R D0< D0= D2* D2/  ok.
+\     D< D= D>S DABS DMAX DMIN DNEGATE M*/ M+ 2ROT DU<  ok.
+\ Also tests the interpreter and compiler reading a double number  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ Assumptions and dependencies:  ok.
+\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been  
+ok.
+\       included prior to this file  ok.
+\     - the Core word set is available and tested  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ Constant definitions  ok.
+  ok.
+DECIMAL  ok.
+0 INVERT        CONSTANT 1SD  ok.
+1SD 1 RSHIFT    CONSTANT MAX-INTD   \ 01...1  ok.
+MAX-INTD INVERT CONSTANT MIN-INTD   \ 10...0  ok.
+MAX-INTD 2/     CONSTANT HI-INT     \ 001...1  ok.
+MIN-INTD 2/     CONSTANT LO-INT     \ 110...1  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING interpreter and compiler reading double numbers, with/without prefixes *
+ ok.
+  ok.
+T{ 1. -> 1 0 }T  ok.
+T{ -2. -> -2 -1 }T  ok.
+T{ : RDL1 3. ; RDL1 -> 3 0 }T  ok.
+T{ : RDL2 -4. ; RDL2 -> -4 -1 }T  ok.
+  ok.
+VARIABLE OLD-DBASE  ok.
+DECIMAL BASE @ OLD-DBASE !  ok.
+T{ #12346789. -> 12346789. }T  ok.
+T{ #-12346789. -> -12346789. }T  ok.
+T{ $12aBcDeF. -> 313249263. }T  ok.
+T{ $-12AbCdEf. -> -313249263. }T  ok.
+T{ %10010110. -> 150. }T  ok.
+T{ %-10010110. -> -150. }T  ok.
+\ Check BASE is unchanged  ok.
+T{ BASE @ OLD-DBASE @ = -> <TRUE> }T  ok.
+  ok.
+\ Repeat in Hex mode  ok.
+16 OLD-DBASE ! 16 BASE !  ok.
+T{ #12346789. -> BC65A5. }T  ok.
+T{ #-12346789. -> -BC65A5. }T  ok.
+T{ $12aBcDeF. -> 12AbCdeF. }T  ok.
+T{ $-12AbCdEf. -> -12ABCDef. }T  ok.
+T{ %10010110. -> 96. }T  ok.
+T{ %-10010110. -> -96. }T  ok.
+\ Check BASE is unchanged  ok.
+T{ BASE @ OLD-DBASE @ = -> <TRUE> }T   \ 2  ok.
+  ok.
+DECIMAL  ok.
+\ Check number prefixes in compile mode  ok.
+T{ : dnmp  #8327. $-2cbe. %011010111. ; dnmp -> 8327. -11454. 215. }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING 2CONSTANT * ok.
+  ok.
+T{ 1 2 2CONSTANT 2C1 -> }T  ok.
+T{ 2C1 -> 1 2 }T  ok.
+T{ : CD1 2C1 ; -> }T  ok.
+T{ CD1 -> 1 2 }T  ok.
+T{ : CD2 2CONSTANT ; -> }T  ok.
+T{ -1 -2 CD2 2C2 -> }T  ok.
+T{ 2C2 -> -1 -2 }T  ok.
+\           T{ 4 5 2CONSTANT 2C3 IMMEDIATE 2C3 -> 4 5 }T  ok.
+\           T{ : CD6 2C3 2LITERAL ; CD6 -> 4 5 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ Some 2CONSTANTs for the following tests  ok.
+  ok.
+1SD MAX-INTD 2CONSTANT MAX-2INT  \ 01...1  ok.
+0   MIN-INTD 2CONSTANT MIN-2INT  \ 10...0  ok.
+MAX-2INT 2/  2CONSTANT HI-2INT   \ 001...1  ok.
+MIN-2INT 2/  2CONSTANT LO-2INT   \ 110...0  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING DNEGATE * ok.
+  ok.
+T{ 0. DNEGATE -> 0. }T  ok.
+T{ 1. DNEGATE -> -1. }T  ok.
+T{ -1. DNEGATE -> 1. }T  ok.
+T{ MAX-2INT DNEGATE -> MIN-2INT SWAP 1+ SWAP }T  ok.
+T{ MIN-2INT SWAP 1+ SWAP DNEGATE -> MAX-2INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D+ with small integers * ok.
+  ok.
+T{  0.  5. D+ ->  5. }T  ok.
+T{ -5.  0. D+ -> -5. }T  ok.
+T{  1.  2. D+ ->  3. }T  ok.
+T{  1. -2. D+ -> -1. }T  ok.
+T{ -1.  2. D+ ->  1. }T  ok.
+T{ -1. -2. D+ -> -3. }T  ok.
+T{ -1.  1. D+ ->  0. }T  ok.
+  ok.
+TESTING D+ with mid range integers * ok.
+  ok.
+T{  0  0  0  5 D+ ->  0  5 }T  ok.
+T{ -1  5  0  0 D+ -> -1  5 }T  ok.
+T{  0  0  0 -5 D+ ->  0 -5 }T  ok.
+T{  0 -5 -1  0 D+ -> -1 -5 }T  ok.
+T{  0  1  0  2 D+ ->  0  3 }T  ok.
+T{ -1  1  0 -2 D+ -> -1 -1 }T  ok.
+T{  0 -1  0  2 D+ ->  0  1 }T  ok.
+T{  0 -1 -1 -2 D+ -> -1 -3 }T  ok.
+T{ -1 -1  0  1 D+ -> -1  0 }T  ok.
+T{ MIN-INTD 0 2DUP D+ -> 0 1 }T  ok.
+T{ MIN-INTD S>D MIN-INTD 0 D+ -> 0 0 }T  ok.
+  ok.
+TESTING D+ with large double integers * ok.
+  ok.
+T{ HI-2INT 1. D+ -> 0 HI-INT 1+ }T  ok.
+T{ HI-2INT 2DUP D+ -> 1SD 1- MAX-INTD }T  ok.
+T{ MAX-2INT MIN-2INT D+ -> -1. }T  ok.
+T{ MAX-2INT LO-2INT D+ -> HI-2INT }T  ok.
+T{ HI-2INT MIN-2INT D+ 1. D+ -> LO-2INT }T  ok.
+T{ LO-2INT 2DUP D+ -> MIN-2INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D- with small integers * ok.
+  ok.
+T{  0.  5. D- -> -5. }T  ok.
+T{  5.  0. D- ->  5. }T  ok.
+T{  0. -5. D- ->  5. }T  ok.
+T{  1.  2. D- -> -1. }T  ok.
+T{  1. -2. D- ->  3. }T  ok.
+T{ -1.  2. D- -> -3. }T  ok.
+T{ -1. -2. D- ->  1. }T  ok.
+T{ -1. -1. D- ->  0. }T  ok.
+  ok.
+TESTING D- with mid-range integers * ok.
+  ok.
+T{  0  0  0  5 D- ->  0 -5 }T  ok.
+T{ -1  5  0  0 D- -> -1  5 }T  ok.
+T{  0  0 -1 -5 D- ->  1  4 }T  ok.
+T{  0 -5  0  0 D- ->  0 -5 }T  ok.
+T{ -1  1  0  2 D- -> -1 -1 }T  ok.
+T{  0  1 -1 -2 D- ->  1  2 }T  ok.
+T{  0 -1  0  2 D- ->  0 -3 }T  ok.
+T{  0 -1  0 -2 D- ->  0  1 }T  ok.
+T{  0  0  0  1 D- ->  0 -1 }T  ok.
+T{ MIN-INTD 0 2DUP D- -> 0. }T  ok.
+T{ MIN-INTD S>D MAX-INTD 0 D- -> 1 1SD }T  ok.
+  ok.
+TESTING D- with large integers * ok.
+  ok.
+T{ MAX-2INT MAX-2INT D- -> 0. }T  ok.
+T{ MIN-2INT MIN-2INT D- -> 0. }T  ok.
+T{ MAX-2INT HI-2INT  D- -> LO-2INT DNEGATE }T  ok.
+T{ HI-2INT  LO-2INT  D- -> MAX-2INT }T  ok.
+T{ LO-2INT  HI-2INT  D- -> MIN-2INT 1. D+ }T  ok.
+T{ MIN-2INT MIN-2INT D- -> 0. }T  ok.
+T{ MIN-2INT LO-2INT  D- -> LO-2INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D0< D0= * ok.
+  ok.
+T{ 0. D0< -> FALSE }T  ok.
+T{ 1. D0< -> FALSE }T  ok.
+T{ MIN-INTD 0 D0< -> FALSE }T  ok.
+T{ 0 MAX-INTD D0< -> FALSE }T  ok.
+T{ MAX-2INT  D0< -> FALSE }T  ok.
+T{ -1. D0< -> TRUE }T  ok.
+T{ MIN-2INT D0< -> TRUE }T  ok.
+  ok.
+T{ 1. D0= -> FALSE }T  ok.
+T{ MIN-INTD 0 D0= -> FALSE }T  ok.
+T{ MAX-2INT  D0= -> FALSE }T  ok.
+T{ -1 MAX-INTD D0= -> FALSE }T  ok.
+T{ 0. D0= -> TRUE }T  ok.
+T{ -1. D0= -> FALSE }T  ok.
+T{ 0 MIN-INTD D0= -> FALSE }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D2* D2/ * ok.
+  ok.
+T{ 0. D2* -> 0. D2* }T  ok.
+T{ MIN-INTD 0 D2* -> 0 1 }T  ok.
+T{ HI-2INT D2* -> MAX-2INT 1. D- }T  ok.
+T{ LO-2INT D2* -> MIN-2INT }T  ok.
+  ok.
+T{ 0. D2/ -> 0. }T  ok.
+T{ 1. D2/ -> 0. }T  ok.
+T{ 0 1 D2/ -> MIN-INTD 0 }T  ok.
+T{ MAX-2INT D2/ -> HI-2INT }T  ok.
+T{ -1. D2/ -> -1. }T  ok.
+T{ MIN-2INT D2/ -> LO-2INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D< D= * ok.
+  ok.
+T{  0.  1. D< -> TRUE  }T  ok.
+T{  0.  0. D< -> FALSE }T  ok.
+T{  1.  0. D< -> FALSE }T  ok.
+T{ -1.  1. D< -> TRUE  }T  ok.
+T{ -1.  0. D< -> TRUE  }T  ok.
+T{ -2. -1. D< -> TRUE  }T  ok.
+T{ -1. -2. D< -> FALSE }T  ok.
+T{ 0 1   1. D< -> FALSE }T  \ Suggested by Helmut Eller  ok.
+T{ 1.  0 1  D< -> TRUE  }T  ok.
+T{ 0 -1 1 -2 D< -> FALSE }T  ok.
+T{ 1 -2 0 -1 D< -> TRUE  }T  ok.
+T{ -1. MAX-2INT D< -> TRUE }T  ok.
+T{ MIN-2INT MAX-2INT D< -> TRUE }T  ok.
+T{ MAX-2INT -1. D< -> FALSE }T  ok.
+T{ MAX-2INT MIN-2INT D< -> FALSE }T  ok.
+T{ MAX-2INT 2DUP -1. D+ D< -> FALSE }T  ok.
+T{ MIN-2INT 2DUP  1. D+ D< -> TRUE  }T  ok.
+T{ MAX-INTD S>D 2DUP 1. D+ D< -> TRUE }T \ Ensure D< acts on MS cells  ok.
+  ok.
+T{ -1. -1. D= -> TRUE  }T  ok.
+T{ -1.  0. D= -> FALSE }T  ok.
+T{ -1.  1. D= -> FALSE }T  ok.
+T{  0. -1. D= -> FALSE }T  ok.
+T{  0.  0. D= -> TRUE  }T  ok.
+T{  0.  1. D= -> FALSE }T  ok.
+T{  1. -1. D= -> FALSE }T  ok.
+T{  1.  0. D= -> FALSE }T  ok.
+T{  1.  1. D= -> TRUE  }T  ok.
+  ok.
+T{ 0 -1 0 -1 D= -> TRUE  }T  ok.
+T{ 0 -1 0  0 D= -> FALSE }T  ok.
+T{ 0 -1 0  1 D= -> FALSE }T  ok.
+T{ 0  0 0 -1 D= -> FALSE }T  ok.
+T{ 0  0 0  0 D= -> TRUE  }T  ok.
+T{ 0  0 0  1 D= -> FALSE }T  ok.
+T{ 0  1 0 -1 D= -> FALSE }T  ok.
+T{ 0  1 0  0 D= -> FALSE }T  ok.
+T{ 0  1 0  1 D= -> TRUE  }T  ok.
+  ok.
+T{ MAX-2INT MIN-2INT D= -> FALSE }T  ok.
+T{ MAX-2INT 0. D= -> FALSE }T  ok.
+T{ MAX-2INT MAX-2INT D= -> TRUE }T  ok.
+T{ MAX-2INT HI-2INT  D= -> FALSE }T  ok.
+T{ MAX-2INT MIN-2INT D= -> FALSE }T  ok.
+T{ MIN-2INT MIN-2INT D= -> TRUE }T  ok.
+T{ MIN-2INT LO-2INT  D=  -> FALSE }T  ok.
+T{ MIN-2INT MAX-2INT D= -> FALSE }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING 2LITERAL 2VARIABLE * ok.
+  ok.
+T{ : CD3 [ MAX-2INT ] 2LITERAL ; -> }T  ok.
+T{ CD3 -> MAX-2INT }T  ok.
+T{ 2VARIABLE 2V1 -> }T  ok.
+T{ 0. 2V1 2! -> }T  ok.
+T{ 2V1 2@ -> 0. }T  ok.
+T{ -1 -2 2V1 2! -> }T  ok.
+T{ 2V1 2@ -> -1 -2 }T  ok.
+T{ : CD4 2VARIABLE ; -> }T  ok.
+T{ CD4 2V2 -> }T  ok.
+T{ : CD5 2V2 2! ; -> }T  ok.
+T{ -2 -1 CD5 -> }T  ok.
+T{ 2V2 2@ -> -2 -1 }T  ok.
+\           T{ 2VARIABLE 2V3 IMMEDIATE 5 6 2V3 2! -> }T  ok.
+\           T{ 2V3 2@ -> 5 6 }T  ok.
+\           T{ : CD7 2V3 [ 2@ ] 2LITERAL ; CD7 -> 5 6 }T  ok.
+\           T{ : CD8 [ 6 7 ] 2V3 [ 2! ] ; 2V3 2@ -> 6 7 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING DMAX DMIN * ok.
+  ok.
+T{  1.  2. DMAX -> 2. }T  ok.
+T{  1.  0. DMAX -> 1. }T  ok.
+T{  1. -1. DMAX -> 1. }T  ok.
+T{  1.  1. DMAX -> 1. }T  ok.
+T{  0.  1. DMAX -> 1. }T  ok.
+T{  0. -1. DMAX -> 0. }T  ok.
+T{ -1.  1. DMAX -> 1. }T  ok.
+T{ -1. -2. DMAX -> -1. }T  ok.
+  ok.
+T{ MAX-2INT HI-2INT  DMAX -> MAX-2INT }T  ok.
+T{ MAX-2INT MIN-2INT DMAX -> MAX-2INT }T  ok.
+T{ MIN-2INT MAX-2INT DMAX -> MAX-2INT }T  ok.
+T{ MIN-2INT LO-2INT  DMAX -> LO-2INT  }T  ok.
+  ok.
+T{ MAX-2INT  1. DMAX -> MAX-2INT }T  ok.
+T{ MAX-2INT -1. DMAX -> MAX-2INT }T  ok.
+T{ MIN-2INT  1. DMAX ->  1. }T  ok.
+T{ MIN-2INT -1. DMAX -> -1. }T  ok.
+  ok.
+  ok.
+T{  1.  2. DMIN ->  1. }T  ok.
+T{  1.  0. DMIN ->  0. }T  ok.
+T{  1. -1. DMIN -> -1. }T  ok.
+T{  1.  1. DMIN ->  1. }T  ok.
+T{  0.  1. DMIN ->  0. }T  ok.
+T{  0. -1. DMIN -> -1. }T  ok.
+T{ -1.  1. DMIN -> -1. }T  ok.
+T{ -1. -2. DMIN -> -2. }T  ok.
+  ok.
+T{ MAX-2INT HI-2INT  DMIN -> HI-2INT  }T  ok.
+T{ MAX-2INT MIN-2INT DMIN -> MIN-2INT }T  ok.
+T{ MIN-2INT MAX-2INT DMIN -> MIN-2INT }T  ok.
+T{ MIN-2INT LO-2INT  DMIN -> MIN-2INT }T  ok.
+  ok.
+T{ MAX-2INT  1. DMIN ->  1. }T  ok.
+T{ MAX-2INT -1. DMIN -> -1. }T  ok.
+T{ MIN-2INT  1. DMIN -> MIN-2INT }T  ok.
+T{ MIN-2INT -1. DMIN -> MIN-2INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D>S DABS * ok.
+  ok.
+T{  1234  0 D>S ->  1234 }T  ok.
+T{ -1234 -1 D>S -> -1234 }T  ok.
+T{ MAX-INTD  0 D>S -> MAX-INTD }T  ok.
+T{ MIN-INTD -1 D>S -> MIN-INTD }T  ok.
+  ok.
+T{  1. DABS -> 1. }T  ok.
+T{ -1. DABS -> 1. }T  ok.
+T{ MAX-2INT DABS -> MAX-2INT }T  ok.
+T{ MIN-2INT 1. D+ DABS -> MAX-2INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING M+ M*/ * ok.
+  ok.
+T{ HI-2INT   1 M+ -> HI-2INT   1. D+ }T  ok.
+T{ MAX-2INT -1 M+ -> MAX-2INT -1. D+ }T  ok.
+T{ MIN-2INT  1 M+ -> MIN-2INT  1. D+ }T  ok.
+T{ LO-2INT  -1 M+ -> LO-2INT  -1. D+ }T  ok.
+  ok.
+\ To correct the result if the division is floored, only used when  ok.
+\ necessary i.e. negative quotient and remainder <> 0  ok.
+  ok.
+: ?FLOORED [ -3 2 / -2 = ] LITERAL IF 1. D- THEN ;  ok.
+  ok.
+T{  5.  7 11 M*/ ->  3. }T  ok.
+T{  5. -7 11 M*/ -> -3. ?FLOORED }T    \ FLOORED -4.  ok.
+T{ -5.  7 11 M*/ -> -3. ?FLOORED }T    \ FLOORED -4.  ok.
+T{ -5. -7 11 M*/ ->  3. }T  ok.
+T{ MAX-2INT  8 16 M*/ -> HI-2INT }T  ok.
+T{ MAX-2INT -8 16 M*/ -> HI-2INT DNEGATE ?FLOORED }T  \ FLOORED SUBTRACT 1  ok.
+T{ MIN-2INT  8 16 M*/ -> LO-2INT }T  ok.
+T{ MIN-2INT -8 16 M*/ -> LO-2INT DNEGATE }T  ok.
+T{ MAX-2INT MAX-INTD MAX-INTD M*/ -> MAX-2INT }T  ok.
+T{ MAX-2INT MAX-INTD 2/ MAX-INTD M*/ -> MAX-INTD 1- HI-2INT NIP }T  ok.
+T{ MIN-2INT LO-2INT NIP 1+ DUP 1- NEGATE M*/ -> 0 MAX-INTD 1- }T  ok.
+T{ MIN-2INT LO-2INT NIP 1- MAX-INTD M*/ -> MIN-INTD 3 + HI-2INT NIP 2 + }T  ok.
+T{ MAX-2INT LO-2INT NIP DUP NEGATE M*/ -> MAX-2INT DNEGATE }T  ok.
+T{ MIN-2INT MAX-INTD DUP M*/ -> MIN-2INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D. D.R * ok.
+  ok.
+\ Create some large double numbers  ok.
+MAX-2INT 71 73 M*/ 2CONSTANT DBL1  ok.
+MIN-2INT 73 79 M*/ 2CONSTANT DBL2  ok.
+  ok.
+: D>ASCII  ( D -- CADDR U )  ok.
+   DUP >R <# DABS #S R> SIGN #>    ( -- CADDR1 U )  ok.
+   HERE SWAP 2DUP 2>R CHARS DUP ALLOT MOVE 2R>  ok.
+;  ok.
+  ok.
+DBL1 D>ASCII 2CONSTANT "DBL1"  ok.
+DBL2 D>ASCII 2CONSTANT "DBL2"  ok.
+  ok.
+: DOUBLEOUTPUT  ok.
+   CR ." You should see lines duplicated:" CR  ok.
+   5 SPACES "DBL1" TYPE CR  ok.
+   5 SPACES DBL1 D. CR  ok.
+   8 SPACES "DBL1" DUP >R TYPE CR  ok.
+   5 SPACES DBL1 R> 3 + D.R CR  ok.
+   5 SPACES "DBL2" TYPE CR  ok.
+   5 SPACES DBL2 D. CR  ok.
+   10 SPACES "DBL2" DUP >R TYPE CR  ok.
+   5 SPACES DBL2 R> 5 + D.R CR  ok.
+;  ok.
+  ok.
+T{ DOUBLEOUTPUT -> }T 
+You should see lines duplicated:
+     2088648478
+     2088648478 
+        2088648478
+        2088648478
+     -1984383624
+     -1984383624 
+          -1984383624
+          -1984383624
+ ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING 2ROT DU< (Double Number extension words) * ok.
+  ok.
+T{ 1. 2. 3. 2ROT -> 2. 3. 1. }T  ok.
+T{ MAX-2INT MIN-2INT 1. 2ROT -> MIN-2INT 1. MAX-2INT }T  ok.
+  ok.
+T{  1.  1. DU< -> FALSE }T  ok.
+T{  1. -1. DU< -> TRUE  }T  ok.
+T{ -1.  1. DU< -> FALSE }T  ok.
+T{ -1. -2. DU< -> FALSE }T  ok.
+T{ 0 1   1. DU< -> FALSE }T  ok.
+T{ 1.  0 1  DU< -> TRUE  }T  ok.
+T{ 0 -1 1 -2 DU< -> FALSE }T  ok.
+T{ 1 -2 0 -1 DU< -> TRUE  }T  ok.
+  ok.
+T{ MAX-2INT HI-2INT  DU< -> FALSE }T  ok.
+T{ HI-2INT  MAX-2INT DU< -> TRUE  }T  ok.
+T{ MAX-2INT MIN-2INT DU< -> TRUE }T  ok.
+T{ MIN-2INT MAX-2INT DU< -> FALSE }T  ok.
+T{ MIN-2INT LO-2INT  DU< -> TRUE }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\           TESTING 2VALUE  ok.
+\  ok.
+\           T{ 1111 2222 2VALUE 2VAL -> }T  ok.
+\           T{ 2VAL -> 1111 2222 }T  ok.
+\           T{ 3333 4444 TO 2VAL -> }T  ok.
+\           T{ 2VAL -> 3333 4444 }T  ok.
+\           T{ : TO-2VAL TO 2VAL ; 5555 6666 TO-2VAL -> }T  ok.
+\           T{ 2VAL -> 5555 6666 }T  ok.
+\  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+  ok.
+\ DOUBLE-ERRORS SET-ERROR-COUNT  ok.
+  ok.
+CR .( End of Double-Number word tests) CR 
+End of Double-Number word tests
+ ok.
+  ok.
+\ To test the ANS Forth String word set  ok.
+  ok.
+\ This program was written by Gerry Jackson in 2006, with contributions from  ok
+.
+\ others where indicated, and is in the public domain - it can be distributed  o
+k.
+\ and/or modified in any way but please retain this notice.  ok.
+  ok.
+\ This program is distributed in the hope that it will be useful,  ok.
+\ but WITHOUT ANY WARRANTY; without even the implied warranty of  ok.
+\ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  ok.
+  ok.
+\ The tests are not claimed to be comprehensive or correct   ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ Version 0.13 13 Nov 2015 Interpretive use of S" replaced by $" from  ok.
+\                          utilities.fth  ok.
+\         0.11 25 April 2015 Tests for REPLACES SUBSTITUTE UNESCAPE added  ok.
+\         0.6 1 April 2012 Tests placed in the public domain.  ok.
+\         0.5 29 April 2010 Added tests for SEARCH and COMPARE with  ok.
+\             all strings zero length (suggested by Krishna Myneni).  ok.
+\             SLITERAL test amended in line with comp.lang.forth  ok.
+\             discussion  ok.
+\         0.4 30 November 2009 <TRUE> and <FALSE> replaced with TRUE  ok.
+\             and FALSE  ok.
+\         0.3 6 March 2009 { and } replaced with T{ and }T  ok.
+\         0.2 20 April 2007 ANS Forth words changed to upper case  ok.
+\         0.1 Oct 2006 First version released  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ The tests are based on John Hayes test program for the core word set  ok.
+\ and requires those files to have been loaded  ok.
+  ok.
+\ Words tested in this file are:  ok.
+\     -TRAILING /STRING BLANK CMOVE CMOVE> COMPARE SEARCH SLITERAL  ok.
+\     REPLACES SUBSTITUTE UNESCAPE  ok.
+\  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ Assumptions, dependencies and notes:  ok.
+\     - tester.fr (or ttester.fs), errorreport.fth and utilities.fth have been  
+ok.
+\       included prior to this file  ok.
+\     - the Core word set is available and tested  ok.
+\     - COMPARE is case sensitive  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+  ok.
+TESTING String word set * ok.
+  ok.
+DECIMAL  ok.
+  ok.
+T{ :  S1 S" abcdefghijklmnopqrstuvwxyz" ; -> }T  ok.
+T{ :  S2 S" abc"   ; -> }T  ok.
+T{ :  S3 S" jklmn" ; -> }T  ok.
+T{ :  S4 S" z"     ; -> }T  ok.
+T{ :  S5 S" mnoq"  ; -> }T  ok.
+T{ :  S6 S" 12345" ; -> }T  ok.
+T{ :  S7 S" "      ; -> }T  ok.
+T{ :  S8 S" abc  " ; -> }T  ok.
+T{ :  S9 S"      " ; -> }T  ok.
+T{ : S10 S"    a " ; -> }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ TESTING -TRAILING  ok.
+\  ok.
+\ T{  S1 -TRAILING -> S1 }T  ok.
+\ T{  S8 -TRAILING -> S8 2 - }T  ok.
+\ T{  S7 -TRAILING -> S7 }T  ok.
+\ T{  S9 -TRAILING -> S9 DROP 0 }T  ok.
+\ T{ S10 -TRAILING -> S10 1- }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING /STRING * ok.
+  ok.
+T{ S1  5 /STRING -> S1 SWAP 5 + SWAP 5 - }T  ok.
+T{ S1 10 /STRING -4 /STRING -> S1 6 /STRING }T  ok.
+T{ S1  0 /STRING -> S1 }T  ok.
+  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D<> * ok.
+  ok.
+T{ -1. -1. D<> -> FALSE  }T  ok.
+T{ -1.  0. D<> -> TRUE }T  ok.
+T{ -1.  1. D<> -> TRUE }T  ok.
+T{  0. -1. D<> -> TRUE }T  ok.
+T{  0.  0. D<> -> FALSE  }T  ok.
+T{  0.  1. D<> -> TRUE }T  ok.
+T{  1. -1. D<> -> TRUE }T  ok.
+T{  1.  0. D<> -> TRUE }T  ok.
+T{  1.  1. D<> -> FALSE  }T  ok.
+  ok.
+T{ 0 -1 0 -1 D<> -> FALSE  }T  ok.
+T{ 0 -1 0  0 D<> -> TRUE }T  ok.
+T{ 0 -1 0  1 D<> -> TRUE }T  ok.
+T{ 0  0 0 -1 D<> -> TRUE }T  ok.
+T{ 0  0 0  0 D<> -> FALSE  }T  ok.
+T{ 0  0 0  1 D<> -> TRUE }T  ok.
+T{ 0  1 0 -1 D<> -> TRUE }T  ok.
+T{ 0  1 0  0 D<> -> TRUE }T  ok.
+T{ 0  1 0  1 D<> -> FALSE  }T  ok.
+  ok.
+T{ MAX-2INT MIN-2INT D<> -> TRUE }T  ok.
+T{ MAX-2INT 0. D<> -> TRUE }T  ok.
+T{ MAX-2INT MAX-2INT D<> -> FALSE }T  ok.
+T{ MAX-2INT HI-2INT  D<> -> TRUE }T  ok.
+T{ MAX-2INT MIN-2INT D<> -> TRUE }T  ok.
+T{ MIN-2INT MIN-2INT D<> -> FALSE }T  ok.
+T{ MIN-2INT LO-2INT  D<>  -> TRUE }T  ok.
+T{ MIN-2INT MAX-2INT D<> -> TRUE }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D> D<= D>= * ok.
+  ok.
+T{  0.  1. 2SWAP D> -> TRUE  }T  ok.
+T{  0.  0. 2SWAP D> -> FALSE }T  ok.
+T{  1.  0. 2SWAP D> -> FALSE }T  ok.
+T{ -1.  1. 2SWAP D> -> TRUE  }T  ok.
+T{ -1.  0. 2SWAP D> -> TRUE  }T  ok.
+T{ -2. -1. 2SWAP D> -> TRUE  }T  ok.
+T{ -1. -2. 2SWAP D> -> FALSE }T  ok.
+T{ 0 1   1. 2SWAP D> -> FALSE }T  \ Suggested by Helmut Eller  ok.
+T{ 1.  0 1  2SWAP D> -> TRUE  }T  ok.
+T{ 0 -1 1 -2 2SWAP D> -> FALSE }T  ok.
+T{ 1 -2 0 -1 2SWAP D> -> TRUE  }T  ok.
+T{ -1. MAX-2INT 2SWAP D> -> TRUE }T  ok.
+T{ MIN-2INT MAX-2INT 2SWAP D> -> TRUE }T  ok.
+T{ MAX-2INT -1. 2SWAP D> -> FALSE }T  ok.
+T{ MAX-2INT MIN-2INT 2SWAP D> -> FALSE }T  ok.
+T{ MAX-2INT 2DUP -1. D+ 2SWAP D> -> FALSE }T  ok.
+T{ MIN-2INT 2DUP  1. D+ 2SWAP D> -> TRUE  }T  ok.
+T{ MAX-INTD S>D 2DUP 1. D+ 2SWAP D> -> TRUE }T \ Ensure 2SWAP D> acts on MS cell
+s  ok.
+  ok.
+  ok.
+T{  0.  1. 2SWAP D<= INVERT -> TRUE  }T  ok.
+T{  0.  0. 2SWAP D<= INVERT -> FALSE }T  ok.
+T{  1.  0. 2SWAP D<= INVERT -> FALSE }T  ok.
+T{ -1.  1. 2SWAP D<= INVERT -> TRUE  }T  ok.
+T{ -1.  0. 2SWAP D<= INVERT -> TRUE  }T  ok.
+T{ -2. -1. 2SWAP D<= INVERT -> TRUE  }T  ok.
+T{ -1. -2. 2SWAP D<= INVERT -> FALSE }T  ok.
+T{ 0 1   1. 2SWAP D<= INVERT -> FALSE }T  \ Suggested by Helmut Eller  ok.
+T{ 1.  0 1  2SWAP D<= INVERT -> TRUE  }T  ok.
+T{ 0 -1 1 -2 2SWAP D<= INVERT -> FALSE }T  ok.
+T{ 1 -2 0 -1 2SWAP D<= INVERT -> TRUE  }T  ok.
+T{ -1. MAX-2INT 2SWAP D<= INVERT -> TRUE }T  ok.
+T{ MIN-2INT MAX-2INT 2SWAP D<= INVERT -> TRUE }T  ok.
+T{ MAX-2INT -1. 2SWAP D<= INVERT -> FALSE }T  ok.
+T{ MAX-2INT MIN-2INT 2SWAP D<= INVERT -> FALSE }T  ok.
+T{ MAX-2INT 2DUP -1. D+ 2SWAP D<= INVERT -> FALSE }T  ok.
+T{ MIN-2INT 2DUP  1. D+ 2SWAP D<= INVERT -> TRUE  }T  ok.
+T{ MAX-INTD S>D 2DUP 1. D+ 2SWAP D<= INVERT -> TRUE }T \ Ensure 2SWAP D<= INVERT
+ acts on MS cells  ok.
+  ok.
+  ok.
+T{  0.  1. D>= INVERT -> TRUE  }T  ok.
+T{  0.  0. D>= INVERT -> FALSE }T  ok.
+T{  1.  0. D>= INVERT -> FALSE }T  ok.
+T{ -1.  1. D>= INVERT -> TRUE  }T  ok.
+T{ -1.  0. D>= INVERT -> TRUE  }T  ok.
+T{ -2. -1. D>= INVERT -> TRUE  }T  ok.
+T{ -1. -2. D>= INVERT -> FALSE }T  ok.
+T{ 0 1   1. D>= INVERT -> FALSE }T  \ Suggested by Helmut Eller  ok.
+T{ 1.  0 1  D>= INVERT -> TRUE  }T  ok.
+T{ 0 -1 1 -2 D>= INVERT -> FALSE }T  ok.
+T{ 1 -2 0 -1 D>= INVERT -> TRUE  }T  ok.
+T{ -1. MAX-2INT D>= INVERT -> TRUE }T  ok.
+T{ MIN-2INT MAX-2INT D>= INVERT -> TRUE }T  ok.
+T{ MAX-2INT -1. D>= INVERT -> FALSE }T  ok.
+T{ MAX-2INT MIN-2INT D>= INVERT -> FALSE }T  ok.
+T{ MAX-2INT 2DUP -1. D+ D>= INVERT -> FALSE }T  ok.
+T{ MIN-2INT 2DUP  1. D+ D>= INVERT -> TRUE  }T  ok.
+T{ MAX-INTD S>D 2DUP 1. D+ D>= INVERT -> TRUE }T \ Ensure D>= INVERT acts on MS 
+cells  ok.
+  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING D> D<= D>= * ok.
+  ok.
+T{  1.  1. 2SWAP DU> -> FALSE }T  ok.
+T{  1. -1. 2SWAP DU> -> TRUE  }T  ok.
+T{ -1.  1. 2SWAP DU> -> FALSE }T  ok.
+T{ -1. -2. 2SWAP DU> -> FALSE }T  ok.
+T{ 0 1   1. 2SWAP DU> -> FALSE }T  ok.
+T{ 1.  0 1  2SWAP DU> -> TRUE  }T  ok.
+T{ 0 -1 1 -2 2SWAP DU> -> FALSE }T  ok.
+T{ 1 -2 0 -1 2SWAP DU> -> TRUE  }T  ok.
+  ok.
+T{ MAX-2INT HI-2INT  2SWAP DU> -> FALSE }T  ok.
+T{ HI-2INT  MAX-2INT 2SWAP DU> -> TRUE  }T  ok.
+T{ MAX-2INT MIN-2INT 2SWAP DU> -> TRUE }T  ok.
+T{ MIN-2INT MAX-2INT 2SWAP DU> -> FALSE }T  ok.
+T{ MIN-2INT LO-2INT  2SWAP DU> -> TRUE }T  ok.
+  ok.
+  ok.
+T{  1.  1. 2SWAP DU<= INVERT -> FALSE }T  ok.
+T{  1. -1. 2SWAP DU<= INVERT -> TRUE  }T  ok.
+T{ -1.  1. 2SWAP DU<= INVERT -> FALSE }T  ok.
+T{ -1. -2. 2SWAP DU<= INVERT -> FALSE }T  ok.
+T{ 0 1   1. 2SWAP DU<= INVERT -> FALSE }T  ok.
+T{ 1.  0 1  2SWAP DU<= INVERT -> TRUE  }T  ok.
+T{ 0 -1 1 -2 2SWAP DU<= INVERT -> FALSE }T  ok.
+T{ 1 -2 0 -1 2SWAP DU<= INVERT -> TRUE  }T  ok.
+  ok.
+T{ MAX-2INT HI-2INT  2SWAP DU<= INVERT -> FALSE }T  ok.
+T{ HI-2INT  MAX-2INT 2SWAP DU<= INVERT -> TRUE  }T  ok.
+T{ MAX-2INT MIN-2INT 2SWAP DU<= INVERT -> TRUE }T  ok.
+T{ MIN-2INT MAX-2INT 2SWAP DU<= INVERT -> FALSE }T  ok.
+T{ MIN-2INT LO-2INT  2SWAP DU<= INVERT -> TRUE }T  ok.
+  ok.
+  ok.
+T{  1.  1. DU>= INVERT -> FALSE }T  ok.
+T{  1. -1. DU>= INVERT -> TRUE  }T  ok.
+T{ -1.  1. DU>= INVERT -> FALSE }T  ok.
+T{ -1. -2. DU>= INVERT -> FALSE }T  ok.
+T{ 0 1   1. DU>= INVERT -> FALSE }T  ok.
+T{ 1.  0 1  DU>= INVERT -> TRUE  }T  ok.
+T{ 0 -1 1 -2 DU>= INVERT -> FALSE }T  ok.
+T{ 1 -2 0 -1 DU>= INVERT -> TRUE  }T  ok.
+  ok.
+T{ MAX-2INT HI-2INT  DU>= INVERT -> FALSE }T  ok.
+T{ HI-2INT  MAX-2INT DU>= INVERT -> TRUE  }T  ok.
+T{ MAX-2INT MIN-2INT DU>= INVERT -> TRUE }T  ok.
+T{ MIN-2INT MAX-2INT DU>= INVERT -> FALSE }T  ok.
+T{ MIN-2INT LO-2INT  DU>= INVERT -> TRUE }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING UD. * ok.
+  ok.
+: UDOUBLEOUTPUT  ok.
+   CR ." You should see lines duplicated:" CR  ok.
+   5 SPACES "DBL1" TYPE CR  ok.
+   5 SPACES DBL1 UD. CR  ok.
+;  ok.
+  ok.
+T{ UDOUBLEOUTPUT -> }T 
+You should see lines duplicated:
+     2088648478
+     2088648478 
+ ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING DSHR DSHL * ok.
+  ok.
+T{ 0. DSHL -> 0. DSHL }T ?
+T{ MIN-INTD 0 DSHL -> 0 1 }T ?
+T{ HI-2INT DSHL -> MAX-2INT 1. D- }T ?
+T{ LO-2INT DSHL -> MIN-2INT }T ?
+  ok.
+T{ 0. DSHR -> 0. }T  ok.
+T{ 1. DSHR -> 0. }T  ok.
+T{ 0 1 DSHR -> MIN-INTD 0 }T  ok.
+T{ MAX-2INT DSHR -> HI-2INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING NOT * ok.
+  ok.
+T{ 0S NOT -> 1S }T  ok.
+T{ 1S NOT -> 0S }T  ok.
+  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING <= >= * ok.
+  ok.
+T{ 0 1 >= INVERT -> <TRUE> }T  ok.
+T{ 1 2 >= INVERT -> <TRUE> }T  ok.
+T{ -1 0 >= INVERT -> <TRUE> }T  ok.
+T{ -1 1 >= INVERT -> <TRUE> }T  ok.
+T{ MIN-INT 0 >= INVERT -> <TRUE> }T  ok.
+T{ MIN-INT MAX-INT >= INVERT -> <TRUE> }T  ok.
+T{ 0 MAX-INT >= INVERT -> <TRUE> }T  ok.
+T{ 0 0 >= INVERT -> <FALSE> }T  ok.
+T{ 1 1 >= INVERT -> <FALSE> }T  ok.
+T{ 1 0 >= INVERT -> <FALSE> }T  ok.
+T{ 2 1 >= INVERT -> <FALSE> }T  ok.
+T{ 0 -1 >= INVERT -> <FALSE> }T  ok.
+T{ 1 -1 >= INVERT -> <FALSE> }T  ok.
+T{ 0 MIN-INT >= INVERT -> <FALSE> }T  ok.
+T{ MAX-INT MIN-INT >= INVERT -> <FALSE> }T  ok.
+T{ MAX-INT 0 >= INVERT -> <FALSE> }T  ok.
+  ok.
+T{ 0 1 <= INVERT -> <FALSE> }T  ok.
+T{ 1 2 <= INVERT -> <FALSE> }T  ok.
+T{ -1 0 <= INVERT -> <FALSE> }T  ok.
+T{ -1 1 <= INVERT -> <FALSE> }T  ok.
+T{ MIN-INT 0 <= INVERT -> <FALSE> }T  ok.
+T{ MIN-INT MAX-INT <= INVERT -> <FALSE> }T  ok.
+T{ 0 MAX-INT <= INVERT -> <FALSE> }T  ok.
+T{ 0 0 <= INVERT -> <FALSE> }T  ok.
+T{ 1 1 <= INVERT -> <FALSE> }T  ok.
+T{ 1 0 <= INVERT -> <TRUE> }T  ok.
+T{ 2 1 <= INVERT -> <TRUE> }T  ok.
+T{ 0 -1 <= INVERT -> <TRUE> }T  ok.
+T{ 1 -1 <= INVERT -> <TRUE> }T  ok.
+T{ 0 MIN-INT <= INVERT -> <TRUE> }T  ok.
+T{ MAX-INT MIN-INT <= INVERT -> <TRUE> }T  ok.
+T{ MAX-INT 0 <= INVERT -> <TRUE> }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING U<= U>= UMIN UMAX * ok.
+  ok.
+T{ 0 1 U>= INVERT -> <TRUE> }T  ok.
+T{ 1 2 U>= INVERT -> <TRUE> }T  ok.
+T{ 0 MID-UINT U>= INVERT -> <TRUE> }T  ok.
+T{ 0 MAX-UINT U>= INVERT -> <TRUE> }T  ok.
+T{ MID-UINT MAX-UINT U>= INVERT -> <TRUE> }T  ok.
+T{ 0 0 U>= INVERT -> <FALSE> }T  ok.
+T{ 1 1 U>= INVERT -> <FALSE> }T  ok.
+T{ 1 0 U>= INVERT -> <FALSE> }T  ok.
+T{ 2 1 U>= INVERT -> <FALSE> }T  ok.
+T{ MID-UINT 0 U>= INVERT -> <FALSE> }T  ok.
+T{ MAX-UINT 0 U>= INVERT -> <FALSE> }T  ok.
+T{ MAX-UINT MID-UINT U>= INVERT -> <FALSE> }T  ok.
+  ok.
+T{ 0 1 SWAP U<= INVERT -> <TRUE> }T  ok.
+T{ 1 2 SWAP U<= INVERT -> <TRUE> }T  ok.
+T{ 0 MID-UINT SWAP U<= INVERT -> <TRUE> }T  ok.
+T{ 0 MAX-UINT SWAP U<= INVERT -> <TRUE> }T  ok.
+T{ MID-UINT MAX-UINT SWAP U<= INVERT -> <TRUE> }T  ok.
+T{ 0 0 SWAP U<= INVERT -> <FALSE> }T  ok.
+T{ 1 1 SWAP U<= INVERT -> <FALSE> }T  ok.
+T{ 1 0 SWAP U<= INVERT -> <FALSE> }T  ok.
+T{ 2 1 SWAP U<= INVERT -> <FALSE> }T  ok.
+T{ MID-UINT 0 SWAP U<= INVERT -> <FALSE> }T  ok.
+T{ MAX-UINT 0 SWAP U<= INVERT -> <FALSE> }T  ok.
+T{ MAX-UINT MID-UINT SWAP U<= INVERT -> <FALSE> }T  ok.
+  ok.
+  ok.
+T{ 0 1 UMIN -> 0 }T  ok.
+T{ 1 2 UMIN -> 1 }T  ok.
+T{ -1 0 UMIN -> 0 }T  ok.
+T{ -1 1 UMIN -> 1 }T  ok.
+T{ MIN-INT 0 UMIN -> 0 }T  ok.
+T{ MIN-INT MAX-INT UMIN -> MAX-INT }T  ok.
+T{ 0 MAX-INT UMIN -> 0 }T  ok.
+T{ 0 0 UMIN -> 0 }T  ok.
+T{ 1 1 UMIN -> 1 }T  ok.
+T{ 1 0 UMIN -> 0 }T  ok.
+T{ 2 1 UMIN -> 1 }T  ok.
+T{ 0 -1 UMIN -> 0 }T  ok.
+T{ 1 -1 UMIN -> 1 }T  ok.
+T{ 0 MIN-INT UMIN -> 0 }T  ok.
+T{ MAX-INT MIN-INT UMIN -> MAX-INT }T  ok.
+T{ MAX-INT 0 UMIN -> 0 }T  ok.
+  ok.
+T{ 0 1 UMAX -> 1 }T  ok.
+T{ 1 2 UMAX -> 2 }T  ok.
+T{ -1 0 UMAX -> -1 }T  ok.
+T{ -1 1 UMAX -> -1 }T  ok.
+T{ MIN-INT 0 UMAX -> MIN-INT }T  ok.
+T{ MIN-INT MAX-INT UMAX -> MIN-INT }T  ok.
+T{ 0 MAX-INT UMAX -> MAX-INT }T  ok.
+T{ 0 0 UMAX -> 0 }T  ok.
+T{ 1 1 UMAX -> 1 }T  ok.
+T{ 1 0 UMAX -> 1 }T  ok.
+T{ 2 1 UMAX -> 2 }T  ok.
+T{ 0 -1 UMAX -> -1 }T  ok.
+T{ 1 -1 UMAX -> -1 }T  ok.
+T{ 0 MIN-INT UMAX -> MIN-INT }T  ok.
+T{ MAX-INT MIN-INT UMAX -> MIN-INT }T  ok.
+T{ MAX-INT 0 UMAX -> MAX-INT }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING F* F/ * ok.
+  ok.
+T{ 2,0 1,0 F/ -> 2,0 }T  ok.
+T{ 2,0 2,0 F/ -> 1,0 }T  ok.
+T{ 2,0 4,0 F/ -> 0,5 }T  ok.
+T{ 2,0 8,0 F/ -> 0,25 }T  ok.
+  ok.
+T{ 2,0 -1,0 F/ -> -2,0 }T  ok.
+T{ 2,0 -2,0 F/ -> -1,0 }T  ok.
+T{ 2,0 -4,0 F/ -> -0,5 }T  ok.
+T{ 2,0 -8,0 F/ -> -0,25 }T  ok.
+  ok.
+T{ -2,0 1,0 F/ -> -2,0 }T  ok.
+T{ -2,0 2,0 F/ -> -1,0 }T  ok.
+T{ -2,0 4,0 F/ -> -0,5 }T  ok.
+T{ -2,0 8,0 F/ -> -0,25 }T  ok.
+  ok.
+T{ -2,0 -1,0 F/ -> 2,0 }T  ok.
+T{ -2,0 -2,0 F/ -> 1,0 }T  ok.
+T{ -2,0 -4,0 F/ -> 0,5 }T  ok.
+T{ -2,0 -8,0 F/ -> 0,25 }T  ok.
+  ok.
+  ok.
+T{ 0,25 1,0 F* -> 0,25 }T  ok.
+T{ 0,25 2,0 F* -> 0,5 }T  ok.
+T{ 0,25 4,0 F* -> 1,0 }T  ok.
+T{ 0,25 8,0 F* -> 2,0 }T  ok.
+  ok.
+T{ 0,25 -1,0 F* -> -0,25 }T  ok.
+T{ 0,25 -2,0 F* -> -0,5 }T  ok.
+T{ 0,25 -4,0 F* -> -1,0 }T  ok.
+T{ 0,25 -8,0 F* -> -2,0 }T  ok.
+  ok.
+T{ -0,25 1,0 F* -> -0,25 }T  ok.
+T{ -0,25 2,0 F* -> -0,5 }T  ok.
+T{ -0,25 4,0 F* -> -1,0 }T  ok.
+T{ -0,25 8,0 F* -> -2,0 }T  ok.
+  ok.
+T{ -0,25 -1,0 F* -> 0,25 }T  ok.
+T{ -0,25 -2,0 F* -> 0,5 }T  ok.
+T{ -0,25 -4,0 F* -> 1,0 }T  ok.
+T{ -0,25 -8,0 F* -> 2,0 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING F. F.N * ok.
+  ok.
+T{ 3,14159 F. -> }T 3,1415863037109375  ok.
+T{ 3,14159 3 F.N -> }T 3,141  ok.
+  ok.
+T{ -3,14159 F. -> }T -3,1415863037109375  ok.
+T{ -3,14159 3 F.N -> }T -3,141  ok.
+  ok.
+T{ 3,14159 0 F.N -> }T 3,  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING S>F * ok.
+  ok.
+T{  0 S>F ->  0,0 }T  ok.
+T{  1 S>F ->  1,0 }T  ok.
+T{ -1 S>F -> -1,0 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING RDEPTH * ok.
+  ok.
+T{ : RD0 RDEPTH RDEPTH SWAP - ; RD0 -> 0 }T  ok.
+T{ : RD1 RDEPTH 0 >R RDEPTH RDROP SWAP - ; RD1 -> 1 }T  ok.
+T{ : RD2 RDEPTH 0 >R 1 >R RDEPTH RDROP RDROP SWAP - ; RD2 -> 2 }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING ARSHIFT * ok.
+  ok.
+HEX  ok.
+  ok.
+T{ 0S 1 ARSHIFT -> 0S }T  ok.
+T{ 1 1 ARSHIFT -> 0 }T  ok.
+T{ 4000 1 ARSHIFT -> 2000 }T  ok.
+T{ 1S 1 ARSHIFT -> 1S }T            \ MSB PROPOGATED  ok.
+T{ 1S 1 XOR 1 ARSHIFT -> 1S }T  ok.
+T{ MSB 1 ARSHIFT MSB AND -> MSB }T  ok.
+  ok.
+T{ 1 0 ARSHIFT -> 1 }T  ok.
+T{ 1 1 ARSHIFT -> 0 }T  ok.
+T{ 2 1 ARSHIFT -> 1 }T  ok.
+T{ 4 2 ARSHIFT -> 1 }T  ok.
+  ok.
+DECIMAL  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING 2OR 2AND 2XOR * ok.
+  ok.
+HEX  ok.
+  ok.
+T{ 0S 0S 0S 0S 2OR -> 0S 0S }T  ok.
+T{ 0S 0S 0S 1S 2OR -> 0S 1S }T  ok.
+T{ 0S 0S 1S 0S 2OR -> 1S 0S }T  ok.
+T{ 0S 0S 1S 1S 2OR -> 1S 1S }T  ok.
+  ok.
+T{ 0S 1S 0S 0S 2OR -> 0S 1S }T  ok.
+T{ 0S 1S 0S 1S 2OR -> 0S 1S }T  ok.
+T{ 0S 1S 1S 0S 2OR -> 1S 1S }T  ok.
+T{ 0S 1S 1S 1S 2OR -> 1S 1S }T  ok.
+  ok.
+T{ 1S 0S 0S 0S 2OR -> 1S 0S }T  ok.
+T{ 1S 0S 0S 1S 2OR -> 1S 1S }T  ok.
+T{ 1S 0S 1S 0S 2OR -> 1S 0S }T  ok.
+T{ 1S 0S 1S 1S 2OR -> 1S 1S }T  ok.
+  ok.
+T{ 1S 1S 0S 0S 2OR -> 1S 1S }T  ok.
+T{ 1S 1S 0S 1S 2OR -> 1S 1S }T  ok.
+T{ 1S 1S 1S 0S 2OR -> 1S 1S }T  ok.
+T{ 1S 1S 1S 1S 2OR -> 1S 1S }T  ok.
+  ok.
+  ok.
+T{ 0S 0S 0S 0S 2AND -> 0S 0S }T  ok.
+T{ 0S 0S 0S 1S 2AND -> 0S 0S }T  ok.
+T{ 0S 0S 1S 0S 2AND -> 0S 0S }T  ok.
+T{ 0S 0S 1S 1S 2AND -> 0S 0S }T  ok.
+  ok.
+T{ 0S 1S 0S 0S 2AND -> 0S 0S }T  ok.
+T{ 0S 1S 0S 1S 2AND -> 0S 1S }T  ok.
+T{ 0S 1S 1S 0S 2AND -> 0S 0S }T  ok.
+T{ 0S 1S 1S 1S 2AND -> 0S 1S }T  ok.
+  ok.
+T{ 1S 0S 0S 0S 2AND -> 0S 0S }T  ok.
+T{ 1S 0S 0S 1S 2AND -> 0S 0S }T  ok.
+T{ 1S 0S 1S 0S 2AND -> 1S 0S }T  ok.
+T{ 1S 0S 1S 1S 2AND -> 1S 0S }T  ok.
+  ok.
+T{ 1S 1S 0S 0S 2AND -> 0S 0S }T  ok.
+T{ 1S 1S 0S 1S 2AND -> 0S 1S }T  ok.
+T{ 1S 1S 1S 0S 2AND -> 1S 0S }T  ok.
+T{ 1S 1S 1S 1S 2AND -> 1S 1S }T  ok.
+  ok.
+  ok.
+T{ 0S 0S 0S 0S 2XOR -> 0S 0S }T  ok.
+T{ 0S 0S 0S 1S 2XOR -> 0S 1S }T  ok.
+T{ 0S 0S 1S 0S 2XOR -> 1S 0S }T  ok.
+T{ 0S 0S 1S 1S 2XOR -> 1S 1S }T  ok.
+  ok.
+T{ 0S 1S 0S 0S 2XOR -> 0S 1S }T  ok.
+T{ 0S 1S 0S 1S 2XOR -> 0S 0S }T  ok.
+T{ 0S 1S 1S 0S 2XOR -> 1S 1S }T  ok.
+T{ 0S 1S 1S 1S 2XOR -> 1S 0S }T  ok.
+  ok.
+T{ 1S 0S 0S 0S 2XOR -> 1S 0S }T  ok.
+T{ 1S 0S 0S 1S 2XOR -> 1S 1S }T  ok.
+T{ 1S 0S 1S 0S 2XOR -> 0S 0S }T  ok.
+T{ 1S 0S 1S 1S 2XOR -> 0S 1S }T  ok.
+  ok.
+T{ 1S 1S 0S 0S 2XOR -> 1S 1S }T  ok.
+T{ 1S 1S 0S 1S 2XOR -> 1S 0S }T  ok.
+T{ 1S 1S 1S 0S 2XOR -> 0S 1S }T  ok.
+T{ 1S 1S 1S 1S 2XOR -> 0S 0S }T  ok.
+  ok.
+DECIMAL  ok.
+  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING 2LSHIFT 2RSHIFT 2ARSHIFT * ok.
+  ok.
+0    CONSTANT 0S  ok.
+0 INVERT CONSTANT 1S  ok.
+  ok.
+T{ 1 0 1 2LSHIFT -> 1 0 D2* }T  ok.
+T{ 1 0 2 2LSHIFT -> 1 0 D2* D2* }T  ok.
+T{ 1 0 3 2LSHIFT -> 1 0 D2* D2* D2* }T  ok.
+  ok.
+T{ 0 1 1 2LSHIFT -> 0 1 D2* }T  ok.
+T{ 0 1 2 2LSHIFT -> 0 1 D2* D2* }T  ok.
+T{ 0 1 3 2LSHIFT -> 0 1 D2* D2* D2* }T  ok.
+  ok.
+T{ 1S 0S 1 2LSHIFT -> 1S 0S D2* }T  ok.
+T{ 1S 0S 2 2LSHIFT -> 1S 0S D2* D2* }T  ok.
+T{ 1S 0S 3 2LSHIFT -> 1S 0S D2* D2* D2* }T  ok.
+  ok.
+T{ 0S 1S 1 2LSHIFT -> 0S 1S D2* }T  ok.
+T{ 0S 1S 2 2LSHIFT -> 0S 1S D2* D2* }T  ok.
+T{ 0S 1S 3 2LSHIFT -> 0S 1S D2* D2* D2* }T  ok.
+  ok.
+  ok.
+T{ 1 0 1 2ARSHIFT -> 1 0 D2/ }T  ok.
+T{ 1 0 2 2ARSHIFT -> 1 0 D2/ D2/ }T  ok.
+T{ 1 0 3 2ARSHIFT -> 1 0 D2/ D2/ D2/ }T  ok.
+  ok.
+T{ 0 1 1 2ARSHIFT -> 0 1 D2/ }T  ok.
+T{ 0 1 2 2ARSHIFT -> 0 1 D2/ D2/ }T  ok.
+T{ 0 1 3 2ARSHIFT -> 0 1 D2/ D2/ D2/ }T  ok.
+  ok.
+T{ 1S 0S 1 2ARSHIFT -> 1S 0S D2/ }T  ok.
+T{ 1S 0S 2 2ARSHIFT -> 1S 0S D2/ D2/ }T  ok.
+T{ 1S 0S 3 2ARSHIFT -> 1S 0S D2/ D2/ D2/ }T  ok.
+  ok.
+T{ 0S 1S 1 2ARSHIFT -> 0S 1S D2/ }T  ok.
+T{ 0S 1S 2 2ARSHIFT -> 0S 1S D2/ D2/ }T  ok.
+T{ 0S 1S 3 2ARSHIFT -> 0S 1S D2/ D2/ D2/ }T  ok.
+  ok.
+  ok.
+T{ 1 0 1 2RSHIFT -> 1 0 D2/ }T  ok.
+T{ 1 0 2 2RSHIFT -> 1 0 D2/ D2/ }T  ok.
+T{ 1 0 3 2RSHIFT -> 1 0 D2/ D2/ D2/ }T  ok.
+  ok.
+T{ 0 1 1 2RSHIFT -> 0 1 D2/ }T  ok.
+T{ 0 1 2 2RSHIFT -> 0 1 D2/ D2/ }T  ok.
+T{ 0 1 3 2RSHIFT -> 0 1 D2/ D2/ D2/ }T  ok.
+  ok.
+T{ 1S 0S 1 2RSHIFT -> 1S 0S D2/ }T  ok.
+T{ 1S 0S 2 2RSHIFT -> 1S 0S D2/ D2/ }T  ok.
+T{ 1S 0S 3 2RSHIFT -> 1S 0S D2/ D2/ D2/ }T  ok.
+  ok.
+T{ 0S MAX-INT 1 2RSHIFT -> 0S MAX-INT D2/ }T  ok.
+T{ 0S MAX-INT 2 2RSHIFT -> 0S MAX-INT D2/ D2/ }T  ok.
+T{ 0S MAX-INT 3 2RSHIFT -> 0S MAX-INT D2/ D2/ D2/ }T  ok.
+  ok.
+T{ 0 MAX-INT  1 CELLS 8 * 2ARSHIFT -> MAX-INT  0  }T  ok.
+T{ 0 MAX-UINT 1 CELLS 8 * 2ARSHIFT -> MAX-UINT 1S }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING UD/MOD * ok.
+  ok.
+T{ 0. 2. UD/MOD -> 0. 0. }T  ok.
+T{ 1. 2. UD/MOD -> 1. 0. }T  ok.
+T{ 2. 2. UD/MOD -> 0. 1. }T  ok.
+T{ 3. 2. UD/MOD -> 1. 1. }T  ok.
+T{ 4. 2. UD/MOD -> 0. 2. }T  ok.
+  ok.
+T{  3.  2. UD/MOD ->  1.                 1.  }T  ok.
+T{ -3.  2. UD/MOD ->  1. MAX-UINT 1- MAX-INT }T  ok.
+T{  3. -2. UD/MOD ->  3.                 0.  }T  ok.
+T{ -3. -2. UD/MOD -> -3.                 0.  }T  ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+TESTING ." * ok.
+  ok.
+T{ ." Hello world" -> }T Hello world ok.
+  ok.
+\ ------------------------------------------------------------------------------
+  ok.
+\ Lesezugriffe auf die Dictionarystruktur und Debug-Werkzeuge  ok.
+  ok.
+insight 
+Addr: 3906  Link: 38FC  Flags: - 0  Code: 390C  1S
+Addr: 38FC  Link: 38E2  Flags: - 0  Code: 3902  0S
+Addr: 38E2  Link: 38CE  Flags: - -  Code: 38E8  RD2
+Addr: 38CE  Link: 38C0  Flags: - -  Code: 38D4  RD1
+Addr: 38C0  Link: 386E  Flags: - -  Code: 38C6  RD0
+Addr: 386E  Link: 385E  Flags: - -  Code: 387E  UDOUBLEOUTPUT
+Addr: 385E  Link: 384E  Flags: - -  Code: 3864  S10
+Addr: 384E  Link: 383E  Flags: - -  Code: 3854  S9
+Addr: 383E  Link: 3832  Flags: - -  Code: 3844  S8
+Addr: 3832  Link: 3822  Flags: - -  Code: 3838  S7
+Addr: 3822  Link: 3812  Flags: - -  Code: 3828  S6
+Addr: 3812  Link: 3806  Flags: - -  Code: 3818  S5
+Addr: 3806  Link: 37F6  Flags: - -  Code: 380C  S4
+Addr: 37F6  Link: 37E8  Flags: - -  Code: 37FC  S3
+Addr: 37E8  Link: 37C2  Flags: - -  Code: 37EE  S2
+Addr: 37C2  Link: 370C  Flags: - -  Code: 37C8  S1
+Addr: 370C  Link: 36FC  Flags: - -  Code: 371C  DOUBLEOUTPUT
+Addr: 36FC  Link: 36E0  Flags: - 0  Code: 3706  "DBL2"
+Addr: 36E0  Link: 36A6  Flags: - 0  Code: 36EA  "DBL1"
+Addr: 36A6  Link: 3694  Flags: - -  Code: 36B0  D>ASCII
+Addr: 3694  Link: 3686  Flags: - 0  Code: 369C  DBL2
+Addr: 3686  Link: 366E  Flags: - 0  Code: 368E  DBL1
+Addr: 366E  Link: 3664  Flags: - -  Code: 367A  ?FLOORED
+Addr: 3664  Link: 3656  Flags: - -  Code: 366A  CD5
+Addr: 3656  Link: 364E  Flags: - 0  Code: 365C  2V2
+Addr: 364E  Link: 3640  Flags: - -  Code: 3654  CD4
+Addr: 3640  Link: 3632  Flags: - 0  Code: 3646  2V1
+Addr: 3632  Link: 3620  Flags: - -  Code: 3638  CD3
+Addr: 3620  Link: 360E  Flags: - 0  Code: 362A  LO-2INT
+Addr: 360E  Link: 35FA  Flags: - 0  Code: 3618  HI-2INT
+Addr: 35FA  Link: 35E6  Flags: - 0  Code: 3606  MIN-2INT
+Addr: 35E6  Link: 35D6  Flags: - 0  Code: 35F2  MAX-2INT
+Addr: 35D6  Link: 35CE  Flags: - 0  Code: 35DC  2C2
+Addr: 35CE  Link: 35C2  Flags: - -  Code: 35D4  CD2
+Addr: 35C2  Link: 35B6  Flags: - -  Code: 35C8  CD1
+Addr: 35B6  Link: 359C  Flags: - 0  Code: 35BC  2C1
+Addr: 359C  Link: 358A  Flags: - -  Code: 35A4  dnmp
+Addr: 358A  Link: 357A  Flags: - 0  Code: 3596  OLD-DBASE
+Addr: 357A  Link: 356C  Flags: - -  Code: 3582  RDL2
+Addr: 356C  Link: 355C  Flags: - -  Code: 3574  RDL1
+Addr: 355C  Link: 354E  Flags: - 0  Code: 3566  LO-INT
+Addr: 354E  Link: 353C  Flags: - 0  Code: 3558  HI-INT
+Addr: 353C  Link: 352C  Flags: - 0  Code: 3548  MIN-INTD
+Addr: 352C  Link: 3520  Flags: - 0  Code: 3538  MAX-INTD
+Addr: 3520  Link: 3512  Flags: - 0  Code: 3526  1SD
+Addr: 3512  Link: 3500  Flags: - -  Code: 3518  2K
+Addr: 3500  Link: 34DC  Flags: - -  Code: 350E  MAKE-2CONST
+Addr: 34DC  Link: 34B4  Flags: - -  Code: 34E4  UNS1
+Addr: 34B4  Link: 3456  Flags: - -  Code: 34C8  NON-EXISTENT-WORD
+Addr: 3456  Link: 3442  Flags: - -  Code: 3470  EMPTYSTRING-FIND-CHECK
+Addr: 3442  Link: 341C  Flags: - -  Code: 3450  EMPTYSTRING
+Addr: 341C  Link: 33F6  Flags: - -  Code: 343E  _`abcdefghijklmnopqrstuvwxyz{|~
+Addr: 33F6  Link: 33D0  Flags: - -  Code: 3418  _`abcdefghijklmnopqrstuvwxyz{|}
+Addr: 33D0  Link: 33AA  Flags: - -  Code: 33F2  @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^
+Addr: 33AA  Link: 3398  Flags: - -  Code: 33CC  !"#$%&'()*+,-./0123456789:;<=>?
+Addr: 3398  Link: 3386  Flags: - -  Code: 339E  nmp
+Addr: 3386  Link: 3358  Flags: - 0  Code: 3392  OLD-BASE
+Addr: 3358  Link: 3344  Flags: - -  Code: 335E  PB1
+Addr: 3344  Link: 333C  Flags: - -  Code: 334A  GC5
+Addr: 333C  Link: 3330  Flags: - -  Code: 3342  IT3
+Addr: 3330  Link: 3324  Flags: I -  Code: 3336  IT2
+Addr: 3324  Link: 3306  Flags: - 0  Code: 332A  IT1
+Addr: 3306  Link: 32D6  Flags: - -  Code: 330E  MELSE
+Addr: 32D6  Link: 329A  Flags: - -  Code: 32DC  ACK
+Addr: 329A  Link: 3274  Flags: - -  Code: 32A0  PL8
+Addr: 3274  Link: 324E  Flags: - -  Code: 327A  PL7
+Addr: 324E  Link: 3228  Flags: - -  Code: 3254  PL6
+Addr: 3228  Link: 320A  Flags: - -  Code: 322E  PL5
+Addr: 320A  Link: 31DA  Flags: - -  Code: 3210  PL4
+Addr: 31DA  Link: 31BC  Flags: - -  Code: 31E0  PL3
+Addr: 31BC  Link: 319E  Flags: - -  Code: 31C2  PL2
+Addr: 319E  Link: 3186  Flags: - -  Code: 31A4  PL1
+Addr: 3186  Link: 316E  Flags: - -  Code: 3190  -SET-I
+Addr: 316E  Link: 315C  Flags: - -  Code: 3176  SET-I
+Addr: 315C  Link: 3142  Flags: - 0  Code: 3168  -MAX-INT
+Addr: 3142  Link: 3128  Flags: - -  Code: 314A  (-MI)
+Addr: 3128  Link: 3118  Flags: - -  Code: 312E  GD9
+Addr: 3118  Link: 3108  Flags: - 0  Code: 3122  -UWRAP?
+Addr: 3108  Link: 30F8  Flags: - 0  Code: 3112  +UWRAP?
+Addr: 30F8  Link: 30E8  Flags: - 0  Code: 3102  -WRAP?
+Addr: 30E8  Link: 30CE  Flags: - 0  Code: 30F2  +WRAP?
+Addr: 30CE  Link: 30C0  Flags: - -  Code: 30D4  GD8
+Addr: 30C0  Link: 30B2  Flags: - 0  Code: 30C8  BUMP
+Addr: 30B2  Link: 30A6  Flags: - 0  Code: 30BA  -STEP
+Addr: 30A6  Link: 3096  Flags: - 0  Code: 30AE  STEP
+Addr: 3096  Link: 308A  Flags: - 0  Code: 30A0  -USTEP
+Addr: 308A  Link: 3056  Flags: - 0  Code: 3092  USTEP
+Addr: 3056  Link: 3044  Flags: - -  Code: 305C  GD7
+Addr: 3044  Link: 3030  Flags: - 0  Code: 3050  INCREMENT
+Addr: 3030  Link: 3018  Flags: - 0  Code: 303E  ITERATIONS
+Addr: 3018  Link: 2FFE  Flags: - -  Code: 302A  PARSE-NAME-TEST
+Addr: 2FFE  Link: 2FF0  Flags: - -  Code: 3004  PA1
+Addr: 2FF0  Link: 2FB6  Flags: - 0  Code: 2FFA  MAXCHAR
+Addr: 2FB6  Link: 2FA8  Flags: - -  Code: 2FC2  CHECKPAD
+Addr: 2FA8  Link: 2F98  Flags: - 0  Code: 2FB2  AUS/PAD
+Addr: 2F98  Link: 2EF8  Flags: - 0  Code: 2FA4  CHARS/PAD
+Addr: 2EF8  Link: 2E8C  Flags: - -  Code: 2F02  .R&U.R
+Addr: 2E8C  Link: 2E7E  Flags: - -  Code: 2E98  (.R&U.R)
+Addr: 2E7E  Link: 2E72  Flags: - 0  Code: 2E88  LENLI1
+Addr: 2E72  Link: 2E68  Flags: - 0  Code: 2E78  LI2
+Addr: 2E68  Link: 2E3E  Flags: - 0  Code: 2E6E  LI1
+Addr: 2E3E  Link: 2E34  Flags: - -  Code: 2E46  DOTP
+Addr: 2E34  Link: 2E2C  Flags: - -  Code: 2E3A  AS1
+Addr: 2E2C  Link: 2E20  Flags: - -  Code: 2E30  Q
+Addr: 2E20  Link: 2E12  Flags: - 0  Code: 2E28  DUP+
+Addr: 2E12  Link: 2DB4  Flags: - 0  Code: 2E18  RN2
+Addr: 2DB4  Link: 2D90  Flags: - 0  Code: 2DBA  RN1
+Addr: 2D90  Link: 2D84  Flags: - 0  Code: 2D96  NN2
+Addr: 2D84  Link: 2D6C  Flags: - 0  Code: 2D8A  NN1
+Addr: 2D6C  Link: 2D54  Flags: - -  Code: 2D72  CS7
+Addr: 2D54  Link: 2D46  Flags: - -  Code: 2D5A  CS6
+Addr: 2D46  Link: 2D3C  Flags: - -  Code: 2D4C  CS5
+Addr: 2D3C  Link: 2CFE  Flags: - -  Code: 2D42  CS4
+Addr: 2CFE  Link: 2C8A  Flags: - -  Code: 2D04  CS3
+Addr: 2C8A  Link: 2C50  Flags: - -  Code: 2C90  CS2
+Addr: 2C50  Link: 2C38  Flags: - -  Code: 2C56  CS1
+Addr: 2C38  Link: 2BFE  Flags: - 0  Code: 2C44  BUF:TEST
+Addr: 2BFE  Link: 2BEE  Flags: - -  Code: 2C04  QD6
+Addr: 2BEE  Link: 2BE0  Flags: - 0  Code: 2BF8  INCRMNT
+Addr: 2BE0  Link: 2BC4  Flags: - 0  Code: 2BE8  ITERS
+Addr: 2BC4  Link: 2BA8  Flags: - -  Code: 2BCA  QD5
+Addr: 2BA8  Link: 2B8E  Flags: - -  Code: 2BAE  QD4
+Addr: 2B8E  Link: 2B6A  Flags: - -  Code: 2B94  QD3
+Addr: 2B6A  Link: 2B50  Flags: - -  Code: 2B70  QD2
+Addr: 2B50  Link: 2B38  Flags: - -  Code: 2B56  QD1
+Addr: 2B38  Link: 2B1E  Flags: - -  Code: 2B3E  QD
+Addr: 2B1E  Link: 2B0A  Flags: - -  Code: 2B24  AG0
+Addr: 2B0A  Link: 2AF8  Flags: - 0  Code: 2B14  UNUSED0
+Addr: 2AF8  Link: 2AE6  Flags: - -  Code: 2AFE  RR2
+Addr: 2AE6  Link: 2AD6  Flags: - -  Code: 2AEC  RR1
+Addr: 2AD6  Link: 2AC4  Flags: - -  Code: 2ADC  RR0
+Addr: 2AC4  Link: 2AB8  Flags: - -  Code: 2ACA  RO5
+Addr: 2AB8  Link: 2AAE  Flags: - -  Code: 2ABE  GDX
+Addr: 2AAE  Link: 2A4E  Flags: - -  Code: 2AB4  GDX
+Addr: 2A4E  Link: 29F2  Flags: - -  Code: 2A5C  ACCEPT-TEST
+Addr: 29F2  Link: 279E  Flags: - -  Code: 29FA  ABUF
+Addr: 279E  Link: 2782  Flags: - -  Code: 27AC  OUTPUT-TEST
+Addr: 2782  Link: 2772  Flags: - -  Code: 278C  SEEBUF
+Addr: 2772  Link: 2762  Flags: - -  Code: 277A  SBUF
+Addr: 2762  Link: 2744  Flags: - -  Code: 276A  FBUF
+Addr: 2744  Link: 26D0  Flags: - -  Code: 274A  GN2
+Addr: 26D0  Link: 2684  Flags: - -  Code: 26D6  GP7
+Addr: 2684  Link: 264A  Flags: - -  Code: 268A  GP6
+Addr: 264A  Link: 263A  Flags: - -  Code: 2650  GP5
+Addr: 263A  Link: 2616  Flags: - 0  Code: 2646  #BITS-UD
+Addr: 2616  Link: 2606  Flags: - -  Code: 2624  COUNT-BITS
+Addr: 2606  Link: 25F0  Flags: - 0  Code: 2612  MAX-BASE
+Addr: 25F0  Link: 25D6  Flags: - -  Code: 25F6  GP4
+Addr: 25D6  Link: 25B0  Flags: - -  Code: 25DC  GP3
+Addr: 25B0  Link: 2592  Flags: - -  Code: 25B6  GP2
+Addr: 2592  Link: 2544  Flags: - -  Code: 2598  GP1
+Addr: 2544  Link: 2536  Flags: - -  Code: 254A  S=
+Addr: 2536  Link: 2528  Flags: - -  Code: 253C  GS4
+Addr: 2528  Link: 250C  Flags: - -  Code: 252E  GS3
+Addr: 250C  Link: 24EC  Flags: - -  Code: 2512  GS2
+Addr: 24EC  Link: 24DE  Flags: - -  Code: 24F6  RESCAN?
+Addr: 24DE  Link: 24BC  Flags: - 0  Code: 24E6  SCANS
+Addr: 24BC  Link: 24B2  Flags: - -  Code: 24C2  GS1
+Addr: 24B2  Link: 24A8  Flags: - -  Code: 24B8  GE7
+Addr: 24A8  Link: 249E  Flags: - -  Code: 24AE  GE6
+Addr: 249E  Link: 2496  Flags: - -  Code: 24A4  GE4
+Addr: 2496  Link: 2480  Flags: I -  Code: 249C  GE5
+Addr: 2480  Link: 246E  Flags: - -  Code: 2486  GE3
+Addr: 246E  Link: 2460  Flags: I -  Code: 2474  GE2
+Addr: 2460  Link: 2456  Flags: I -  Code: 2466  GE1
+Addr: 2456  Link: 243E  Flags: - -  Code: 245C  W1
+Addr: 243E  Link: 2432  Flags: - -  Code: 2448  WEIRD:
+Addr: 2432  Link: 2422  Flags: - -  Code: 2438  CR1
+Addr: 2422  Link: 2412  Flags: - -  Code: 242A  DOES2
+Addr: 2412  Link: 2408  Flags: - -  Code: 241A  DOES1
+Addr: 2408  Link: 23FE  Flags: - -  Code: 2410  NOP2
+Addr: 23FE  Link: 23F2  Flags: - -  Code: 2406  NOP1
+Addr: 23F2  Link: 23E6  Flags: - -  Code: 23F8  NOP
+Addr: 23E6  Link: 23DA  Flags: - 0  Code: 23EC  V1
+Addr: 23DA  Link: 23D2  Flags: - 0  Code: 23E2  Y123
+Addr: 23D2  Link: 23C6  Flags: - -  Code: 23D8  EQU
+Addr: 23C6  Link: 238A  Flags: - 0  Code: 23CE  X123
+Addr: 238A  Link: 2366  Flags: - -  Code: 2390  GD6
+Addr: 2366  Link: 2344  Flags: - -  Code: 236C  GD5
+Addr: 2344  Link: 2326  Flags: - -  Code: 234A  GD4
+Addr: 2326  Link: 2310  Flags: - -  Code: 232C  GD3
+Addr: 2310  Link: 22FE  Flags: - -  Code: 2316  GD2
+Addr: 22FE  Link: 22E8  Flags: - -  Code: 2304  GD1
+Addr: 22E8  Link: 22C4  Flags: - -  Code: 22EE  GI6
+Addr: 22C4  Link: 22B0  Flags: - -  Code: 22CA  GI5
+Addr: 22B0  Link: 229A  Flags: - -  Code: 22B6  GI4
+Addr: 229A  Link: 228A  Flags: - -  Code: 22A0  GI3
+Addr: 228A  Link: 227E  Flags: - -  Code: 2290  GI2
+Addr: 227E  Link: 2272  Flags: - -  Code: 2284  GI1
+Addr: 2272  Link: 2268  Flags: - -  Code: 2278  GT9
+Addr: 2268  Link: 225E  Flags: I -  Code: 226E  GT8
+Addr: 225E  Link: 2254  Flags: - -  Code: 2264  GT7
+Addr: 2254  Link: 224A  Flags: I -  Code: 225A  GT6
+Addr: 224A  Link: 223E  Flags: - -  Code: 2250  GT5
+Addr: 223E  Link: 2234  Flags: I -  Code: 2244  GT4
+Addr: 2234  Link: 222A  Flags: I -  Code: 223A  GT2
+Addr: 222A  Link: 221C  Flags: - -  Code: 2230  GT1
+Addr: 221C  Link: 2212  Flags: - -  Code: 2222  GC4
+Addr: 2212  Link: 2208  Flags: - -  Code: 2218  GC3
+Addr: 2208  Link: 21FE  Flags: - -  Code: 220E  GC2
+Addr: 21FE  Link: 21D8  Flags: - -  Code: 2204  GC1
+Addr: 21D8  Link: 21CA  Flags: - -  Code: 21E0  BITS
+Addr: 21CA  Link: 21BC  Flags: - 0  Code: 21D4  UA-ADDR
+Addr: 21BC  Link: 21A8  Flags: - 0  Code: 21C6  A-ADDR
+Addr: 21A8  Link: 219C  Flags: - 0  Code: 21B0  1STC
+Addr: 219C  Link: 2190  Flags: - 0  Code: 21A4  2NDC
+Addr: 2190  Link: 2186  Flags: - 0  Code: 2196  1ST
+Addr: 2186  Link: 2174  Flags: - 0  Code: 218C  2ND
+Addr: 2174  Link: 2168  Flags: - 0  Code: 217C  ALMNT
+Addr: 2168  Link: 215C  Flags: - 0  Code: 2170  1STA
+Addr: 215C  Link: 214E  Flags: - 0  Code: 2164  2NDA
+Addr: 214E  Link: 213C  Flags: - -  Code: 2154  T*/
+Addr: 213C  Link: 2130  Flags: - -  Code: 2146  T*/MOD
+Addr: 2130  Link: 2124  Flags: - -  Code: 2138  TMOD
+Addr: 2124  Link: 2114  Flags: - -  Code: 212A  T/
+Addr: 2114  Link: 2104  Flags: - -  Code: 211C  T/MOD
+Addr: 2104  Link: 20EE  Flags: - -  Code: 210C  IFSYM
+Addr: 20EE  Link: 20E0  Flags: - -  Code: 20FA  IFFLOORED
+Addr: 20E0  Link: 20D4  Flags: - -  Code: 20E6  GR2
+Addr: 20D4  Link: 20C4  Flags: - -  Code: 20DA  GR1
+Addr: 20C4  Link: 20B6  Flags: - 0  Code: 20CE  <TRUE>
+Addr: 20B6  Link: 20A2  Flags: - 0  Code: 20C0  <FALSE>
+Addr: 20A2  Link: 2092  Flags: - 0  Code: 20B0  MID-UINT+1
+Addr: 2092  Link: 2082  Flags: - 0  Code: 209E  MID-UINT
+Addr: 2082  Link: 2074  Flags: - 0  Code: 208C  MIN-INT
+Addr: 2074  Link: 2062  Flags: - 0  Code: 207E  MAX-INT
+Addr: 2062  Link: 2056  Flags: - 0  Code: 206E  MAX-UINT
+Addr: 2056  Link: 204A  Flags: - 0  Code: 205C  MSB
+Addr: 204A  Link: 2040  Flags: - 0  Code: 2050  1S
+Addr: 2040  Link: 2028  Flags: - 0  Code: 2046  0S
+Addr: 2028  Link: 1FFA  Flags: - -  Code: 2034  BITSSET?
+Addr: 1FFA  Link: 1F8E  Flags: - -  Code: 2004  TESTING
+Addr: 1F8E  Link: 1F66  Flags: - -  Code: 1F94  }T
+Addr: 1F66  Link: 1F5E  Flags: - -  Code: 1F6C  ->
+Addr: 1F5E  Link: 1F08  Flags: - -  Code: 1F64  T{
+Addr: 1F08  Link: 1EF2  Flags: - -  Code: 1F1A  ACTUAL-RESULTS
+Addr: 1EF2  Link: 1ED4  Flags: - 0  Code: 1F02  ACTUAL-DEPTH
+Addr: 1ED4  Link: 1EC4  Flags: - -  Code: 1EDC  ERROR
+Addr: 1EC4  Link: 1E8C  Flags: - 0  Code: 1ECE  #ERRORS
+Addr: 1E8C  Link: 1E7C  Flags: - -  Code: 1E9A  EMPTY-STACK
+Addr: 1E7C  Link: 1E6E  Flags: - 0  Code: 1E86  VERBOSE
+Addr: 1E6E  Link: 1E40  Flags: - -  Code: 1E74  m*/
+Addr: 1E40  Link: 1E10  Flags: - -  Code: 1E46  t/
+Addr: 1E10  Link: 1DF0  Flags: - -  Code: 1E16  t*
+Addr: 1DF0  Link: 1DE8  Flags: - -  Code: 1DFA  tnegate
+Addr: 1DE8  Link: 1DD4  Flags: - -  Code: 1DEE  d>s
+Addr: 1DD4  Link: 1DC4  Flags: I -  Code: 1DE0  2literal
+Addr: 1DC4  Link: 1DB6  Flags: - 0  Code: 1DCE  <TRUE>
+Addr: 1DB6  Link: 1D9E  Flags: - 0  Code: 1DC0  <FALSE>
+Addr: 1D9E  Link: 1D8E  Flags: - -  Code: 1DA4  2r@
+Addr: 1D8E  Link: 1D7A  Flags: I -  Code: 1D94  2r>
+Addr: 1D7A  Link: 1D5C  Flags: - -  Code: 1D80  2>r
+Addr: 1D5C  Link: 1D50  Flags: - -  Code: 1D64  pick
+Addr: 1D50  Link: 1D36  Flags: I -  Code: 1D56  .(
+Addr: 1D36  Link: 1D2A  Flags: - -  Code: 1D3E  roll
+Addr: 1D2A  Link: 1D20  Flags: - -  Code: 1D32  erase
+Addr: 1D20  Link: 1D16  Flags: - 1  Code: 1D28  char+
+Addr: 1D16  Link: 1CD6  Flags: - 0  Code: 1D1E  chars
+Addr: 1CD6  Link: 1CC4  Flags: - -  Code: 1CDE  word
+Addr: 1CC4  Link: 1CB4  Flags: - -  Code: 1CD0  2variable
+Addr: 1CB4  Link: 1CA6  Flags: - -  Code: 1CC0  variable
+Addr: 1CA6  Link: 1C98  Flags: - -  Code: 1CAC  new
+Addr: 1C98  Link: 1C4E  Flags: - -  Code: 1C9E  see
+Addr: 1C4E  Link: 1B76  Flags: - -  Code: 1C56  seec
+Addr: 1B76  Link: 1B52  Flags: - -  Code: 1B84  disasm-step
+Addr: 1B52  Link: 1AAA  Flags: - -  Code: 1B5E  memstamp
+Addr: 1AAA  Link: 19EC  Flags: - -  Code: 1AB2  alu.
+Addr: 19EC  Link: 19D8  Flags: - -  Code: 19F4  name.
+Addr: 19D8  Link: 19C6  Flags: - 0  Code: 19E6  disasm-cont
+Addr: 19C6  Link: 190E  Flags: - 0  Code: 19D2  disasm-$
+Addr: 190E  Link: 189E  Flags: - -  Code: 1918  insight
+Addr: 189E  Link: 1834  Flags: - -  Code: 18A4  .s
+Addr: 1834  Link: 17FC  Flags: - -  Code: 183C  dump
+Addr: 17FC  Link: 17D8  Flags: - 4  Code: 1802  f/
+Addr: 17D8  Link: 1750  Flags: - 4  Code: 17E2  ud/mod
+Addr: 1750  Link: 173E  Flags: - -  Code: 175C  (ud/mod)
+Addr: 173E  Link: 172E  Flags: - 0  Code: 1748  divisor
+Addr: 172E  Link: 171A  Flags: - 0  Code: 1736  shift
+Addr: 171A  Link: 16CE  Flags: - 0  Code: 1726  dividend
+Addr: 16CE  Link: 16C4  Flags: - 4  Code: 16D4  f*
+Addr: 16C4  Link: 16AA  Flags: - 1  Code: 16CA  s>f
+Addr: 16AA  Link: 1694  Flags: - -  Code: 16B6  2constant
+Addr: 1694  Link: 168A  Flags: - -  Code: 16A0  2variable
+Addr: 168A  Link: 164E  Flags: - -  Code: 1690  f.
+Addr: 164E  Link: 163E  Flags: - -  Code: 1654  f.n
+Addr: 163E  Link: 161A  Flags: - -  Code: 1644  f#
+Addr: 161A  Link: 160E  Flags: - -  Code: 1622  hold<
+Addr: 160E  Link: 1602  Flags: - 4  Code: 1616  du<=
+Addr: 1602  Link: 15F8  Flags: - 4  Code: 160A  du>=
+Addr: 15F8  Link: 15DC  Flags: - 4  Code: 15FE  du>
+Addr: 15DC  Link: 15C4  Flags: - 4  Code: 15E2  du<
+Addr: 15C4  Link: 15AC  Flags: - 4  Code: 15CC  dmax
+Addr: 15AC  Link: 15A2  Flags: - 4  Code: 15B4  dmin
+Addr: 15A2  Link: 1598  Flags: - 4  Code: 15A8  d<=
+Addr: 1598  Link: 158E  Flags: - 4  Code: 159E  d>=
+Addr: 158E  Link: 1572  Flags: - 4  Code: 1594  d>
+Addr: 1572  Link: 155E  Flags: - 4  Code: 1578  d<
+Addr: 155E  Link: 154C  Flags: - 6  Code: 1566  2rot
+Addr: 154C  Link: 1510  Flags: - 4  Code: 1554  2nip
+Addr: 1510  Link: 14E0  Flags: - 3  Code: 151C  2arshift
+Addr: 14E0  Link: 14B0  Flags: - 3  Code: 14EA  2rshift
+Addr: 14B0  Link: 1494  Flags: - 3  Code: 14BA  2lshift
+Addr: 1494  Link: 147C  Flags: - 2  Code: 149C  dshr
+Addr: 147C  Link: 1472  Flags: - 2  Code: 1482  d2/
+Addr: 1472  Link: 145E  Flags: - 4  Code: 1478  d<>
+Addr: 145E  Link: 1454  Flags: - 4  Code: 1464  d=
+Addr: 1454  Link: 143E  Flags: - 2  Code: 145A  d0<
+Addr: 143E  Link: 1428  Flags: - 4  Code: 1446  2xor
+Addr: 1428  Link: 1414  Flags: - 4  Code: 1430  2and
+Addr: 1414  Link: 1404  Flags: - 4  Code: 141A  2or
+Addr: 1404  Link: 13E0  Flags: - -  Code: 140E  unused
+Addr: 13E0  Link: 13BE  Flags: - -  Code: 13EE  cornerstone
+Addr: 13BE  Link: 13AE  Flags: I -  Code: 13C8  endcase
+Addr: 13AE  Link: 1392  Flags: I -  Code: 13B6  endof
+Addr: 1392  Link: 1386  Flags: I -  Code: 1398  of
+Addr: 1386  Link: 1372  Flags: I -  Code: 138E  case
+Addr: 1372  Link: 135C  Flags: I -  Code: 1378  s"
+Addr: 135C  Link: 1352  Flags: - 3  Code: 1366  within
+Addr: 1352  Link: 1336  Flags: - -  Code: 1358  pad
+Addr: 1336  Link: 132C  Flags: I 0  Code: 133C  ."
+Addr: 132C  Link: 1324  Flags: - 2  Code: 1332  mod
+Addr: 1324  Link: 1314  Flags: - 2  Code: 1328  /
+Addr: 1314  Link: 12F8  Flags: - 2  Code: 131C  /mod
+Addr: 12F8  Link: 12EC  Flags: - -  Code: 1300  move
+Addr: 12EC  Link: 12DE  Flags: - -  Code: 12F2  u.r
+Addr: 12DE  Link: 12D0  Flags: - -  Code: 12E4  .r
+Addr: 12D0  Link: 12B6  Flags: - -  Code: 12D6  d.r
+Addr: 12B6  Link: 12AC  Flags: - -  Code: 12BE  rtype
+Addr: 12AC  Link: 12A4  Flags: - -  Code: 12B2  u.
+Addr: 12A4  Link: 1298  Flags: - -  Code: 12A8  .
+Addr: 1298  Link: 1288  Flags: - -  Code: 129E  d.
+Addr: 1288  Link: 1270  Flags: - -  Code: 128E  ud.
+Addr: 1270  Link: 125E  Flags: - -  Code: 1278  (d.)
+Addr: 125E  Link: 124E  Flags: - -  Code: 1264  #>
+Addr: 124E  Link: 1230  Flags: - -  Code: 1254  #s
+Addr: 1230  Link: 1216  Flags: - -  Code: 1234  #
+Addr: 1216  Link: 1204  Flags: - -  Code: 1220  .digit
+Addr: 1204  Link: 11EE  Flags: - -  Code: 120C  sign
+Addr: 11EE  Link: 11E2  Flags: - -  Code: 11F6  hold
+Addr: 11E2  Link: 11D6  Flags: - -  Code: 11E8  <#
+Addr: 11D6  Link: 11CC  Flags: - 0  Code: 11DC  hld
+Addr: 11CC  Link: 1140  Flags: - 0  Code: 11D2  BUF
+Addr: 1140  Link: 1128  Flags: - -  Code: 1148  BUF0
+Addr: 1128  Link: 111E  Flags: - -  Code: 1132  spaces
+Addr: 111E  Link: 110E  Flags: - 3  Code: 1124  */
+Addr: 110E  Link: 10CA  Flags: - 3  Code: 1116  */mod
+Addr: 10CA  Link: 10A0  Flags: - 3  Code: 10D4  fm/mod
+Addr: 10A0  Link: 1092  Flags: - 3  Code: 10AA  sm/rem
+Addr: 1092  Link: 107C  Flags: - 2  Code: 1098  sgn
+Addr: 107C  Link: 1068  Flags: - -  Code: 1088  constant
+Addr: 1068  Link: 104A  Flags: - -  Code: 1074  variable
+Addr: 104A  Link: 103C  Flags: - 2  Code: 1050  m*
+Addr: 103C  Link: 102A  Flags: - -  Code: 1044  >body
+Addr: 102A  Link: 1012  Flags: - -  Code: 1034  buffer:
+Addr: 1012  Link: 1002  Flags: - -  Code: 101C  create
+Addr: 1002  Link: 0FF6  Flags: I -  Code: 100C  repeat
+Addr: 0FF6  Link: 0FE6  Flags: I -  Code: 0FFE  while
+Addr: 0FE6  Link: 0FDC  Flags: I -  Code: 0FEE  else
+Addr: 0FDC  Link: 0FD2  Flags: - 2  Code: 0FE2  <=
+Addr: 0FD2  Link: 0FC8  Flags: - 2  Code: 0FD8  >=
+Addr: 0FC8  Link: 0FBE  Flags: - 2  Code: 0FCE  u<=
+Addr: 0FBE  Link: 0FB4  Flags: - 2  Code: 0FC4  u>=
+Addr: 0FB4  Link: 0FA8  Flags: I 0  Code: 0FB8  (
+Addr: 0FA8  Link: 0FA0  Flags: I 0  Code: 0FB2  [char]
+Addr: 0FA0  Link: 0F5E  Flags: I 0  Code: 0FA6  [']
+Addr: 0F5E  Link: 0F4A  Flags: - -  Code: 0F68  welcome
+Addr: 0F4A  Link: 0F32  Flags: - -  Code: 0F52  xor!
+Addr: 0F32  Link: 0F1E  Flags: - -  Code: 0F3A  bic!
+Addr: 0F1E  Link: 0F0E  Flags: - -  Code: 0F26  bis!
+Addr: 0F0E  Link: 0F04  Flags: - -  Code: 0F16  eint?
+Addr: 0F04  Link: 0EFA  Flags: - -  Code: 0F0C  dint
+Addr: 0EFA  Link: 0EBE  Flags: - -  Code: 0F02  eint
+Addr: 0EBE  Link: 0E96  Flags: - -  Code: 0EC6  quit
+Addr: 0E96  Link: 0E7C  Flags: - -  Code: 0EA2  evaluate
+Addr: 0E7C  Link: 0E18  Flags: - -  Code: 0E86  refill
+Addr: 0E18  Link: 0C20  Flags: - -  Code: 0E22  accept
+Addr: 0C20  Link: 0BEC  Flags: - -  Code: 0C2A  number
+Addr: 0BEC  Link: 0BE0  Flags: - -  Code: 0BF4  digit
+Addr: 0BE0  Link: 0BD2  Flags: I 0  Code: 0BE4  \
+Addr: 0BD2  Link: 0BC6  Flags: - -  Code: 0BDA  char
+Addr: 0BC6  Link: 0BA8  Flags: - -  Code: 0BCA  '
+Addr: 0BA8  Link: 0B84  Flags: I -  Code: 0BB4  postpone
+Addr: 0B84  Link: 0B74  Flags: I -  Code: 0B8E  literal
+Addr: 0B74  Link: 0B68  Flags: - -  Code: 0B7C  abort
+Addr: 0B68  Link: 0B5E  Flags: I -  Code: 0B70  rdrop
+Addr: 0B5E  Link: 0B54  Flags: I -  Code: 0B64  r@
+Addr: 0B54  Link: 0B4A  Flags: I -  Code: 0B5A  r>
+Addr: 0B4A  Link: 0B40  Flags: I -  Code: 0B50  >r
+Addr: 0B40  Link: 0B32  Flags: - -  Code: 0B46  hex
+Addr: 0B32  Link: 0B22  Flags: - -  Code: 0B3C  binary
+Addr: 0B22  Link: 0B14  Flags: - -  Code: 0B2C  decimal
+Addr: 0B14  Link: 0AF2  Flags: I -  Code: 0B1E  unloop
+Addr: 0AF2  Link: 0ADC  Flags: - -  Code: 0AF6  j
+Addr: 0ADC  Link: 0ACC  Flags: - -  Code: 0AE0  i
+Addr: 0ACC  Link: 0ABC  Flags: I -  Code: 0AD4  +loop
+Addr: 0ABC  Link: 0A86  Flags: I -  Code: 0AC4  loop
+Addr: 0A86  Link: 0A70  Flags: I -  Code: 0A8C  ?do
+Addr: 0A70  Link: 0A66  Flags: I -  Code: 0A78  leave
+Addr: 0A66  Link: 09E8  Flags: I -  Code: 0A6C  do
+Addr: 09E8  Link: 09D2  Flags: I -  Code: 09F2  recurse
+Addr: 09D2  Link: 09C4  Flags: - -  Code: 09DA  does>
+Addr: 09C4  Link: 09BA  Flags: I -  Code: 09CC  until
+Addr: 09BA  Link: 09AC  Flags: I -  Code: 09C2  again
+Addr: 09AC  Link: 099C  Flags: I -  Code: 09B4  begin
+Addr: 099C  Link: 0990  Flags: I -  Code: 09A4  then
+Addr: 0990  Link: 0982  Flags: I -  Code: 0996  if
+Addr: 0982  Link: 096E  Flags: I -  Code: 098A  ahead
+Addr: 096E  Link: 0930  Flags: I -  Code: 0972  ;
+Addr: 0930  Link: 0914  Flags: I -  Code: 0938  exit
+Addr: 0914  Link: 090C  Flags: - -  Code: 091E  :noname
+Addr: 090C  Link: 08FC  Flags: - -  Code: 0910  :
+Addr: 08FC  Link: 08F0  Flags: - -  Code: 0900  ]
+Addr: 08F0  Link: 08DA  Flags: I -  Code: 08F4  [
+Addr: 08DA  Link: 08BE  Flags: - -  Code: 08E6  immediate
+Addr: 08BE  Link: 088E  Flags: - -  Code: 08CA  foldable
+Addr: 088E  Link: 0860  Flags: I -  Code: 089A  sliteral
+Addr: 0860  Link: 07FC  Flags: - -  Code: 0866  s,
+Addr: 07FC  Link: 07DC  Flags: - -  Code: 0808  compile,
+Addr: 07DC  Link: 07D0  Flags: - -  Code: 07E2  c,
+Addr: 07D0  Link: 07C4  Flags: - -  Code: 07D4  ,
+Addr: 07C4  Link: 07A8  Flags: - -  Code: 07CC  allot
+Addr: 07A8  Link: 0766  Flags: - -  Code: 07B0  parse
+Addr: 0766  Link: 0736  Flags: - -  Code: 0774  parse-name
+Addr: 0736  Link: 0728  Flags: - -  Code: 0740  source
+Addr: 0728  Link: 0718  Flags: - -  Code: 072E  2!
+Addr: 0718  Link: 06EE  Flags: - -  Code: 071E  2@
+Addr: 06EE  Link: 06C6  Flags: - -  Code: 06F8  cmove>
+Addr: 06C6  Link: 06A8  Flags: - -  Code: 06CE  cmove
+Addr: 06A8  Link: 0664  Flags: - -  Code: 06B0  fill
+Addr: 0664  Link: 0654  Flags: - -  Code: 066C  sfind
+Addr: 0654  Link: 05CA  Flags: - -  Code: 065C  align
+Addr: 05CA  Link: 05AA  Flags: - 1  Code: 05D4  aligned
+Addr: 05AA  Link: 0598  Flags: - -  Code: 05B2  words
+Addr: 0598  Link: 0586  Flags: - -  Code: 05A0  link@
+Addr: 0586  Link: 057C  Flags: - -  Code: 058E  here
+Addr: 057C  Link: 0570  Flags: - 0  Code: 0582  tib
+Addr: 0570  Link: 0564  Flags: - 0  Code: 0578  init
+Addr: 0564  Link: 055A  Flags: - 0  Code: 056C  forth
+Addr: 055A  Link: 054E  Flags: - 0  Code: 0560  >in
+Addr: 054E  Link: 0542  Flags: - 0  Code: 0556  base
+Addr: 0542  Link: 048A  Flags: - 0  Code: 054A  state
+Addr: 048A  Link: 0474  Flags: - -  Code: 0494  /string
+Addr: 0474  Link: 0464  Flags: - -  Code: 047C  type
+Addr: 0464  Link: 045A  Flags: - -  Code: 046C  count
+Addr: 045A  Link: 0450  Flags: - -  Code: 0460  .x
+Addr: 0450  Link: 0424  Flags: - -  Code: 0456  .x2
+Addr: 0424  Link: 041A  Flags: - 0  Code: 042A  bl
+Addr: 041A  Link: 040E  Flags: - -  Code: 0420  cr
+Addr: 040E  Link: 03E2  Flags: - -  Code: 0416  space
+Addr: 03E2  Link: 03C8  Flags: - -  Code: 03E8  c!
+Addr: 03C8  Link: 03B2  Flags: - -  Code: 03CE  c@
+Addr: 03B2  Link: 03A4  Flags: - -  Code: 03BA  emit
+Addr: 03A4  Link: 0396  Flags: - -  Code: 03AA  key
+Addr: 0396  Link: 0382  Flags: - -  Code: 039E  key?
+Addr: 0382  Link: 0378  Flags: - -  Code: 038A  emit?
+Addr: 0378  Link: 0370  Flags: - -  Code: 0380  pause
+Addr: 0370  Link: 035A  Flags: - -  Code: 0376  nop
+Addr: 035A  Link: 032A  Flags: - 3  Code: 0364  um/mod
+Addr: 032A  Link: 031A  Flags: - 2  Code: 032E  *
+Addr: 031A  Link: 0300  Flags: - 2  Code: 0320  um*
+Addr: 0300  Link: 02F6  Flags: - 2  Code: 0306  d2*
+Addr: 02F6  Link: 02EC  Flags: - 2  Code: 02FC  d0=
+Addr: 02EC  Link: 02E2  Flags: - 3  Code: 02F2  m+
+Addr: 02E2  Link: 02D0  Flags: - 1  Code: 02E8  s>d
+Addr: 02D0  Link: 02BA  Flags: - 2  Code: 02D8  dabs
+Addr: 02BA  Link: 029E  Flags: - 2  Code: 02C4  dnegate
+Addr: 029E  Link: 0282  Flags: - 4  Code: 02A4  d-
+Addr: 0282  Link: 0278  Flags: - 4  Code: 0288  d+
+Addr: 0278  Link: 0270  Flags: - -  Code: 0280  depth
+Addr: 0270  Link: 0266  Flags: - -  Code: 0276  io@
+Addr: 0266  Link: 025E  Flags: - -  Code: 026C  io!
+Addr: 025E  Link: 0254  Flags: - 2  Code: 0264  nip
+Addr: 0254  Link: 024C  Flags: - 2  Code: 025C  over
+Addr: 024C  Link: 0242  Flags: - 1  Code: 0252  dup
+Addr: 0242  Link: 023A  Flags: - 2  Code: 024A  swap
+Addr: 023A  Link: 0234  Flags: - 2  Code: 0240  u<
+Addr: 0234  Link: 022E  Flags: - 2  Code: 0238  <
+Addr: 022E  Link: 0222  Flags: - 2  Code: 0232  =
+Addr: 0222  Link: 021A  Flags: - 1  Code: 022C  invert
+Addr: 021A  Link: 0212  Flags: - 1  Code: 0220  not
+Addr: 0212  Link: 020A  Flags: - 2  Code: 0218  or
+Addr: 020A  Link: 0202  Flags: - 2  Code: 0210  and
+Addr: 0202  Link: 01FC  Flags: - 2  Code: 0208  xor
+Addr: 01FC  Link: 01F6  Flags: - 2  Code: 0200  -
+Addr: 01F6  Link: 01EE  Flags: - 2  Code: 01FA  +
+Addr: 01EE  Link: 01E6  Flags: - -  Code: 01F2  !
+Addr: 01E6  Link: 01DE  Flags: - 1  Code: 01EC  2/
+Addr: 01DE  Link: 01D4  Flags: - 1  Code: 01E4  2*
+Addr: 01D4  Link: 01C4  Flags: - 1  Code: 01DC  cells
+Addr: 01C4  Link: 01B6  Flags: - 1  Code: 01CA  abs
+Addr: 01B6  Link: 01A2  Flags: - 2  Code: 01C0  bounds
+Addr: 01A2  Link: 018E  Flags: - 2  Code: 01AA  umax
+Addr: 018E  Link: 017C  Flags: - 2  Code: 0196  umin
+Addr: 017C  Link: 016A  Flags: - 2  Code: 0182  max
+Addr: 016A  Link: 0156  Flags: - 2  Code: 0170  min
+Addr: 0156  Link: 0144  Flags: - 4  Code: 015E  2over
+Addr: 0144  Link: 0132  Flags: - 4  Code: 014C  2swap
+Addr: 0132  Link: 0126  Flags: - -  Code: 0138  +!
+Addr: 0126  Link: 0116  Flags: - 2  Code: 012E  2dup
+Addr: 0116  Link: 010A  Flags: - 1  Code: 011E  ?dup
+Addr: 010A  Link: 00FE  Flags: - 2  Code: 0112  2drop
+Addr: 00FE  Link: 00EC  Flags: - 2  Code: 0106  tuck
+Addr: 00EC  Link: 00DE  Flags: - 3  Code: 00F4  -rot
+Addr: 00DE  Link: 00D2  Flags: - 3  Code: 00E4  rot
+Addr: 00D2  Link: 00C6  Flags: - 0  Code: 00DA  true
+Addr: 00C6  Link: 00BC  Flags: - 0  Code: 00CE  false
+Addr: 00BC  Link: 00B2  Flags: - 1  Code: 00C4  drop
+Addr: 00B2  Link: 00A8  Flags: - 2  Code: 00B8  u>
+Addr: 00A8  Link: 009E  Flags: - 1  Code: 00AE  0>
+Addr: 009E  Link: 0096  Flags: - 1  Code: 00A4  0<
+Addr: 0096  Link: 008C  Flags: - 2  Code: 009A  >
+Addr: 008C  Link: 0082  Flags: - 1  Code: 0092  0<>
+Addr: 0082  Link: 0076  Flags: - 2  Code: 0088  <>
+Addr: 0076  Link: 006C  Flags: - 1  Code: 007E  cell+
+Addr: 006C  Link: 0060  Flags: - 1  Code: 0072  0=
+Addr: 0060  Link: 0054  Flags: - -  Code: 006A  rdepth
+Addr: 0054  Link: 004C  Flags: - -  Code: 0058  @
+Addr: 004C  Link: 003E  Flags: - 1  Code: 0052  1-
+Addr: 003E  Link: 0036  Flags: - 1  Code: 0048  negate
+Addr: 0036  Link: 002A  Flags: - 1  Code: 003C  1+
+Addr: 002A  Link: 001E  Flags: - 2  Code: 0034  arshift
+Addr: 001E  Link: 0012  Flags: - 2  Code: 0028  rshift
+Addr: 0012  Link: 0004  Flags: - 2  Code: 001C  lshift
+Addr: 0004  Link: 0000  Flags: - -  Code: 000E  execute
+ ok.
+words 1S 0S RD2 RD1 RD0 UDOUBLEOUTPUT S10 S9 S8 S7 S6 S5 S4 S3 S2 S1 DOUBLEOUTPU
+T "DBL2" "DBL1" D>ASCII DBL2 DBL1 ?FLOORED CD5 2V2 CD4 2V1 CD3 LO-2INT HI-2INT M
+IN-2INT MAX-2INT 2C2 CD2 CD1 2C1 dnmp OLD-DBASE RDL2 RDL1 LO-INT HI-INT MIN-INTD
+ MAX-INTD 1SD 2K MAKE-2CONST UNS1 NON-EXISTENT-WORD EMPTYSTRING-FIND-CHECK EMPTY
+STRING _`abcdefghijklmnopqrstuvwxyz{|~ _`abcdefghijklmnopqrstuvwxyz{|} @ABCDEFGH
+IJKLMNOPQRSTUVWXYZ[\]^ !"#$%&'()*+,-./0123456789:;<=>? nmp OLD-BASE PB1 GC5 IT3 
+IT2 IT1 MELSE ACK PL8 PL7 PL6 PL5 PL4 PL3 PL2 PL1 -SET-I SET-I -MAX-INT (-MI) GD
+9 -UWRAP? +UWRAP? -WRAP? +WRAP? GD8 BUMP -STEP STEP -USTEP USTEP GD7 INCREMENT I
+TERATIONS PARSE-NAME-TEST PA1 MAXCHAR CHECKPAD AUS/PAD CHARS/PAD .R&U.R (.R&U.R)
+ LENLI1 LI2 LI1 DOTP AS1 Q DUP+ RN2 RN1 NN2 NN1 CS7 CS6 CS5 CS4 CS3 CS2 CS1 BUF:
+TEST QD6 INCRMNT ITERS QD5 QD4 QD3 QD2 QD1 QD AG0 UNUSED0 RR2 RR1 RR0 RO5 GDX GD
+X ACCEPT-TEST ABUF OUTPUT-TEST SEEBUF SBUF FBUF GN2 GP7 GP6 GP5 #BITS-UD COUNT-B
+ITS MAX-BASE GP4 GP3 GP2 GP1 S= GS4 GS3 GS2 RESCAN? SCANS GS1 GE7 GE6 GE4 GE5 GE
+3 GE2 GE1 W1 WEIRD: CR1 DOES2 DOES1 NOP2 NOP1 NOP V1 Y123 EQU X123 GD6 GD5 GD4 G
+D3 GD2 GD1 GI6 GI5 GI4 GI3 GI2 GI1 GT9 GT8 GT7 GT6 GT5 GT4 GT2 GT1 GC4 GC3 GC2 G
+C1 BITS UA-ADDR A-ADDR 1STC 2NDC 1ST 2ND ALMNT 1STA 2NDA T*/ T*/MOD TMOD T/ T/MO
+D IFSYM IFFLOORED GR2 GR1 <TRUE> <FALSE> MID-UINT+1 MID-UINT MIN-INT MAX-INT MAX
+-UINT MSB 1S 0S BITSSET? TESTING }T -> T{ ACTUAL-RESULTS ACTUAL-DEPTH ERROR #ERR
+ORS EMPTY-STACK VERBOSE m*/ t/ t* tnegate d>s 2literal <TRUE> <FALSE> 2r@ 2r> 2>
+r pick .( roll erase char+ chars word 2variable variable new see seec disasm-ste
+p memstamp alu. name. disasm-cont disasm-$ insight .s dump f/ ud/mod (ud/mod) di
+visor shift dividend f* s>f 2constant 2variable f. f.n f# hold< du<= du>= du> du
+< dmax dmin d<= d>= d> d< 2rot 2nip 2arshift 2rshift 2lshift dshr d2/ d<> d= d0<
+ 2xor 2and 2or unused cornerstone endcase endof of case s" within pad ." mod / /
+mod move u.r .r d.r rtype u. . d. ud. (d.) #> #s # .digit sign hold <# hld BUF B
+UF0 spaces */ */mod fm/mod sm/rem sgn constant variable m* >body buffer: create 
+repeat while else <= >= u<= u>= ( [char] ['] welcome xor! bic! bis! eint? dint e
+int quit evaluate refill accept number digit \ char ' postpone literal abort rdr
+op r@ r> >r hex binary decimal unloop j i +loop loop ?do leave do recurse does> 
+until again begin then if ahead ; exit :noname : ] [ immediate foldable sliteral
+ s, compile, c, , allot parse parse-name source 2! 2@ cmove> cmove fill sfind al
+ign aligned words link@ here tib init forth >in base state /string type count .x
+ .x2 bl cr space c! c@ emit key key? emit? pause nop um/mod * um* d2* d0= m+ s>d
+ dabs dnegate d- d+ depth io@ io! nip over dup swap u< < = invert not or and xor
+ - + ! 2/ 2* cells abs bounds umax umin max min 2over 2swap +! 2dup ?dup 2drop t
+uck -rot rot true false drop u> 0> 0< > 0<> <> cell+ 0= rdepth @ 1- negate 1+ ar
+shift rshift lshift execute  ok.
+.s [ 00 ]  ok.
+
+1CA6 Code: 1CAC - 1CA4 Unknown: ----  Name: new
+1C98 Code: 1C9E - 1CA4 Unknown: 0004  Name: see
+1C4E Code: 1C56 - 1C96 Unknown: 0021  Name: seec
+1B76 Code: 1B84 - 1C4C Unknown: 0065  Name: disasm-step
+1B52 Code: 1B5E - 1B74 Unknown: 000C  Name: memstamp
+1AAA Code: 1AB2 - 1B50 Unknown: 0050  Name: alu.
+19EC Code: 19F4 - 1AA8 Unknown: 005B  Name: name.
+19D8 Code: 19E6 - 19EA Unknown: 0003  Name: disasm-cont
+19C6 Code: 19D2 - 19D6 Unknown: 0003  Name: disasm-$
+190E Code: 1918 - 19C4 Unknown: ----  Name: insight
+189E Code: 18A4 - 190C Unknown: 001A  Name: .s
+1834 Code: 183C - 189C Unknown: 0031  Name: dump
+17FC Code: 1802 - 1832 Unknown: ----  Name: f/
+17D8 Code: 17E2 - 17FA Unknown: ----  Name: ud/mod
+1750 Code: 175C - 17D6 Unknown: ----  Name: (ud/mod)
+173E Code: 1748 - 174E Unknown: 0002  Name: divisor
+172E Code: 1736 - 173C Unknown: 0002  Name: shift
+171A Code: 1726 - 172C Unknown: 0002  Name: dividend
+16CE Code: 16D4 - 1718 Unknown: ----  Name: f*
+16C4 Code: 16CA - 16CC Unknown: ----  Name: s>f
+16AA Code: 16B6 - 16C2 Unknown: ----  Name: 2constant
+1694 Code: 16A0 - 16A8 Unknown: ----  Name: 2variable
+168A Code: 1690 - 1692 Unknown: ----  Name: f.
+164E Code: 1654 - 1688 Unknown: ----  Name: f.n
+163E Code: 1644 - 164C Unknown: ----  Name: f#
+161A Code: 1622 - 163C Unknown: ----  Name: hold<
+160E Code: 1616 - 1618 Unknown: ----  Name: du<=
+1602 Code: 160A - 160C Unknown: ----  Name: du>=
+15F8 Code: 15FE - 1600 Unknown: ----  Name: du>
+15DC Code: 15E2 - 15F6 Unknown: ----  Name: du<
+15C4 Code: 15CC - 15DA Unknown: ----  Name: dmax
+15AC Code: 15B4 - 15C2 Unknown: ----  Name: dmin
+15A2 Code: 15A8 - 15AA Unknown: ----  Name: d<=
+1598 Code: 159E - 15A0 Unknown: ----  Name: d>=
+158E Code: 1594 - 1596 Unknown: ----  Name: d>
+1572 Code: 1578 - 158C Unknown: ----  Name: d<
+155E Code: 1566 - 1570 Unknown: ----  Name: 2rot
+154C Code: 1554 - 155C Unknown: ----  Name: 2nip
+1510 Code: 151C - 154A Unknown: ----  Name: 2arshift
+14E0 Code: 14EA - 150E Unknown: ----  Name: 2rshift
+14B0 Code: 14BA - 14DE Unknown: ----  Name: 2lshift
+1494 Code: 149C - 14AE Unknown: ----  Name: dshr
+147C Code: 1482 - 1492 Unknown: ----  Name: d2/
+1472 Code: 1478 - 147A Unknown: ----  Name: d<>
+145E Code: 1464 - 1470 Unknown: ----  Name: d=
+1454 Code: 145A - 145C Unknown: ----  Name: d0<
+143E Code: 1446 - 1452 Unknown: ----  Name: 2xor
+1428 Code: 1430 - 143C Unknown: ----  Name: 2and
+1414 Code: 141A - 1426 Unknown: ----  Name: 2or
+1404 Code: 140E - 1412 Unknown: ----  Name: unused
+13E0 Code: 13EE - 1402 Unknown: 000B  Name: cornerstone
+13BE Code: 13C8 - 13DE Unknown: ----  Name: endcase
+13AE Code: 13B6 - 13BC Unknown: ----  Name: endof
+1392 Code: 1398 - 13AC Unknown: ----  Name: of
+1386 Code: 138E - 1390 Unknown: ----  Name: case
+1372 Code: 1378 - 1384 Unknown: ----  Name: s"
+135C Code: 1366 - 1370 Unknown: ----  Name: within
+1352 Code: 1358 - 135A Unknown: ----  Name: pad
+1336 Code: 133C - 1350 Unknown: ----  Name: ."
+132C Code: 1332 - 1334 Unknown: ----  Name: mod
+1324 Code: 1328 - 132A Unknown: ----  Name: /
+1314 Code: 131C - 1322 Unknown: ----  Name: /mod
+12F8 Code: 1300 - 1312 Unknown: ----  Name: move
+12EC Code: 12F2 - 12F6 Unknown: ----  Name: u.r
+12DE Code: 12E4 - 12EA Unknown: ----  Name: .r
+12D0 Code: 12D6 - 12DC Unknown: ----  Name: d.r
+12B6 Code: 12BE - 12CE Unknown: ----  Name: rtype
+12AC Code: 12B2 - 12B4 Unknown: ----  Name: u.
+12A4 Code: 12A8 - 12AA Unknown: ----  Name: .
+1298 Code: 129E - 12A2 Unknown: ----  Name: d.
+1288 Code: 128E - 1296 Unknown: ----  Name: ud.
+1270 Code: 1278 - 1286 Unknown: ----  Name: (d.)
+125E Code: 1264 - 126E Unknown: ----  Name: #>
+124E Code: 1254 - 125C Unknown: ----  Name: #s
+1230 Code: 1234 - 124C Unknown: ----  Name: #
+1216 Code: 1220 - 122E Unknown: ----  Name: .digit
+1204 Code: 120C - 1214 Unknown: ----  Name: sign
+11EE Code: 11F6 - 1202 Unknown: ----  Name: hold
+11E2 Code: 11E8 - 11EC Unknown: ----  Name: <#
+11D6 Code: 11DC - 11E0 Unknown: 0002  Name: hld
+11CC Code: 11D2 - 11D4 Unknown: 0002  Name: BUF
+1140 Code: 1148 - 11CA Unknown: 001E  Name: BUF0
+1128 Code: 1132 - 113E Unknown: ----  Name: spaces
+111E Code: 1124 - 1126 Unknown: ----  Name: */
+110E Code: 1116 - 111C Unknown: ----  Name: */mod
+10CA Code: 10D4 - 110C Unknown: ----  Name: fm/mod
+10A0 Code: 10AA - 10C8 Unknown: ----  Name: sm/rem
+1092 Code: 1098 - 109E Unknown: ----  Name: sgn
+107C Code: 1088 - 1090 Unknown: ----  Name: constant
+1068 Code: 1074 - 107A Unknown: ----  Name: variable
+104A Code: 1050 - 1066 Unknown: ----  Name: m*
+103C Code: 1044 - 1048 Unknown: ----  Name: >body
+102A Code: 1034 - 103A Unknown: ----  Name: buffer:
+1012 Code: 101C - 1028 Unknown: ----  Name: create
+1002 Code: 100C - 1010 Unknown: ----  Name: repeat
+0FF6 Code: 0FFE - 1000 Unknown: ----  Name: while
+0FE6 Code: 0FEE - 0FF4 Unknown: ----  Name: else
+0FDC Code: 0FE2 - 0FE4 Unknown: ----  Name: <=
+0FD2 Code: 0FD8 - 0FDA Unknown: ----  Name: >=
+0FC8 Code: 0FCE - 0FD0 Unknown: ----  Name: u<=
+0FBE Code: 0FC4 - 0FC6 Unknown: ----  Name: u>=
+0FB4 Code: 0FB8 - 0FBC Unknown: ----  Name: (
+0FA8 Code: 0FB2 - 0FB2 Unknown: ----  Name: [char]
+0FA0 Code: 0FA6 - 0FA6 Unknown: ----  Name: [']
+0F5E Code: 0F68 - 0F9E Unknown: ----  Name: welcome
+0F4A Code: 0F52 - 0F5C Unknown: 0006  Name: xor!
+0F32 Code: 0F3A - 0F48 Unknown: 0008  Name: bic!
+0F1E Code: 0F26 - 0F30 Unknown: 0006  Name: bis!
+0F0E Code: 0F16 - 0F1C Unknown: 0004  Name: eint?
+0F04 Code: 0F0C - 0F0C Unknown: 0001  Name: dint
+0EFA Code: 0F02 - 0F02 Unknown: 0001  Name: eint
+0EBE Code: 0EC6 - 0EF8 Unknown: 0001  Name: quit
+0E96 Code: 0EA2 - 0EBC Unknown: ----  Name: evaluate
+0E7C Code: 0E86 - 0E94 Unknown: ----  Name: refill
+0E18 Code: 0E22 - 0E7A Unknown: 0007  Name: accept
+0C20 Code: 0C2A - 0E16 Unknown: 0015  Name: number
+0BEC Code: 0BF4 - 0C1E Unknown: ----  Name: digit
+0BE0 Code: 0BE4 - 0BEA Unknown: ----  Name: \
+0BD2 Code: 0BDA - 0BDE Unknown: ----  Name: char
+0BC6 Code: 0BCA - 0BD0 Unknown: ----  Name: '
+0BA8 Code: 0BB4 - 0BC4 Unknown: ----  Name: postpone
+0B84 Code: 0B8E - 0BA6 Unknown: ----  Name: literal
+0B74 Code: 0B7C - 0B82 Unknown: 0001  Name: abort
+0B68 Code: 0B70 - 0B72 Unknown: ----  Name: rdrop
+0B5E Code: 0B64 - 0B66 Unknown: ----  Name: r@
+0B54 Code: 0B5A - 0B5C Unknown: ----  Name: r>
+0B4A Code: 0B50 - 0B52 Unknown: ----  Name: >r
+0B40 Code: 0B46 - 0B48 Unknown: ----  Name: hex
+0B32 Code: 0B3C - 0B3E Unknown: ----  Name: binary
+0B22 Code: 0B2C - 0B30 Unknown: ----  Name: decimal
+0B14 Code: 0B1E - 0B20 Unknown: ----  Name: unloop
+0AF2 Code: 0AF6 - 0B12 Unknown: ----  Name: j
+0ADC Code: 0AE0 - 0AF0 Unknown: ----  Name: i
+0ACC Code: 0AD4 - 0ADA Unknown: ----  Name: +loop
+0ABC Code: 0AC4 - 0ACA Unknown: ----  Name: loop
+0A86 Code: 0A8C - 0ABA Unknown: ----  Name: ?do
+0A70 Code: 0A78 - 0A84 Unknown: ----  Name: leave
+0A66 Code: 0A6C - 0A6E Unknown: ----  Name: do
+09E8 Code: 09F2 - 0A64 Unknown: ----  Name: recurse
+09D2 Code: 09DA - 09E6 Unknown: ----  Name: does>
+09C4 Code: 09CC - 09D0 Unknown: ----  Name: until
+09BA Code: 09C2 - 09C2 Unknown: ----  Name: again
+09AC Code: 09B4 - 09B8 Unknown: ----  Name: begin
+099C Code: 09A4 - 09AA Unknown: ----  Name: then
+0990 Code: 0996 - 099A Unknown: ----  Name: if
+0982 Code: 098A - 098E Unknown: ----  Name: ahead
+096E Code: 0972 - 0980 Unknown: ----  Name: ;
+0930 Code: 0938 - 096C Unknown: ----  Name: exit
+0914 Code: 091E - 092E Unknown: ----  Name: :noname
+090C Code: 0910 - 0912 Unknown: ----  Name: :
+08FC Code: 0900 - 090A Unknown: ----  Name: ]
+08F0 Code: 08F4 - 08FA Unknown: ----  Name: [
+08DA Code: 08E6 - 08EE Unknown: ----  Name: immediate
+08BE Code: 08CA - 08D8 Unknown: ----  Name: foldable
+088E Code: 089A - 08BC Unknown: ----  Name: sliteral
+0860 Code: 0866 - 088C Unknown: ----  Name: s,
+07FC Code: 0808 - 085E Unknown: ----  Name: compile,
+07DC Code: 07E2 - 07FA Unknown: ----  Name: c,
+07D0 Code: 07D4 - 07DA Unknown: ----  Name: ,
+07C4 Code: 07CC - 07CE Unknown: ----  Name: allot
+07A8 Code: 07B0 - 07C2 Unknown: ----  Name: parse
+0766 Code: 0774 - 07A6 Unknown: ----  Name: parse-name
+0736 Code: 0740 - 0764 Unknown: ----  Name: source
+0728 Code: 072E - 0734 Unknown: ----  Name: 2!
+0718 Code: 071E - 0726 Unknown: ----  Name: 2@
+06EE Code: 06F8 - 0716 Unknown: ----  Name: cmove>
+06C6 Code: 06CE - 06EC Unknown: ----  Name: cmove
+06A8 Code: 06B0 - 06C4 Unknown: ----  Name: fill
+0664 Code: 066C - 06A6 Unknown: ----  Name: sfind
+0654 Code: 065C - 0662 Unknown: ----  Name: align
+05CA Code: 05D4 - 0652 Unknown: ----  Name: aligned
+05AA Code: 05B2 - 05C8 Unknown: ----  Name: words
+0598 Code: 05A0 - 05A8 Unknown: ----  Name: link@
+0586 Code: 058E - 0596 Unknown: ----  Name: here
+057C Code: 0582 - 0584 Unknown: 0002  Name: tib
+0570 Code: 0578 - 057A Unknown: 0002  Name: init
+0564 Code: 056C - 056E Unknown: 0002  Name: forth
+055A Code: 0560 - 0562 Unknown: ----  Name: >in
+054E Code: 0556 - 0558 Unknown: ----  Name: base
+0542 Code: 054A - 054C Unknown: ----  Name: state
+048A Code: 0494 - 0540 Unknown: 0011  Name: /string
+0474 Code: 047C - 0488 Unknown: ----  Name: type
+0464 Code: 046C - 0472 Unknown: ----  Name: count
+045A Code: 0460 - 0462 Unknown: ----  Name: .x
+0450 Code: 0456 - 0458 Unknown: ----  Name: .x2
+0424 Code: 042A - 044E Unknown: ----  Name: bl
+041A Code: 0420 - 0422 Unknown: ----  Name: cr
+040E Code: 0416 - 0418 Unknown: ----  Name: space
+03E2 Code: 03E8 - 040C Unknown: ----  Name: c!
+03C8 Code: 03CE - 03E0 Unknown: ----  Name: c@
+03B2 Code: 03BA - 03C6 Unknown: ----  Name: emit
+03A4 Code: 03AA - 03B0 Unknown: ----  Name: key
+0396 Code: 039E - 03A2 Unknown: ----  Name: key?
+0382 Code: 038A - 0394 Unknown: ----  Name: emit?
+0378 Code: 0380 - 0380 Unknown: ----  Name: pause
+0370 Code: 0376 - 0376 Unknown: ----  Name: nop
+035A Code: 0364 - 036E Unknown: ----  Name: um/mod
+032A Code: 032E - 0358 Unknown: ----  Name: *
+031A Code: 0320 - 0328 Unknown: ----  Name: um*
+0300 Code: 0306 - 0318 Unknown: ----  Name: d2*
+02F6 Code: 02FC - 02FE Unknown: ----  Name: d0=
+02EC Code: 02F2 - 02F4 Unknown: ----  Name: m+
+02E2 Code: 02E8 - 02EA Unknown: ----  Name: s>d
+02D0 Code: 02D8 - 02E0 Unknown: ----  Name: dabs
+02BA Code: 02C4 - 02CE Unknown: ----  Name: dnegate
+029E Code: 02A4 - 02B8 Unknown: ----  Name: d-
+0282 Code: 0288 - 029C Unknown: ----  Name: d+
+0278 Code: 0280 - 0280 Unknown: ----  Name: depth
+0270 Code: 0276 - 0276 Unknown: 0001  Name: io@
+0266 Code: 026C - 026E Unknown: 0002  Name: io!
+025E Code: 0264 - 0264 Unknown: ----  Name: nip
+0254 Code: 025C - 025C Unknown: ----  Name: over
+024C Code: 0252 - 0252 Unknown: ----  Name: dup
+0242 Code: 024A - 024A Unknown: ----  Name: swap
+023A Code: 0240 - 0240 Unknown: ----  Name: u<
+0234 Code: 0238 - 0238 Unknown: ----  Name: <
+022E Code: 0232 - 0232 Unknown: ----  Name: =
+0222 Code: 022C - 022C Unknown: ----  Name: invert
+021A Code: 0220 - 0220 Unknown: ----  Name: not
+0212 Code: 0218 - 0218 Unknown: ----  Name: or
+020A Code: 0210 - 0210 Unknown: ----  Name: and
+0202 Code: 0208 - 0208 Unknown: ----  Name: xor
+01FC Code: 0200 - 0200 Unknown: ----  Name: -
+01F6 Code: 01FA - 01FA Unknown: ----  Name: +
+01EE Code: 01F2 - 01F4 Unknown: ----  Name: !
+01E6 Code: 01EC - 01EC Unknown: ----  Name: 2/
+01DE Code: 01E4 - 01E4 Unknown: ----  Name: 2*
+01D4 Code: 01DC - 01DC Unknown: ----  Name: cells
+01C4 Code: 01CA - 01D2 Unknown: ----  Name: abs
+01B6 Code: 01C0 - 01C2 Unknown: ----  Name: bounds
+01A2 Code: 01AA - 01B4 Unknown: ----  Name: umax
+018E Code: 0196 - 01A0 Unknown: ----  Name: umin
+017C Code: 0182 - 018C Unknown: ----  Name: max
+016A Code: 0170 - 017A Unknown: ----  Name: min
+0156 Code: 015E - 0168 Unknown: ----  Name: 2over
+0144 Code: 014C - 0154 Unknown: ----  Name: 2swap
+0132 Code: 0138 - 0142 Unknown: ----  Name: +!
+0126 Code: 012E - 0130 Unknown: ----  Name: 2dup
+0116 Code: 011E - 0124 Unknown: ----  Name: ?dup
+010A Code: 0112 - 0114 Unknown: ----  Name: 2drop
+00FE Code: 0106 - 0108 Unknown: ----  Name: tuck
+00EC Code: 00F4 - 00FC Unknown: ----  Name: -rot
+00DE Code: 00E4 - 00EA Unknown: ----  Name: rot
+00D2 Code: 00DA - 00DC Unknown: ----  Name: true
+00C6 Code: 00CE - 00D0 Unknown: ----  Name: false
+00BC Code: 00C4 - 00C4 Unknown: ----  Name: drop
+00B2 Code: 00B8 - 00BA Unknown: ----  Name: u>
+00A8 Code: 00AE - 00B0 Unknown: ----  Name: 0>
+009E Code: 00A4 - 00A6 Unknown: ----  Name: 0<
+0096 Code: 009A - 009C Unknown: ----  Name: >
+008C Code: 0092 - 0094 Unknown: ----  Name: 0<>
+0082 Code: 0088 - 008A Unknown: ----  Name: <>
+0076 Code: 007E - 0080 Unknown: ----  Name: cell+
+006C Code: 0072 - 0074 Unknown: ----  Name: 0=
+0060 Code: 006A - 006A Unknown: ----  Name: rdepth
+0054 Code: 0058 - 005E Unknown: ----  Name: @
+004C Code: 0052 - 0052 Unknown: ----  Name: 1-
+003E Code: 0048 - 004A Unknown: ----  Name: negate
+0036 Code: 003C - 003C Unknown: ----  Name: 1+
+002A Code: 0034 - 0034 Unknown: ----  Name: arshift
+001E Code: 0028 - 0028 Unknown: ----  Name: rshift
+0012 Code: 001C - 001C Unknown: ----  Name: lshift
+0004 Code: 000E - 0010 Unknown: ----  Name: execute
+

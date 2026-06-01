@@ -1,0 +1,27 @@
+#/bin/sh
+
+./compilenucleus
+
+fpc -XX -O3 icecreammachine-16kb-speicherkarte.pas
+
+  cat tester.txt test-core.txt test-core-ext.txt test-core-plus.txt test-double.txt test-strings.txt test-mecrisp-ice-extras.txt > complete-test.txt
+# cat tester.txt test-core.txt  > complete-test.txt
+
+# ./icecreammachine-16kb-speicherkarte build/iceimage.hex 0x1CA6 complete-test.txt > >(tee log.txt)
+  ./icecreammachine-16kb-speicherkarte build/iceimage.hex 0x1CA6 complete-test.txt > log.txt
+
+echo "-------------------------------------------------------------------------------"
+echo "  Ungetestete Routinen:"
+echo "-------------------------------------------------------------------------------"
+
+cat log.txt | grep Unknown | grep -v -e "----" > ungetestet.txt
+
+cat ungetestet.txt
+
+echo "-------------------------------------------------------------------------------"
+echo "  Gefundene Fehler:"
+echo "-------------------------------------------------------------------------------"
+
+cat log.txt | grep INCORRECT
+
+cat log.txt | grep WRONG
