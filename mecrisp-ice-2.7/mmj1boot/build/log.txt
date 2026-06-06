@@ -985,6 +985,131 @@ Mecrisp-Ice 2.7
     $a0 io!     \ Write to BOOTCTL register  ok.
 ;  ok.
   ok.
+\ SPI Flash Security  ok.
+\  ok.
+\ These words support flash security by providing hardware write protection  ok.
+
+\ for the bootloader and other features.  ok.
+  ok.
+: rdstatreg ( status-register-num -- register-value )  ok.
+    \ Read Status Register.  ok.
+    \ Register number is $05 (1), $35 (2), or $15 (3)  ok.
+    >spi          \ Read status register command ($05, $35, $15)  ok.
+    spi>           \ Read register  ok.
+    idle            \ End of command  ok.
+;  ok.
+  ok.
+: wrstatreg ( register-value status-register-num -- )  ok.
+    \ Write Status Register.  ok.
+    \ Register number is $05 (1), $35 (2), or $15 (3)  ok.
+    spiwe         \ Enable write to status registers  ok.
+    >spi           \ Write status register 3  ok.
+    >spi            \ Updated register value  ok.
+    idle             \ End of command  ok.
+;  ok.
+  ok.
+  ok.
+: WPSset ( -- )  ok.
+    \ Set write protect status bit in status register 3.  ok.
+    \ This flag must be set in order to write protect flash memory on a  ok.
+    \ block by block basis (4 KB blocks).  ok.
+    $AB >spi   \ Release from Deep Power Down Mode, IgorM  ok.
+    idle  ok.
+    0  begin 1+ dup 500 =  until drop \ delay 100us  ok.
+    $15 rdstatreg \ Read status register 3  ok.
+    $4 or            \ Set WPS bit (2)  ok.
+    $11 wrstatreg     \ Write status register 3  ok.
+;  ok.
+  ok.
+: WPSclr ( -- )  ok.
+    \ Clear write protect status bit in status register 3.  ok.
+    \ This flag needs to be cleared before using the CH431A programmer  ok.
+    \ to write a new image to flash.  ok.
+    $AB >spi   \ Release from Deep Power Down Mode, IgorM  ok.
+    idle  ok.
+    0  begin 1+ dup 500 =  until drop \ delay 100us  ok.
+    $15 rdstatreg \ Read status register 3  ok.
+    $FB and        \ Clear WPS bit (2)  ok.
+    $11 wrstatreg   \ Write status register 3  ok.
+;  ok.
+  ok.
+: blklock (end start -- ) ?
+    \ Lock the 4KB sectors in range start..end-1  ok.
+    \ The WPS flag must be set for this to have an effect. Note also  ok.
+    \ that the lock bits are all set on power-up or reset and therefore  ok.
+    \ must be initialized as unlocked for most of flash.  ok.
+  ok.
+    0 0            \ Starting double_rom_addr  ok.
+    2swap ?do       \ Loop through the start..end-1 4KB blocks  ok.
+ 2dup         \ Make index a double  ok.
+ spiwe         \ Write enable status registers  ok.
+        $36 >spi       \ Block/Sector Lock command  ok.
+        addr2spi        \ Output 24-bit address  ok.
+ idle             \ End of command  ok.
+        $1000 0 d+        \ Increment addr to next 4KB block  ok.
+    loop  ok.
+    2drop  ok.
+;  ok.
+  ok.
+: blkunlock (end start -- ) ?
+    \ Unlock the 4KB sectors where the bootloader is stored.  ok.
+  ok.
+    0 0            \ Starting double_rom_addr  ok.
+    2swap ?do       \ Loop through the 32 4KB blocks  ok.
+ 2dup         \ Make index a double  ok.
+ spiwe         \ Write enable status registers  ok.
+        $39 >spi       \ Block/Sector Lock command  ok.
+        addr2spi        \ Output 24-bit address  ok.
+ idle             \ End of command  ok.
+        $1000 0 d+        \ Increment addr to next 4KB block  ok.
+    loop  ok.
+    2drop  ok.
+;  ok.
+  ok.
+: blkstatus ( end start -- )  ok.
+    \ Display write protection status of the bootloader blocks.  ok.
+    \ The bootloader is in address range $000000~$01FFFF  ok.
+    \ This is sector16k 0~7, sector4k 0~31  ok.
+    $AB >spi   \ Release from Deep Power Down Mode, IgorM  ok.
+    idle  ok.
+    0  begin 1+ dup 500 =  until drop \ delay 100us  ok.
+  ok.
+    0 0            \ Starting double_rom_addr  ok.
+    2swap ?do       \ Loop through the 32 4KB blocks  ok.
+        2dup         \ Make index a double  ok.
+        $3D >spi      \ Read Block/Sector Lock command  ok.
+        addr2spi       \ Output 24-bit address  ok.
+        spi>            \ Status, low bit unlock/lock  ok.
+ idle             \ End of command  ok.
+        $01 and           \ Mask the lock status bit  ok.
+        $30 + emit         \ Print 0 or 1  ok.
+        $1000 0 d+          \ Increment addr to next 4KB block  ok.
+    loop  ok.
+    2drop  ok.
+;  ok.
+  ok.
+  ok.
+: bootlock ( -- )  ok.
+    \ Lock the 4KB sectors where the bootloader is stored.  ok.
+    \ The bootloader is in address range $000000~$01FFFF  ok.
+    \ This is sector16k 0~7, sector4k 0~31  ok.
+    \ The WPS flag must be set for this to have an effect. Note also  ok.
+    \ that the lock bits are all set on power-up or reset and therefore  ok.
+    \ must be initialized as unlocked for most of flash.  ok.
+  ok.
+    32 0 blklock    \ Loop through the 32 4KB blocks  ok.
+;  ok.
+  ok.
+: bootunlock ( -- )  ok.
+    \ Unlock the 4KB sectors where the bootloader is stored.  ok.
+    \ The bootloader is in address range $000000~$01FFFF  ok.
+    \ This is sector16k 0~7, sector4k 0~31  ok.
+    \ The WPS flag must be set for this to have an effect. Note also  ok.
+    \ that the lock bits are all set on power-up or reset and therefore  ok.
+    \ must be initialized as unlocked for most of flash.  ok.
+  ok.
+    32 0 blkunlock  \ Loop through the 32 4KB blocks  ok.
+;  ok.
 \ #######   HP-71B  ###########################################  ok.
 \ Words to support HP-71B ROM/RAM modules in flash  ok.
   ok.
@@ -1301,11 +1426,13 @@ Mecrisp-Ice 2.7
 \ would be 16K block #64. The first two 16K blocks are dedicated to the  ok.
 \ directory for the images.  ok.
 frtstart variable forthdir    \ Initial value taken from stack  ok.
+62 constant fthsize           \ Number of blocks in Forth directory  ok.
   ok.
 \ HP-71B dictionary images begin at the 2MB address, hex $200000, which  ok.
 \ would be block #128. The first two 16K blocks are dedicated to the  ok.
 \ directory for the images.  ok.
 romstart variable romdir    \ Initial value taken from stack  ok.
+894 constant romsize        \ Number of blocks in ROM directory  ok.
   ok.
 \ variable fth_dtop     \ Next entry number in Forth directory (0~1023)  ok.
 \ variable rom_dtop     \ Next entry number in HP-71B directory (0~1023)  ok.
