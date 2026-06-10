@@ -27,13 +27,11 @@
 \ would be 16K block #64. The first two 16K blocks are dedicated to the
 \ directory for the images.
 frtstart variable forthdir    \ Initial value taken from stack
-62 constant fthsize           \ Number of blocks in Forth directory
 
 \ HP-71B dictionary images begin at the 2MB address, hex $200000, which
 \ would be block #128. The first two 16K blocks are dedicated to the
 \ directory for the images.
 romstart variable romdir    \ Initial value taken from stack
-894 constant romsize        \ Number of blocks in ROM directory
 
 \ variable fth_dtop     \ Next entry number in Forth directory (0~1023)
 \ variable rom_dtop     \ Next entry number in HP-71B directory (0~1023)
