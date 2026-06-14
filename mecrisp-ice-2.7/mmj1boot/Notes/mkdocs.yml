@@ -21,6 +21,7 @@ nav:
   - Forth Files:
     - soft-spi.fs:     softspi.md
     - multiboot.fs:    multiboot.md
+    - security.fs:     security.md
     - ramrom.fs:       ramrom.md
     - xfer.fs:         xfer.md
     - directory.fs:    directory.md

@@ -20,8 +20,6 @@ set_io din71  34
 set_io cdn71  36
 set_io strn71 37
 
-#set_io spi_mosi 17
-#set_io spi_miso 14
 set_io spi_mosi 14
 set_io spi_miso 17
 set_io spi_clk  15

@@ -11,7 +11,7 @@ rm cross.fs instructionset.fs
 echo ""
 
 echo "Compile additional Forth sources..."
-cat soft-spi.fs multiboot.fs ramrom.fs xfer.fs directory.fs transfer.fs > hp71code.fs
+cat soft-spi.fs multiboot.fs security.fs ramrom.fs xfer.fs directory.fs transfer.fs > hp71code.fs
 # cat soft-spi.fs multiboot.fs > hp71code.fs
 cat ../common-forth/coredefinitions.fs basisdefinitions.fs ../common/double.fs ../common/fixpoint.fs ../common-forth/insight-16kb.fs hp71code.fs > included.fs
 ../common-crosscompiler/icecreammachine-16kb build/nucleus.hex build/iceimage.hex included.fs > build/log.txt
