@@ -20,16 +20,16 @@
 
 : idle  ( -- )
     \ Deselect flash to mark the end of a command
-    1 $28 io!   \ Deselect flash CS/ = 1
+    1 $0100 io!   \ Deselect flash CS/ = 1
 ;
 
 : spixbit ( x -- y )
     \ Output data in high byte, assemble input in low byte
     dup 0< 2 and        \ extract MS bit
-    dup $28 io!          \ lower SCK, update MOSI
-    4 + $28 io!           \ raise SCK
+    dup $0100 io!        \ lower SCK, update MOSI
+    4 + $0100 io!         \ raise SCK
     2*                     \ next bit
-    $30 io@ +               \ read MISO, accumulate
+    $0200 io@ +             \ read MISO, accumulate
 ;
 
 : spix ( outdata -- indata )

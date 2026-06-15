@@ -2,11 +2,6 @@ set_io rgb0 39
 set_io rgb1 40
 set_io rgb2 41
 
-set_io pmod_1 46
-set_io pmod_2 47
-set_io pmod_3 45
-set_io pmod_4 44
-
 set_io data_0 46
 set_io data_1 47
 set_io data_2 45

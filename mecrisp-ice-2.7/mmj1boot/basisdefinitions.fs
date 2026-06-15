@@ -17,8 +17,8 @@
 : randombit ( -- 0 | 1 ) $2000 io@ 2 rshift 1 and ;
 : random ( -- x ) 0  16 0 do 2* randombit or 100 0 do loop loop ;
 
-: sram@ ( addr -- x ) $21 io! $20 io@ ;
-: sram! ( x addr -- ) $21 io! $20 io! ;
+: sram@ ( addr -- x ) $800 io! $80 io@ ;
+: sram! ( x addr -- ) $800 io! $80 io! ;
 
 : h71@ ( daddr -- x ) swap $51 io! $52 io! $50 io@ ;
 : h71! ( x daddr -- ) swap $51 io! $52 io! $50 io! ;
