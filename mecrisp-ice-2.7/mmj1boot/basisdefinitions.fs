@@ -19,6 +19,3 @@
 
 : sram@ ( addr -- x ) $800 io! $80 io@ ;
 : sram! ( x addr -- ) $800 io! $80 io! ;
-
-: h71@ ( daddr -- x ) swap $51 io! $52 io! $50 io@ ;
-: h71! ( x daddr -- ) swap $51 io! $52 io! $50 io! ;

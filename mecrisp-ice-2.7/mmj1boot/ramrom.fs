@@ -34,7 +34,7 @@
     \ ram# 0~7, 16K block in SPRAM
     \ sector16k frthstart~1023, 16K block in flash ( 14 MB )
 
-    dup 6 u> if     \ 32K won't fit last 16K block
+    dup 7 u< if     \ 32K won't fit last 16K block
         2dup rom2ram
         1+ swap 1+ swap
         rom2ram
@@ -48,7 +48,7 @@
     \ ram# 0~7, 16K block in SPRAM
     \ sector16k frthstart~1023, 16K block in flash ( 14 MB )
 
-    dup 4 u> if     \ 64K won't fit last 16K block
+    dup 5 u< if     \ 64K won't fit last 16K block
         2dup rom2ram
         1+ swap 1+ swap 2dup
         rom2ram
@@ -62,12 +62,12 @@
 
 
 : ram2rom  ( ram# sector16k -- )
-    \ ram# 0~7, 16K block is SPRAM
+    \ ram# 0~7, 16K block in SPRAM
     \ sector16k 32~127, 16K block in flash ( 2 MB )
 
     dup bitfence 1- u> if    \ Never overwrite bitstream !
 
-        swap $2000 * swap      \ ( ram_addr sector16k -- )
+        swap $2000 * swap      \ ( ram# sector16k -- ram_addr sector16k )
         $AB >spi                \ Release from Deep Power Down
         idle
         dup erase
@@ -104,7 +104,7 @@
     \ ram# 0~7, 16K block in SPRAM
     \ sector16k 32~127, 16K block in flash ( 2 MB )
 
-    over 6 u> if     \ 32K isn't last 16K block
+    over 7 u< if     \ 32K isn't last 16K block
         2dup ram2rom
         1+ swap 1+ swap
         ram2rom
@@ -118,7 +118,7 @@
     \ ram# 0~7, 16K block in SPRAM
     \ sector16k 32~127, 16K block in flash (2 MB)
 
-    over 4 u> if    \ 64K won't fit in last 3 16K blocks
+    over 5 u< if    \ 64K won't fit in last 3 16K blocks
         2dup ram2rom
         1+ swap 1+ swap 2dup
         ram2rom
@@ -146,6 +146,37 @@
     2drop
 ;
 
+: pagecmp ( ram_addr -- ram_addr flag )
+    8192 0 ?do      \ Number of words in SPRAM page
+        dup sram@    \ ( ram_addr -- ram_addr ram_word )
+        spi> spi>     \ ( ... -- ram_addr ram_word lowbyte highbyte )
+        8 lshift or    \ ( ... -- ram_addr ram_word flash_word )
+        <>              \ ( ram_addr ram_word flash_word -- ram_addr flag )
+        if               \ ( ram_addr flag -- ram_addr )
+            leave         \ (ram_addr flag -- ram_addr fail )
+        then               \ Increment ram_addr
+        1+                  \ ( ram_addr -- ram_addr+1 )
+    loop
+    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )
+;
+
+: ramromcmp ( size ram# sector16k -- mem_addr flag )
+    \ Given the sector16k location of an image in flash, the ram# page
+    \ of the same image and the size of the image in number of blocks,
+    \ return a flag indicating the images match and the last address
+    \ of the word in SPRAM of a mismatch if there was a mismatch.
+    spiread16k      \ ( size ram# sector16k -- size ram# )
+    $2000 *          \ ( size ram# -- size ram_addr )
+    swap 0 swap ?do   \ ( size ram_addr -- ram_addr )
+        pagecmp        \ ( ram_addr -- ram_addr flag )
+        not if          \ ( ram_addr flag -- ram_addr )
+            leave        \ ( ram_addr -- ram_addr )
+        then
+    loop
+    idle
+    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )
+;
+
 : zeroram ( ram# -- )
     \ Fill indicated SPRAM block with zeros, used to make IRAMs
 
@@ -161,10 +192,10 @@
     \ Fill indicated SPRAM block with ones, used to fill out data
     \ written to flash.
 
-    $2000 *         \ Starting address in SPRAM
-    $2000 0 ?do      \ Fill 8K of 16-bit words
-        $FF over sram!  \ With ones
-        1+             \ Next address
+    $2000 *             \ Starting address in SPRAM
+    $2000 0 ?do          \ Fill 8K of 16-bit words
+        $FFFF over sram!  \ With ones
+        1+                 \ Next address
     loop
     drop
 ;

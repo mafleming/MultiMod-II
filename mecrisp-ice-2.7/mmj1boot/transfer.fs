@@ -81,6 +81,39 @@
 \ HP-71B ROM/IRAM Images
 \ --------------------------------------------------------------------
 
+: romverify ( ram# name -- ram_addr flag )
+    \ Given a name in the ROM directory, verify its content against
+    \ one or more SPRAM pages. The starting sector16k value and the
+    \ number of sectors the ROM occupies is taken from the directory
+    \ entry for the given name. The starting ram# (0 to 7) is usually
+    \ 0 for ROM images freshly loaded from a host.
+    \ True/False is returned for the comparison, along with the last
+    \ SPRAM address + 1
+
+    \ Is the name valid?
+    romdir @        \ ( ram# name -- ram# name sector16k )
+    dir_find         \ ( ram# name sector16k -- ram# entry# )
+    dup 1024 = if     \ ( ram# entry#  -- ram# entry# )
+        drop           \ ( ram# 1024 -- ram# )
+        $2000 * 0       \ ( ram# -- ram_addr flag )
+        ." Name not found"
+
+    else
+	\ Find the starting address and number of blocks
+        dup romdir @  \ ( ram# entry# -- ram# entry# entry# sector16k )
+        entry_image    \ ( ram# entry# entry# sector16k -- ram# entry# block# )
+        swap romdir @   \ ( ram# entry# block# -- ram# block# entry# sector16k )
+        entry_type       \ ( ram# block# entry# sector16k -- ram# block# type.size )
+        $F and swap       \ ( ram# block# type.size -- ram# size block# )
+        romdir @           \ ( ram# size block# -- ram# size block# sector16k )
+        image_addr          \ ( ram# size block# sector16k -- ram# size sector16k )
+
+	\ Loop through flash and ram, comparing words
+        -rot swap rot          \ ( ram# size sector16k -- size ram# sector16k )
+        ramromcmp               \ ( size ram# sector16k -- ram_addr flag )
+    then
+;
+
 : writeflash ( name type -- )
     \ Download image to flash.
     \ Should check to see if file already exists in the directory.
@@ -159,6 +192,11 @@
 
 \ --------------------------------------------------------------------
 \ FPGA Bitstream Images
+\ Note:
+\     If the bootloader is only configured for two bitstreams, then
+\ you can't warmboot into a third or fourth bitstream image. Using
+\ duplicate image names doesn't create additional images in the
+\ multiboot output.
 \ --------------------------------------------------------------------
 
 : bitstream ( slot -- )
@@ -172,14 +210,15 @@
         cr ." Out of range, Use 1, 2, or 3"
         drop           \
     else                \
-        bitfence *       \ slot * sector16k
+        bitfence *       \ ( slot -- sector16k ) slot * sector16k
         8 0 ?do           \
             i onesram      \ Set all of SPRAM to foxes
-        loop                \
+        loop                \ ( sector16k -- sector16k )
         host2ram             \ ( sector16k -- sector16k ncount ) Read bitstream
         drop dup              \ ( sector16k ncount -- sector16k sector16k )
         0 swap ram64k2rom      \ Half of SPRAM to flash
-        4 swap ram32k2rom       \ Other half to flash
+        4 +                     \ ( sector16k -- sector16k ) Next flash block
+        4 swap ram64k2rom       \ Other half to flash
     then
 ;
 

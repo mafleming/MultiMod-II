@@ -263,7 +263,7 @@ $80 constant DIRSIZE
     \ Failure to find name will return an invalid value of 1024.
     spiread16k      \ Set read pointer to beginning of directory
     16 spiflush      \ Skip DIRSIZE entry
-    1024 0            \ Loop count, iterates 0..1023
+    1024 1            \ Loop count, iterates 0..1023
     ?do  
 	spi> Empty =    \ Empty directory entry?
 	if
