@@ -38,6 +38,9 @@ A internal 64KB RAM block **ram#** (usually IRAM) is copied to flash. Flash dest
 - **ram2ram ( ramfrom# ramto# -- ) -** Copy One 16KB Internal RAM Block To Another.  
 This is used to move images stored in internal RAM from one address to another, one 16KB block at a time.  
 
+- **ramromcmp ( size ram# sector16k -- mem_addr flag ) -** Compare SPRAM to flash.
+Compares the image in SPRAM, starting at 16KB page **ram#** (0~7) to the same flash image starting at **sector16k** and is **size** sectors long. The last memory address examined is returned along with a Pass/Fail flag. If the images don't match the **ram_addr** indicates the point of first mismatch.  
+
 - **zeroram ( ram# -- ) -** Clear RAM Block To Zero's.  
 Clearing a 16K RAM block is done prior to creating an IRAM module. Valid values of **ram#** is 0 to 7.  
 

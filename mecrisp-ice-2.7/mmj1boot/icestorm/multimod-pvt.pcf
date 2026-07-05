@@ -7,14 +7,6 @@ set_io data_1 47
 set_io data_2 45
 set_io data_3 44
 
-set_io to71   48
-set_io from71 42
-set_io ctrl71 38
-
-set_io din71  34
-set_io cdn71  36
-set_io strn71 37
-
 set_io spi_mosi 14
 set_io spi_miso 17
 set_io spi_clk  15
@@ -25,6 +17,7 @@ set_io spi_cs   16
 set_io usb_dn    26
 set_io usb_dp    27
 set_io usb_dp_pu 31
+set_io usb_activ  2
 
 set_io clki    25
 set_io clki_en 35

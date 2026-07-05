@@ -11,13 +11,13 @@
 `include "../common-verilog/usb_cdc/sie.v"
 
 module top (
-    input  clki,    // 48 MHz clock input
-    output clk_en,  // Enable external clock
+    input  clki,     // 48 MHz clock input
+    output clki_en,  // Enable external clock
 
-    inout  data_1, // Four user pins
+    inout  data_0, // Four user pins
+    inout  data_1,
     inout  data_2,
     inout  data_3,
-    inout  data_4,
 
     output rgb0, // LED outputs
     output rgb1,
@@ -32,7 +32,8 @@ module top (
 
     inout  usb_dp, // USB pins
     inout  usb_dn,
-    output usb_dp_pu
+    output usb_dp_pu,
+    input  usb_activ
 );
 
   // ######   Clock   #########################################
@@ -44,7 +45,7 @@ module top (
   wire clk_usb = clki;       // 48 MHz
   wire clk     = divider[1]; // 12 MHz
 
-  assign clk_en = 1'b1;
+  assign clki_en = 1'b1;
 
 
   // ######   Reset logic   ###################################
@@ -115,10 +116,10 @@ module top (
   reg  [3:0] data_out;
   wire [3:0] data_in;
 
-  SB_IO #(.PIN_TYPE(6'b1010_01)) io0 (.PACKAGE_PIN(data_1), .D_OUT_0(data_out[0]), .D_IN_0(data_in[0]), .OUTPUT_ENABLE(data_dir[0]));
-  SB_IO #(.PIN_TYPE(6'b1010_01)) io1 (.PACKAGE_PIN(data_2), .D_OUT_0(data_out[1]), .D_IN_0(data_in[1]), .OUTPUT_ENABLE(data_dir[1]));
-  SB_IO #(.PIN_TYPE(6'b1010_01)) io2 (.PACKAGE_PIN(data_3), .D_OUT_0(data_out[2]), .D_IN_0(data_in[2]), .OUTPUT_ENABLE(data_dir[2]));
-  SB_IO #(.PIN_TYPE(6'b1010_01)) io3 (.PACKAGE_PIN(data_4), .D_OUT_0(data_out[3]), .D_IN_0(data_in[3]), .OUTPUT_ENABLE(data_dir[3]));
+  SB_IO #(.PIN_TYPE(6'b1010_01)) io0 (.PACKAGE_PIN(data_0), .D_OUT_0(data_out[0]), .D_IN_0(data_in[0]), .OUTPUT_ENABLE(data_dir[0]));
+  SB_IO #(.PIN_TYPE(6'b1010_01)) io1 (.PACKAGE_PIN(data_1), .D_OUT_0(data_out[1]), .D_IN_0(data_in[1]), .OUTPUT_ENABLE(data_dir[1]));
+  SB_IO #(.PIN_TYPE(6'b1010_01)) io2 (.PACKAGE_PIN(data_2), .D_OUT_0(data_out[2]), .D_IN_0(data_in[2]), .OUTPUT_ENABLE(data_dir[2]));
+  SB_IO #(.PIN_TYPE(6'b1010_01)) io3 (.PACKAGE_PIN(data_3), .D_OUT_0(data_out[3]), .D_IN_0(data_in[3]), .OUTPUT_ENABLE(data_dir[3]));
 
   // ######   SRAM   ##########################################
 
@@ -338,7 +339,8 @@ module top (
     (io_addr[ 6] ? {12'd0, data_dir}                                                : 16'd0) |
     (io_addr[ 7] ?         sram_in                                                  : 16'd0) |
     
-    (io_addr[ 8] ? {13'd0, spios}                                                   : 16'd0) |
+//    (io_addr[ 8] ? {13'd0, spios}                                                   : 16'd0) |
+    (io_addr[ 8] ? {11'd0, usb_activ, usb_p_tx, usb_n_tx, spios}                    : 16'd0) |
     (io_addr[ 9] ? {15'd0, spi_miso}                                                : 16'd0) |
     
     (io_addr[11] ?         sram_addr                                                : 16'd0) |

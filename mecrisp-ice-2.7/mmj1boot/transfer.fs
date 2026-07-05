@@ -94,8 +94,8 @@
     romdir @        \ ( ram# name -- ram# name sector16k )
     dir_find         \ ( ram# name sector16k -- ram# entry# )
     dup 1024 = if     \ ( ram# entry#  -- ram# entry# )
-        drop           \ ( ram# 1024 -- ram# )
-        $2000 * 0       \ ( ram# -- ram_addr flag )
+	drop           \ ( ram# 1024 -- ram# )
+	$2000 * 0       \ ( ram# -- ram_addr flag )
         ." Name not found"
 
     else
@@ -106,11 +106,11 @@
         entry_type       \ ( ram# block# entry# sector16k -- ram# block# type.size )
         $F and swap       \ ( ram# block# type.size -- ram# size block# )
         romdir @           \ ( ram# size block# -- ram# size block# sector16k )
-        image_addr          \ ( ram# size block# sector16k -- ram# size sector16k )
+	image_addr          \ ( ram# size block# sector16k -- ram# size sector16k )
 
 	\ Loop through flash and ram, comparing words
-        -rot swap rot          \ ( ram# size sector16k -- size ram# sector16k )
-        ramromcmp               \ ( size ram# sector16k -- ram_addr flag )
+	-rot swap rot          \ ( ram# size sector16k -- size ram# sector16k )
+	ramromcmp               \ ( size ram# sector16k -- ram_addr flag )
     then
 ;
 
@@ -216,8 +216,8 @@
         loop                \ ( sector16k -- sector16k )
         host2ram             \ ( sector16k -- sector16k ncount ) Read bitstream
         drop dup              \ ( sector16k ncount -- sector16k sector16k )
-        0 swap ram64k2rom      \ Half of SPRAM to flash
-        4 +                     \ ( sector16k -- sector16k ) Next flash block
+	0 swap ram64k2rom      \ Half of SPRAM to flash
+	4 +                     \ ( sector16k -- sector16k ) Next flash block
         4 swap ram64k2rom       \ Other half to flash
     then
 ;

@@ -19,18 +19,21 @@ This uses the `dir_list` command from the `directory.fs` set of words to list en
 ## HP-71B ROM/IROM Images
 ROM image `.bin` files can be sent using the Kermit protocol. ROM/IRAM images in flash can be downloaded and automatically given the `.bin` extension.
 
-- **readflash ( name -- ) -** Download Flash Image By Name.  
-Downloads the *name* ROM/IROM image using the Kermit receive protocol.  
+- **romverify ( ram# name -- ram_addr flag ) -** Verify Flash Image By Name.  
+Given a name in the ROM directory and the starting point of an image in SPRAM, verify the content in SPRAM matches that of the image in SPRAM. The size of the image in the directory entry is used to determine the length of the image in 16KB sectors. The last memory address examined is returned along with a Pass/Fail flag. If the images don't match the **ram_addr** indicates the point of first mismatch.  
 
 - **writeflash ( name type -- ) -** Upload ROM/IROM Image To Flash.  
 Uploads a file and stores the file in flash, adding *name* to the ROM/IROM directory.  
+
+- **readflash ( name -- ) -** Download Flash Image By Name.  
+Downloads the *name* ROM/IROM image using the Kermit receive protocol.  
 
 - **romlist ( -- ) -** List HP-71B Directory Entries.  
 This uses the `dir_list` command from the `directory.fs` set of words to list ROM/IRAM image entries in the HP-71B directory.
 
 
 ## FPGA Bitstream Images
-There are four locations, slots 0 through 0, in the first megabyte of flash memory that store bitstream images. The first, slot 0, is the bootloader and cannot be erased or altered. The second, slot 1, is the MultiMod II production configuration that is loaded while the MultiMod II is in the HP-71B card reader cavity. Slots 2 and 3 are for alternate configurations that can be loaded via a warm boot.
+There are four locations, slots 0 through 3, in the first megabyte of flash memory that store bitstream images. The first, slot 0, is the bootloader and cannot be erased or altered. The second, slot 1, is the MultiMod II production configuration that is loaded while the MultiMod II is in the HP-71B card reader cavity. Slots 2 and 3 are for alternate configurations that can be loaded via a warm boot.
 
 - **bitstream ( slot -- ) -** Transfer FPGA Bitstream.
 <br>

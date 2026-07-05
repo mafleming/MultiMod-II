@@ -35,6 +35,13 @@
     loop
 ;
 
+: romdumpx ( Nbytes -- )
+    \ Print N bytes from the spi flash being read
+    0 ?do
+        spi> .x
+    loop
+;
+
 : rampeek ( ram_address byte_count -- )
     begin
         over sram@ .x
@@ -51,4 +58,10 @@
         1+            \ increment address
     loop
     2drop
+;
+
+: createdirs ( -- )
+    \ Create the Forth and HP71B directories
+    forthsize forthdir @ dir_init
+    romsize romdir @ dir_init
 ;
