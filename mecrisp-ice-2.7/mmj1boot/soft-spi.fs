@@ -11,6 +11,8 @@
 \ powerup/reset bitstream and should be protected.
 \ Default load on power-up would be 16K sector number 0
 
+cornerstone core4th  \ Everything below this is core Forth
+
 8 constant bitfence  \ Write protect 16KB pages below this point
 64 constant frtstart  \ Forth dictionary images start point
 128 constant romstart  \ HP-71B ROM/IRAM image start
@@ -18,18 +20,35 @@
 \ #############################################################
 \ #######    SPI IO    ########################################
 
+\ IO Address $0100, SPI Read/Write
+\ +------+------+------+------+------+------+
+\ | CLK  | CS   | IO3  | IO2  | MOSI | MISO |
+\ +-----5+-----4+-----3+-----2+-----1+-----0+
+
+\ IO Address $0101, SPI Direction 1:output, 0:input
+\ +------+------+------+------+
+\ | IO3  | IO2  | MOSI | MISO |
+\ +-----3+-----2+-----1+-----0+
+
+\ IO Address $0200
+\ USB Active/State Read       Boot Write
+\ +------+------+------+      +------+------+------+
+\ | ACTV | P_TX | N_TX |      | BOOT | S1   | S0   |
+\ +-----2+-----1+-----0+      +-----2+-----1+-----0+
+
+
 : idle  ( -- )
     \ Deselect flash to mark the end of a command
-    1 $0100 io!   \ Deselect flash CS/ = 1
+    $1C $0100 io!   \ Deselect flash CS/ = 1, IO3/IO2=1
 ;
 
 : spixbit ( x -- y )
     \ Output data in high byte, assemble input in low byte
-    dup 0< 2 and        \ extract MS bit
+    dup 0< 2 and $C or  \ extract MS bit
     dup $0100 io!        \ lower SCK, update MOSI
-    4 + $0100 io!         \ raise SCK
+    $20 or $0100 io!      \ raise SCK
     2*                     \ next bit
-    $0200 io@ +             \ read MISO, accumulate
+    $0100 io@ 1 and +       \ read MISO, accumulate
 ;
 
 : spix ( outdata -- indata )
@@ -58,6 +77,7 @@
     $06 >spi \ Write enable
     idle
 ;
+
 
 
 \ #############################################################
@@ -231,4 +251,4 @@
     else drop then \ Bitstream protection
 ;
 
-cornerstone hp71b    \ Everything below this is core Forth
+cornerstone hp71b    \ Everything below this is core Forth plus SPI flash support

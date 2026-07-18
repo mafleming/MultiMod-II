@@ -23,12 +23,12 @@ module top (
     output rgb1,
     output rgb2,
 
-    output spi_mosi, // SPI Flash
-    input  spi_miso,
+    output spi_cs,    // SPI Flash
     output spi_clk,
-    output spi_io2,
-    output spi_io3,
-    output spi_cs,
+    inout  spi_miso,
+    inout  spi_mosi,
+    inout  spi_io2,
+    inout  spi_io3,
 
     inout  usb_dp, // USB pins
     inout  usb_dn,
@@ -86,8 +86,30 @@ module top (
   );
 
   // ######   SPI   ###########################################
-    reg [2:0] spios;
-    assign {spi_clk, spi_mosi, spi_cs} = spios;
+  // M. Fleming
+  // Make the SPI IO0~IO3 lines directional
+
+  reg  [3:0] spio_dir = 4'b1110;   // 1:output, 0:input
+  reg  [3:0] spio_out;
+  wire [3:0] spio_in;
+
+  SB_IO #(.PIN_TYPE(6'b1010_01)) spio0 (.PACKAGE_PIN(spi_miso), .D_OUT_0(spio_out[0]), .D_IN_0(spio_in[0]), .OUTPUT_ENABLE(spio_dir[0]));
+  SB_IO #(.PIN_TYPE(6'b1010_01)) spio1 (.PACKAGE_PIN(spi_mosi), .D_OUT_0(spio_out[1]), .D_IN_0(spio_in[1]), .OUTPUT_ENABLE(spio_dir[1]));
+  SB_IO #(.PIN_TYPE(6'b1010_01)) spio2 (.PACKAGE_PIN(spi_io2), .D_OUT_0(spio_out[2]), .D_IN_0(spio_in[2]), .OUTPUT_ENABLE(spio_dir[2]));
+  SB_IO #(.PIN_TYPE(6'b1010_01)) spio3 (.PACKAGE_PIN(spi_io3), .D_OUT_0(spio_out[3]), .D_IN_0(spio_in[3]), .OUTPUT_ENABLE(spio_dir[3]));
+
+  // ######   Warm Boot Control ###############################
+  // M. Fleming
+  // Add control register to j1a address space
+
+   reg [2:0] BOOTCTL = 0;
+
+  SB_WARMBOOT B_WARMBOOT(
+      .BOOT(BOOTCTL[2]),
+      .S0(BOOTCTL[0]),
+      .S1(BOOTCTL[1])
+  );
+
 
   // ######   Ticks   #########################################
 
@@ -186,8 +208,6 @@ module top (
   // ######   USB-CDC terminal   ##############################
 
   assign usb_dp_pu = resetq;     // Pull-up on USB-P
-  assign spi_io2 = 1'b1;         // WP/
-  assign spi_io3 = 1'b1;         // HOLD/
    
   wire usb_p_tx;
   wire usb_n_tx;
@@ -290,18 +310,6 @@ module top (
       .RGB2(rgb2)
   );
 
-  // ######   Warm Boot Control ###############################
-  // Add control register to j1a address space
-
-   reg [2:0] BOOTCTL = 0;
-
-  SB_WARMBOOT B_WARMBOOT(
-      .BOOT(BOOTCTL[2]),
-      .S0(BOOTCTL[0]),
-      .S1(BOOTCTL[1])
-  );
-
-
 
   // ######   IO Ports   ######################################
 
@@ -336,13 +344,12 @@ module top (
 
     (io_addr[ 4] ? {12'd0, data_in}                                                 : 16'd0) |
     (io_addr[ 5] ? {12'd0, data_out}                                                : 16'd0) |
-    (io_addr[ 6] ? {12'd0, data_dir}                                                : 16'd0) |
+    (io_addr[ 6] ? { 8'd0, spio_dir, data_dir}                                      : 16'd0) |
     (io_addr[ 7] ?         sram_in                                                  : 16'd0) |
-    
-//    (io_addr[ 8] ? {13'd0, spios}                                                   : 16'd0) |
-    (io_addr[ 8] ? {11'd0, usb_activ, usb_p_tx, usb_n_tx, spios}                    : 16'd0) |
-    (io_addr[ 9] ? {15'd0, spi_miso}                                                : 16'd0) |
-    
+
+    (io_addr[ 8] ? {12'd0, spio_in}                                                 : 16'd0) |
+    (io_addr[ 9] ? {13'd0, usb_activ, usb_p_tx, usb_n_tx}                           : 16'd0) |
+
     (io_addr[11] ?         sram_addr                                                : 16'd0) |
 
     (io_addr[12] ? { 8'd0, terminal_data}                                           : 16'd0) |
@@ -367,10 +374,8 @@ module top (
     if (io_wr & io_addr[6] & (io_addr[1:0] == 2))  data_dir  <=  data_dir  |  io_dout; // Set
     if (io_wr & io_addr[6] & (io_addr[1:0] == 3))  data_dir  <=  data_dir  ^  io_dout; // Invert
 
-    if (io_wr & io_addr[8] & (io_addr[1:0] == 0))  {spios}   <=               io_dout;
-    if (io_wr & io_addr[8] & (io_addr[1:0] == 1))  {spios}   <=  {spios}   & ~io_dout; // Clear
-    if (io_wr & io_addr[8] & (io_addr[1:0] == 2))  {spios}   <=  {spios}   |  io_dout; // Set
-    if (io_wr & io_addr[8] & (io_addr[1:0] == 3))  {spios}   <=  {spios}   ^  io_dout; // Invert
+    if (io_wr & io_addr[8] & (io_addr[1:0] == 0))  {spi_clk, spi_cs, spio_out}  <= io_dout;
+    if (io_wr & io_addr[8] & (io_addr[1:0] == 1))  spio_dir                     <= io_dout;
 
     if (io_wr & io_addr[9]) BOOTCTL <= io_dout;
 
