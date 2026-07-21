@@ -328,7 +328,8 @@ module top (
       0080  7   SRAM read       SRAM write
 
       0100  8   SPI read        SPI write
-      0200  9   MISO read       Warm Boot write
+      0101                      SPIO direction
+      0200  9   USB status      Warm Boot write
       0400  10
       0800  11  SRAM addr       SRAM addr
 

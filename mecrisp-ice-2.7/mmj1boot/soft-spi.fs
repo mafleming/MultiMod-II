@@ -37,9 +37,36 @@ cornerstone core4th  \ Everything below this is core Forth
 \ +-----2+-----1+-----0+      +-----2+-----1+-----0+
 
 
+: spimode_std ( -- )
+    \ Set IO0 as input, IO1/IO2/IO3 as output
+    $E $0101 io!
+;
+
+: spidual_out ( -- )
+    \ Set IO0/IO1/IO2/IO3 as output
+    $F $0101 io!
+;
+
+: spidual_in ( -- )
+    \ Set IO0/IO1 as input, IO2/IO3 as output
+    $C $0101 io!
+;
+
+: spiquad_out ( -- )
+    \ Set IO0/IO1/IO2/IO3 as output
+    $F $0101 io!
+;
+
+: spiquad_in ( -- )
+    \ Set IO0/IO1/IO2/IO3 as input
+    $0 $0101 io!
+;
+
+    
 : idle  ( -- )
     \ Deselect flash to mark the end of a command
     $1C $0100 io!   \ Deselect flash CS/ = 1, IO3/IO2=1
+    spimode_std
 ;
 
 : spixbit ( x -- y )
@@ -76,6 +103,19 @@ cornerstone core4th  \ Everything below this is core Forth
 : spiwe ( -- )
     $06 >spi \ Write enable
     idle
+;
+
+: spi_powerdn ( -- )
+    \ Power the flash device down
+    \ Standby current drops from 10 to 1 uA
+    $B9 >spi idle
+;
+
+: spi_powerup ( -- )
+    \ Recover from power down state
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM
+    idle
+    0  begin 1+ dup 500 =  until drop \ delay 100us
 ;
 
 

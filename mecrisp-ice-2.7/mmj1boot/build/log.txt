@@ -304,9 +304,6 @@ Mecrisp-Ice 2.7
 : sram@ ( addr -- x ) $800 io! $80 io@ ;  ok.
 : sram! ( x addr -- ) $800 io! $80 io! ;  ok.
   ok.
-: h71@ ( daddr -- x ) swap $51 io! $52 io! $50 io@ ;  ok.
-: h71! ( x daddr -- ) swap $51 io! $52 io! $50 io! ;  ok.
-  ok.
 \ -------------------------------------------------------------  ok.
 \  Double tools  ok.
 \ -------------------------------------------------------------  ok.
@@ -747,6 +744,8 @@ Mecrisp-Ice 2.7
 \ powerup/reset bitstream and should be protected.  ok.
 \ Default load on power-up would be 16K sector number 0  ok.
   ok.
+cornerstone core4th  \ Everything below this is core Forth  ok.
+  ok.
 8 constant bitfence  \ Write protect 16KB pages below this point  ok.
 64 constant frtstart  \ Forth dictionary images start point  ok.
 128 constant romstart  \ HP-71B ROM/IRAM image start  ok.
@@ -754,18 +753,62 @@ Mecrisp-Ice 2.7
 \ #############################################################  ok.
 \ #######    SPI IO    ########################################  ok.
   ok.
+\ IO Address $0100, SPI Read/Write  ok.
+\ +------+------+------+------+------+------+  ok.
+\ | CLK  | CS   | IO3  | IO2  | MOSI | MISO |  ok.
+\ +-----5+-----4+-----3+-----2+-----1+-----0+  ok.
+  ok.
+\ IO Address $0101, SPI Direction 1:output, 0:input  ok.
+\ +------+------+------+------+  ok.
+\ | IO3  | IO2  | MOSI | MISO |  ok.
+\ +-----3+-----2+-----1+-----0+  ok.
+  ok.
+\ IO Address $0200  ok.
+\ USB Active/State Read       Boot Write  ok.
+\ +------+------+------+      +------+------+------+  ok.
+\ | ACTV | P_TX | N_TX |      | BOOT | S1   | S0   |  ok.
+\ +-----2+-----1+-----0+      +-----2+-----1+-----0+  ok.
+  ok.
+  ok.
+: spimode_std ( -- )  ok.
+    \ Set IO0 as input, IO1/IO2/IO3 as output  ok.
+    $E $0101 io!  ok.
+;  ok.
+  ok.
+: spidual_out ( -- )  ok.
+    \ Set IO0/IO1/IO2/IO3 as output  ok.
+    $F $0101 io!  ok.
+;  ok.
+  ok.
+: spidual_in ( -- )  ok.
+    \ Set IO0/IO1 as input, IO2/IO3 as output  ok.
+    $C $0101 io!  ok.
+;  ok.
+  ok.
+: spiquad_out ( -- )  ok.
+    \ Set IO0/IO1/IO2/IO3 as output  ok.
+    $F $0101 io!  ok.
+;  ok.
+  ok.
+: spiquad_in ( -- )  ok.
+    \ Set IO0/IO1/IO2/IO3 as input  ok.
+    $0 $0101 io!  ok.
+;  ok.
+  ok.
+      ok.
 : idle  ( -- )  ok.
     \ Deselect flash to mark the end of a command  ok.
-    1 $0100 io!   \ Deselect flash CS/ = 1  ok.
+    $1C $0100 io!   \ Deselect flash CS/ = 1, IO3/IO2=1  ok.
+    spimode_std  ok.
 ;  ok.
   ok.
 : spixbit ( x -- y )  ok.
     \ Output data in high byte, assemble input in low byte  ok.
-    dup 0< 2 and        \ extract MS bit  ok.
+    dup 0< 2 and $C or  \ extract MS bit  ok.
     dup $0100 io!        \ lower SCK, update MOSI  ok.
-    4 + $0100 io!         \ raise SCK  ok.
+    $20 or $0100 io!      \ raise SCK  ok.
     2*                     \ next bit  ok.
-    $0200 io@ +             \ read MISO, accumulate  ok.
+    $0100 io@ 1 and +       \ read MISO, accumulate  ok.
 ;  ok.
   ok.
 : spix ( outdata -- indata )  ok.
@@ -794,6 +837,20 @@ Mecrisp-Ice 2.7
     $06 >spi \ Write enable  ok.
     idle  ok.
 ;  ok.
+  ok.
+: spi_powerdn ( -- )  ok.
+    \ Power the flash device down  ok.
+    \ Standby current drops from 10 to 1 uA  ok.
+    $B9 >spi idle  ok.
+;  ok.
+  ok.
+: spi_powerup ( -- )  ok.
+    \ Recover from power down state  ok.
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM  ok.
+    idle  ok.
+    0  begin 1+ dup 500 =  until drop \ delay 100us  ok.
+;  ok.
+  ok.
   ok.
   ok.
 \ #############################################################  ok.
@@ -972,7 +1029,8 @@ Mecrisp-Ice 2.7
     else drop then \ Bitstream protection  ok.
 ;  ok.
   ok.
-cornerstone hp71b    \ Everything below this is core Forth  ok.
+cornerstone hp71b    \ Everything below this is core Forth plus SPI flash suppor
+t  ok.
 \ #######   Warm Boot   ###########################################  ok.
   ok.
 \ Support For FPGA Warm Boot  ok.
@@ -1166,7 +1224,7 @@ Mecrisp-Ice 2.7
     \ ram# 0~7, 16K block in SPRAM  ok.
     \ sector16k frthstart~1023, 16K block in flash ( 14 MB )  ok.
   ok.
-    dup 6 u> if     \ 32K won't fit last 16K block  ok.
+    dup 7 u< if     \ 32K won't fit last 16K block  ok.
         2dup rom2ram  ok.
         1+ swap 1+ swap  ok.
         rom2ram  ok.
@@ -1180,7 +1238,7 @@ Mecrisp-Ice 2.7
     \ ram# 0~7, 16K block in SPRAM  ok.
     \ sector16k frthstart~1023, 16K block in flash ( 14 MB )  ok.
   ok.
-    dup 4 u> if     \ 64K won't fit last 16K block  ok.
+    dup 5 u< if     \ 64K won't fit last 16K block  ok.
         2dup rom2ram  ok.
         1+ swap 1+ swap 2dup  ok.
         rom2ram  ok.
@@ -1194,12 +1252,12 @@ Mecrisp-Ice 2.7
   ok.
   ok.
 : ram2rom  ( ram# sector16k -- )  ok.
-    \ ram# 0~7, 16K block is SPRAM  ok.
+    \ ram# 0~7, 16K block in SPRAM  ok.
     \ sector16k 32~127, 16K block in flash ( 2 MB )  ok.
   ok.
     dup bitfence 1- u> if    \ Never overwrite bitstream !  ok.
   ok.
-        swap $2000 * swap      \ ( ram_addr sector16k -- )  ok.
+        swap $2000 * swap      \ ( ram# sector16k -- ram_addr sector16k )  ok.
         $AB >spi                \ Release from Deep Power Down  ok.
         idle  ok.
         dup erase  ok.
@@ -1236,7 +1294,7 @@ Mecrisp-Ice 2.7
     \ ram# 0~7, 16K block in SPRAM  ok.
     \ sector16k 32~127, 16K block in flash ( 2 MB )  ok.
   ok.
-    over 6 u> if     \ 32K isn't last 16K block  ok.
+    over 7 u< if     \ 32K isn't last 16K block  ok.
         2dup ram2rom  ok.
         1+ swap 1+ swap  ok.
         ram2rom  ok.
@@ -1250,7 +1308,7 @@ Mecrisp-Ice 2.7
     \ ram# 0~7, 16K block in SPRAM  ok.
     \ sector16k 32~127, 16K block in flash (2 MB)  ok.
   ok.
-    over 4 u> if    \ 64K won't fit in last 3 16K blocks  ok.
+    over 5 u< if    \ 64K won't fit in last 3 16K blocks  ok.
         2dup ram2rom  ok.
         1+ swap 1+ swap 2dup  ok.
         ram2rom  ok.
@@ -1278,6 +1336,38 @@ Mecrisp-Ice 2.7
     2drop  ok.
 ;  ok.
   ok.
+: pagecmp ( ram_addr -- ram_addr flag )  ok.
+    8192 0 ?do      \ Number of words in SPRAM page  ok.
+        dup sram@    \ ( ram_addr -- ram_addr ram_word )  ok.
+        spi> spi>     \ ( ... -- ram_addr ram_word lowbyte highbyte )  ok.
+        8 lshift or    \ ( ... -- ram_addr ram_word flash_word )  ok.
+        <>              \ ( ram_addr ram_word flash_word -- ram_addr flag )  ok.
+
+        if               \ ( ram_addr flag -- ram_addr )  ok.
+            leave         \ (ram_addr flag -- ram_addr fail )  ok.
+        then               \ Increment ram_addr  ok.
+        1+                  \ ( ram_addr -- ram_addr+1 )  ok.
+    loop  ok.
+    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )  ok.
+;  ok.
+  ok.
+: ramromcmp ( size ram# sector16k -- mem_addr flag )  ok.
+    \ Given the sector16k location of an image in flash, the ram# page  ok.
+    \ of the same image and the size of the image in number of blocks,  ok.
+    \ return a flag indicating the images match and the last address  ok.
+    \ of the word in SPRAM of a mismatch if there was a mismatch.  ok.
+    spiread16k      \ ( size ram# sector16k -- size ram# )  ok.
+    $2000 *          \ ( size ram# -- size ram_addr )  ok.
+    swap 0 swap ?do   \ ( size ram_addr -- ram_addr )  ok.
+        pagecmp        \ ( ram_addr -- ram_addr flag )  ok.
+        not if          \ ( ram_addr flag -- ram_addr )  ok.
+            leave        \ ( ram_addr -- ram_addr )  ok.
+        then  ok.
+    loop  ok.
+    idle  ok.
+    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )  ok.
+;  ok.
+  ok.
 : zeroram ( ram# -- )  ok.
     \ Fill indicated SPRAM block with zeros, used to make IRAMs  ok.
   ok.
@@ -1293,10 +1383,10 @@ Mecrisp-Ice 2.7
     \ Fill indicated SPRAM block with ones, used to fill out data  ok.
     \ written to flash.  ok.
   ok.
-    $2000 *         \ Starting address in SPRAM  ok.
-    $2000 0 ?do      \ Fill 8K of 16-bit words  ok.
-        $FF over sram!  \ With ones  ok.
-        1+             \ Next address  ok.
+    $2000 *             \ Starting address in SPRAM  ok.
+    $2000 0 ?do          \ Fill 8K of 16-bit words  ok.
+        $FFFF over sram!  \ With ones  ok.
+        1+                 \ Next address  ok.
     loop  ok.
     drop  ok.
 ;  ok.
@@ -1683,7 +1773,7 @@ Mecrisp-Ice 2.7
     \ Failure to find name will return an invalid value of 1024.  ok.
     spiread16k      \ Set read pointer to beginning of directory  ok.
     16 spiflush      \ Skip DIRSIZE entry  ok.
-    1024 0            \ Loop count, iterates 0..1023  ok.
+    1024 1            \ Loop count, iterates 0..1023  ok.
     ?do    ok.
  spi> Empty =    \ Empty directory entry?  ok.
  if  ok.
@@ -1899,6 +1989,44 @@ Mecrisp-Ice 2.7
 \ HP-71B ROM/IRAM Images  ok.
 \ --------------------------------------------------------------------  ok.
   ok.
+: romverify ( ram# name -- ram_addr flag )  ok.
+    \ Given a name in the ROM directory, verify its content against  ok.
+    \ one or more SPRAM pages. The starting sector16k value and the  ok.
+    \ number of sectors the ROM occupies is taken from the directory  ok.
+    \ entry for the given name. The starting ram# (0 to 7) is usually  ok.
+    \ 0 for ROM images freshly loaded from a host.  ok.
+    \ True/False is returned for the comparison, along with the last  ok.
+    \ SPRAM address + 1  ok.
+  ok.
+    \ Is the name valid?  ok.
+    romdir @        \ ( ram# name -- ram# name sector16k )  ok.
+    dir_find         \ ( ram# name sector16k -- ram# entry# )  ok.
+    dup 1024 = if     \ ( ram# entry#  -- ram# entry# )  ok.
+ drop           \ ( ram# 1024 -- ram# )  ok.
+ $2000 * 0       \ ( ram# -- ram_addr flag )  ok.
+        ." Name not found"  ok.
+  ok.
+    else  ok.
+ \ Find the starting address and number of blocks  ok.
+        dup romdir @  \ ( ram# entry# -- ram# entry# entry# sector16k )  ok.
+        entry_image    \ ( ram# entry# entry# sector16k -- ram# entry# block# ) 
+ ok.
+        swap romdir @   \ ( ram# entry# block# -- ram# block# entry# sector16k )
+  ok.
+        entry_type       \ ( ram# block# entry# sector16k -- ram# block# type.si
+ze )  ok.
+        $F and swap       \ ( ram# block# type.size -- ram# size block# )  ok.
+        romdir @           \ ( ram# size block# -- ram# size block# sector16k ) 
+ ok.
+ image_addr          \ ( ram# size block# sector16k -- ram# size sector16k )  ok
+.
+  ok.
+ \ Loop through flash and ram, comparing words  ok.
+ -rot swap rot          \ ( ram# size sector16k -- size ram# sector16k )  ok.
+ ramromcmp               \ ( size ram# sector16k -- ram_addr flag )  ok.
+    then  ok.
+;  ok.
+  ok.
 : writeflash ( name type -- )  ok.
     \ Download image to flash.  ok.
     \ Should check to see if file already exists in the directory.  ok.
@@ -1981,6 +2109,11 @@ Mecrisp-Ice 2.7
   ok.
 \ --------------------------------------------------------------------  ok.
 \ FPGA Bitstream Images  ok.
+\ Note:  ok.
+\     If the bootloader is only configured for two bitstreams, then  ok.
+\ you can't warmboot into a third or fourth bitstream image. Using  ok.
+\ duplicate image names doesn't create additional images in the  ok.
+\ multiboot output.  ok.
 \ --------------------------------------------------------------------  ok.
   ok.
 : bitstream ( slot -- )  ok.
@@ -1994,16 +2127,17 @@ Mecrisp-Ice 2.7
         cr ." Out of range, Use 1, 2, or 3"  ok.
         drop           \  ok.
     else                \  ok.
-        bitfence *       \ slot * sector16k  ok.
+        bitfence *       \ ( slot -- sector16k ) slot * sector16k  ok.
         8 0 ?do           \  ok.
             i onesram      \ Set all of SPRAM to foxes  ok.
-        loop                \  ok.
+        loop                \ ( sector16k -- sector16k )  ok.
         host2ram             \ ( sector16k -- sector16k ncount ) Read bitstream 
  ok.
         drop dup              \ ( sector16k ncount -- sector16k sector16k )  ok.
 
-        0 swap ram64k2rom      \ Half of SPRAM to flash  ok.
-        4 swap ram32k2rom       \ Other half to flash  ok.
+ 0 swap ram64k2rom      \ Half of SPRAM to flash  ok.
+ 4 +                     \ ( sector16k -- sector16k ) Next flash block  ok.
+        4 swap ram64k2rom       \ Other half to flash  ok.
     then  ok.
 ;  ok.
   ok.

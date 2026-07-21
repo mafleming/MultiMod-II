@@ -47,13 +47,9 @@ GPIO           IOB_25b_G3          20             IO2 (/WP)      3
 ```
 
 ## CPU External Signal Modifications
-The J1A module definition was modified to include an output pin for the external clock oscillator enable signal. The ```clk_en``` signal should be set to logic high by default.
+The J1A module definition was modified to include an output pin for the external clock oscillator enable signal. The `clk_en` signal should be set to logic high by default.
 
-The pins associated with the USB data signals and pullup are ```usb_dn```, ```usb_dp```, and ```usb_pu```. These signals are mapped to FPGA pins not enumerated in the default J1a CPU.
-
-Likewise, the ```to71```, ```from71```, and ```ctrl71``` outputs that control the tristate level shifters are added to the default J1a CPU interface. These also should be set to logic low so that the buffers are tri-stated. These may not be necessary since the enable inputs are pulled low and unconfigured IO pins are likely left floating.
-
-> ***Check this in the FPGA data sheet***
+The pins associated with the USB data signals and pullup are `usb_dn`, `usb_dp`, and `usb_pu`. Additionally there is a `usb_activ` signal that indicates power is being supplied by the USB C connector and therefore serves as a host detection signal.
 
 The header is 
 ```
@@ -61,48 +57,78 @@ module top (
     input  clki,   // 48 MHz clock input
     output clk_en, // Enable external clock
 
-    inout  pmod_1,   // Four user pins
-    inout  pmod_2,
-    inout  pmod_3,
-    inout  pmod_4,
+    inout  data_1,   // Four user pins
+    inout  data_2,
+    inout  data_3,
+    inout  data_4,
 
     output rgb0,   // LED outputs
     output rgb1,
     output rgb2,
 
-    output spi_mosi,    // SPI Flash
-    input  spi_miso,
+    output spi_cs,    // SPI Flash
     output spi_clk,
-    output spi_io2,
-    output spi_io3,
-    output spi_cs,
+    inout  spi_miso,
+    inout  spi_mosi,
+    inout  spi_io2,
+    inout  spi_io3,
 
     inout  usb_dp,    // USB pins
     inout  usb_dn,
     output usb_dp_pu,
+    input  usb_activ
 
-    output to71,  // Tristate buffer control
-    output from71,
-    output ctrl71
 );
 ```
-Note that the four user pins ```pmod_(1,2,3,4)``` were part of the Fomu board definition and are mapped to bus data I/O pins on the MultiMod II board. These signals should be renamed prior to formal release of the Verilog design source.
+Note that the four user pins `data_(1,2,3,4)` are bidirectional with separate input and output registers in the I/O address space, along with a direction register that indicates whether they are inputs or outputs.
 
 The three RGB pins could be removed for power saving reasons, though doing so would require further modification to the Verilog source to remove references to the signals. The pins are unconnected to any external device.
 
+Note that the SPI signals `spi_miso`, `spi_mosi`, `spi_io2`, and `spi_io3` are defined as bidirectional. These four signals now use the same **SB_IO** definitions as the four data signals. Normally `spi_miso` is set as an input and the other three are outputs. The `spi_io2` (WP/) and `spi_io3` (HOLD/) default to logic 1 while the SPI flash communication is in Standard transfer mode.
+
 One set of external signals currently missing from the module header are those that interface to control inputs from the 71B bus. These signals are named and assigned to FPGA pins in the ```pcf``` file, and eventually need to be incorporated for a J1A Forth implementation operating in production mode within the 71B card reader cavity.
 
-The clock enable output is set within an ```always``` block, as so
+## CPU Internal Modifications
+
+Changes to the j1a Verilog design were made include
+
+- Support for bidirectional SPI signals to enable Dual and Quad data transfers,
+- Warm Boot support to allow both bootloader and HP-71B embedded configurations,
+- Changes to the I/O address space to support the above enhancements.
+
+The I/O address modifications are
+
 ```
-    always @(posedge clk) begin
-        clk_en <= 1'b1;        // Always enabled
-        to71   <= 0'b1;        // Always tristated
-        from71 <= 0'b1;        // Always tristated
-        ctrl71 <= 0'b1;        // Always tristated
-        if (button) reset_cnt <= reset_cnt + !resetq;
-        else        reset_cnt <= 0;
-    end
+Address   Read Access   Write Access
+-------   -----------   ------------
+$0100     SPI signals   SPI signals
+$0101                   SPIO direction
+$0200     USB status    Warm Boot Ctl
 ```
 
+```
+ IO Address $0100, SPI Read/Write
+ +------+------+------+------+------+------+
+ | CLK  | CS   | IO3  | IO2  | MOSI | MISO |
+ +-----5+-----4+-----3+-----2+-----1+-----0+
 
+ IO Address $0101, SPI Direction 1:output, 0:input
+ +------+------+------+------+
+ | IO3  | IO2  | MOSI | MISO |
+ +-----3+-----2+-----1+-----0+
+```
+
+The SPI signals are arranged in such a fashion to make it easy to support Dual and Quad mode transfers. The SPI Direction register is by default set to the Standard transfer mode configuration in which **MISO** is an input from the flash device and the remaining three signals are outputs from the FPGA to the flash device.
+
+```
+ IO Address $0200
+ USB Active/State Read       Boot Write
+ +------+------+------+      +------+------+------+
+ | ACTV | P_TX | N_TX |      | BOOT | S1   | S0   |
+ +-----2+-----1+-----0+      +-----2+-----1+-----0+
+```
+
+The Warm Boot control register `BOOTCTL` specifies which of four bitstream images are to be loaded using the lower two bits of the register ('00' for the bootloader, '01' for the HP-71B embedded configuration). Bit 02, when set to logic 1, will initiate the boot sequence.
+
+The USB State includes the status of the USB data pins `USB-P` and `USB-N` along with the `usb_activ` signal that indicates power is present on the USB C connector.
 

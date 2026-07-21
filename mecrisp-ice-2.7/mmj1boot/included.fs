@@ -297,9 +297,6 @@ allot here constant BUF
 : sram@ ( addr -- x ) $800 io! $80 io@ ;
 : sram! ( x addr -- ) $800 io! $80 io! ;
 
-: h71@ ( daddr -- x ) swap $51 io! $52 io! $50 io@ ;
-: h71! ( x daddr -- ) swap $51 io! $52 io! $50 io! ;
-
 \ -------------------------------------------------------------
 \  Double tools
 \ -------------------------------------------------------------
@@ -720,6 +717,8 @@ cornerstone new
 \ powerup/reset bitstream and should be protected.
 \ Default load on power-up would be 16K sector number 0
 
+cornerstone core4th  \ Everything below this is core Forth
+
 8 constant bitfence  \ Write protect 16KB pages below this point
 64 constant frtstart  \ Forth dictionary images start point
 128 constant romstart  \ HP-71B ROM/IRAM image start
@@ -727,18 +726,62 @@ cornerstone new
 \ #############################################################
 \ #######    SPI IO    ########################################
 
+\ IO Address $0100, SPI Read/Write
+\ +------+------+------+------+------+------+
+\ | CLK  | CS   | IO3  | IO2  | MOSI | MISO |
+\ +-----5+-----4+-----3+-----2+-----1+-----0+
+
+\ IO Address $0101, SPI Direction 1:output, 0:input
+\ +------+------+------+------+
+\ | IO3  | IO2  | MOSI | MISO |
+\ +-----3+-----2+-----1+-----0+
+
+\ IO Address $0200
+\ USB Active/State Read       Boot Write
+\ +------+------+------+      +------+------+------+
+\ | ACTV | P_TX | N_TX |      | BOOT | S1   | S0   |
+\ +-----2+-----1+-----0+      +-----2+-----1+-----0+
+
+
+: spimode_std ( -- )
+    \ Set IO0 as input, IO1/IO2/IO3 as output
+    $E $0101 io!
+;
+
+: spidual_out ( -- )
+    \ Set IO0/IO1/IO2/IO3 as output
+    $F $0101 io!
+;
+
+: spidual_in ( -- )
+    \ Set IO0/IO1 as input, IO2/IO3 as output
+    $C $0101 io!
+;
+
+: spiquad_out ( -- )
+    \ Set IO0/IO1/IO2/IO3 as output
+    $F $0101 io!
+;
+
+: spiquad_in ( -- )
+    \ Set IO0/IO1/IO2/IO3 as input
+    $0 $0101 io!
+;
+
+    
 : idle  ( -- )
     \ Deselect flash to mark the end of a command
-    1 $0100 io!   \ Deselect flash CS/ = 1
+    $1C $0100 io!   \ Deselect flash CS/ = 1, IO3/IO2=1
+    spimode_std
 ;
 
 : spixbit ( x -- y )
     \ Output data in high byte, assemble input in low byte
-    dup 0< 2 and        \ extract MS bit
+    dup 0< 2 and $C or  \ extract MS bit
     dup $0100 io!        \ lower SCK, update MOSI
-    4 + $0100 io!         \ raise SCK
+    $20 or $0100 io!      \ raise SCK
     2*                     \ next bit
-    $0200 io@ +             \ read MISO, accumulate
+    $0100 io@ 1 and +       \ read MISO, accumulate
 ;
 
 : spix ( outdata -- indata )
@@ -767,6 +810,20 @@ cornerstone new
     $06 >spi \ Write enable
     idle
 ;
+
+: spi_powerdn ( -- )
+    \ Power the flash device down
+    \ Standby current drops from 10 to 1 uA
+    $B9 >spi idle
+;
+
+: spi_powerup ( -- )
+    \ Recover from power down state
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM
+    idle
+    0  begin 1+ dup 500 =  until drop \ delay 100us
+;
+
 
 
 \ #############################################################
@@ -940,7 +997,7 @@ cornerstone new
     else drop then \ Bitstream protection
 ;
 
-cornerstone hp71b    \ Everything below this is core Forth
+cornerstone hp71b    \ Everything below this is core Forth plus SPI flash support
 \ #######   Warm Boot   ###########################################
 
 \ Support For FPGA Warm Boot
@@ -1129,7 +1186,7 @@ cornerstone hp71b    \ Everything below this is core Forth
     \ ram# 0~7, 16K block in SPRAM
     \ sector16k frthstart~1023, 16K block in flash ( 14 MB )
 
-    dup 6 u> if     \ 32K won't fit last 16K block
+    dup 7 u< if     \ 32K won't fit last 16K block
         2dup rom2ram
         1+ swap 1+ swap
         rom2ram
@@ -1143,7 +1200,7 @@ cornerstone hp71b    \ Everything below this is core Forth
     \ ram# 0~7, 16K block in SPRAM
     \ sector16k frthstart~1023, 16K block in flash ( 14 MB )
 
-    dup 4 u> if     \ 64K won't fit last 16K block
+    dup 5 u< if     \ 64K won't fit last 16K block
         2dup rom2ram
         1+ swap 1+ swap 2dup
         rom2ram
@@ -1157,12 +1214,12 @@ cornerstone hp71b    \ Everything below this is core Forth
 
 
 : ram2rom  ( ram# sector16k -- )
-    \ ram# 0~7, 16K block is SPRAM
+    \ ram# 0~7, 16K block in SPRAM
     \ sector16k 32~127, 16K block in flash ( 2 MB )
 
     dup bitfence 1- u> if    \ Never overwrite bitstream !
 
-        swap $2000 * swap      \ ( ram_addr sector16k -- )
+        swap $2000 * swap      \ ( ram# sector16k -- ram_addr sector16k )
         $AB >spi                \ Release from Deep Power Down
         idle
         dup erase
@@ -1199,7 +1256,7 @@ cornerstone hp71b    \ Everything below this is core Forth
     \ ram# 0~7, 16K block in SPRAM
     \ sector16k 32~127, 16K block in flash ( 2 MB )
 
-    over 6 u> if     \ 32K isn't last 16K block
+    over 7 u< if     \ 32K isn't last 16K block
         2dup ram2rom
         1+ swap 1+ swap
         ram2rom
@@ -1213,7 +1270,7 @@ cornerstone hp71b    \ Everything below this is core Forth
     \ ram# 0~7, 16K block in SPRAM
     \ sector16k 32~127, 16K block in flash (2 MB)
 
-    over 4 u> if    \ 64K won't fit in last 3 16K blocks
+    over 5 u< if    \ 64K won't fit in last 3 16K blocks
         2dup ram2rom
         1+ swap 1+ swap 2dup
         ram2rom
@@ -1241,6 +1298,37 @@ cornerstone hp71b    \ Everything below this is core Forth
     2drop
 ;
 
+: pagecmp ( ram_addr -- ram_addr flag )
+    8192 0 ?do      \ Number of words in SPRAM page
+        dup sram@    \ ( ram_addr -- ram_addr ram_word )
+        spi> spi>     \ ( ... -- ram_addr ram_word lowbyte highbyte )
+        8 lshift or    \ ( ... -- ram_addr ram_word flash_word )
+        <>              \ ( ram_addr ram_word flash_word -- ram_addr flag )
+        if               \ ( ram_addr flag -- ram_addr )
+            leave         \ (ram_addr flag -- ram_addr fail )
+        then               \ Increment ram_addr
+        1+                  \ ( ram_addr -- ram_addr+1 )
+    loop
+    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )
+;
+
+: ramromcmp ( size ram# sector16k -- mem_addr flag )
+    \ Given the sector16k location of an image in flash, the ram# page
+    \ of the same image and the size of the image in number of blocks,
+    \ return a flag indicating the images match and the last address
+    \ of the word in SPRAM of a mismatch if there was a mismatch.
+    spiread16k      \ ( size ram# sector16k -- size ram# )
+    $2000 *          \ ( size ram# -- size ram_addr )
+    swap 0 swap ?do   \ ( size ram_addr -- ram_addr )
+        pagecmp        \ ( ram_addr -- ram_addr flag )
+        not if          \ ( ram_addr flag -- ram_addr )
+            leave        \ ( ram_addr -- ram_addr )
+        then
+    loop
+    idle
+    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )
+;
+
 : zeroram ( ram# -- )
     \ Fill indicated SPRAM block with zeros, used to make IRAMs
 
@@ -1256,10 +1344,10 @@ cornerstone hp71b    \ Everything below this is core Forth
     \ Fill indicated SPRAM block with ones, used to fill out data
     \ written to flash.
 
-    $2000 *         \ Starting address in SPRAM
-    $2000 0 ?do      \ Fill 8K of 16-bit words
-        $FF over sram!  \ With ones
-        1+             \ Next address
+    $2000 *             \ Starting address in SPRAM
+    $2000 0 ?do          \ Fill 8K of 16-bit words
+        $FFFF over sram!  \ With ones
+        1+                 \ Next address
     loop
     drop
 ;
@@ -1641,7 +1729,7 @@ $80 constant DIRSIZE
     \ Failure to find name will return an invalid value of 1024.
     spiread16k      \ Set read pointer to beginning of directory
     16 spiflush      \ Skip DIRSIZE entry
-    1024 0            \ Loop count, iterates 0..1023
+    1024 1            \ Loop count, iterates 0..1023
     ?do  
 	spi> Empty =    \ Empty directory entry?
 	if
@@ -1856,6 +1944,39 @@ $80 constant DIRSIZE
 \ HP-71B ROM/IRAM Images
 \ --------------------------------------------------------------------
 
+: romverify ( ram# name -- ram_addr flag )
+    \ Given a name in the ROM directory, verify its content against
+    \ one or more SPRAM pages. The starting sector16k value and the
+    \ number of sectors the ROM occupies is taken from the directory
+    \ entry for the given name. The starting ram# (0 to 7) is usually
+    \ 0 for ROM images freshly loaded from a host.
+    \ True/False is returned for the comparison, along with the last
+    \ SPRAM address + 1
+
+    \ Is the name valid?
+    romdir @        \ ( ram# name -- ram# name sector16k )
+    dir_find         \ ( ram# name sector16k -- ram# entry# )
+    dup 1024 = if     \ ( ram# entry#  -- ram# entry# )
+	drop           \ ( ram# 1024 -- ram# )
+	$2000 * 0       \ ( ram# -- ram_addr flag )
+        ." Name not found"
+
+    else
+	\ Find the starting address and number of blocks
+        dup romdir @  \ ( ram# entry# -- ram# entry# entry# sector16k )
+        entry_image    \ ( ram# entry# entry# sector16k -- ram# entry# block# )
+        swap romdir @   \ ( ram# entry# block# -- ram# block# entry# sector16k )
+        entry_type       \ ( ram# block# entry# sector16k -- ram# block# type.size )
+        $F and swap       \ ( ram# block# type.size -- ram# size block# )
+        romdir @           \ ( ram# size block# -- ram# size block# sector16k )
+	image_addr          \ ( ram# size block# sector16k -- ram# size sector16k )
+
+	\ Loop through flash and ram, comparing words
+	-rot swap rot          \ ( ram# size sector16k -- size ram# sector16k )
+	ramromcmp               \ ( size ram# sector16k -- ram_addr flag )
+    then
+;
+
 : writeflash ( name type -- )
     \ Download image to flash.
     \ Should check to see if file already exists in the directory.
@@ -1934,6 +2055,11 @@ $80 constant DIRSIZE
 
 \ --------------------------------------------------------------------
 \ FPGA Bitstream Images
+\ Note:
+\     If the bootloader is only configured for two bitstreams, then
+\ you can't warmboot into a third or fourth bitstream image. Using
+\ duplicate image names doesn't create additional images in the
+\ multiboot output.
 \ --------------------------------------------------------------------
 
 : bitstream ( slot -- )
@@ -1947,14 +2073,15 @@ $80 constant DIRSIZE
         cr ." Out of range, Use 1, 2, or 3"
         drop           \
     else                \
-        bitfence *       \ slot * sector16k
+        bitfence *       \ ( slot -- sector16k ) slot * sector16k
         8 0 ?do           \
             i onesram      \ Set all of SPRAM to foxes
-        loop                \
+        loop                \ ( sector16k -- sector16k )
         host2ram             \ ( sector16k -- sector16k ncount ) Read bitstream
         drop dup              \ ( sector16k ncount -- sector16k sector16k )
-        0 swap ram64k2rom      \ Half of SPRAM to flash
-        4 swap ram32k2rom       \ Other half to flash
+	0 swap ram64k2rom      \ Half of SPRAM to flash
+	4 +                     \ ( sector16k -- sector16k ) Next flash block
+        4 swap ram64k2rom       \ Other half to flash
     then
 ;
 
