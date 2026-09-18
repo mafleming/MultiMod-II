@@ -152,7 +152,7 @@ $80 constant DIRSIZE
     waitspi                \ Wait for write to finish
 ;
 
-: free_image ( sector16k -- sector16k )
+: free_image ( sector16k -- block# )
     \ For a `sector16k` dictionary, find the next free image block
     \ within the dictionary. Use the last non empty dictionary
     \ location plus its image length to find next free block.

@@ -1337,19 +1337,25 @@ Mecrisp-Ice 2.7
 ;  ok.
   ok.
 : pagecmp ( ram_addr -- ram_addr flag )  ok.
-    8192 0 ?do      \ Number of words in SPRAM page  ok.
-        dup sram@    \ ( ram_addr -- ram_addr ram_word )  ok.
-        spi> spi>     \ ( ... -- ram_addr ram_word lowbyte highbyte )  ok.
-        8 lshift or    \ ( ... -- ram_addr ram_word flash_word )  ok.
-        <>              \ ( ram_addr ram_word flash_word -- ram_addr flag )  ok.
-
-        if               \ ( ram_addr flag -- ram_addr )  ok.
-            leave         \ (ram_addr flag -- ram_addr fail )  ok.
-        then               \ Increment ram_addr  ok.
-        1+                  \ ( ram_addr -- ram_addr+1 )  ok.
-    loop  ok.
-    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )  ok.
+    \ 1. Set counter to zero  ok.
+    \ 2. Loop  ok.
+    \ 3.   Read memory word from ram_addr  ok.
+    \ 4.   Read two bytes from flash, assemble to word  ok.
+    \ 5.   Increment counter and mem_addr  ok.
+    \ 6. Until counter=8192 or memory word <> flash word  ok.
+    \ 7. Return mem_addr, count=8192  ok.
+    0 begin             \ ram_addr -- ram_addr count  ok.
+ swap dup sram@   \ ram_addr count -- count ram_addr mem  ok.
+ spi> spi>         \ Read two flash bytes  ok.
+ 8 lshift or        \  count ram_addr mem -- count ram_addr mem flash  ok.
+ <> >r               \ Save comparison  ok.
+ 1+ swap 1+ swap      \ count ram_addr -- count+1 ram_addr+1  ok.
+ over 8192 =           \ count ram_addr -- count ram_addr flag  ok.
+ r> or >r swap r>       \ 6. count ram_addr flag -- ram_addr count flag  ok.
+    until  ok.
+    8192 =                       \ ram_addr count -- ram_addr flag  ok.
 ;  ok.
+  ok.
   ok.
 : ramromcmp ( size ram# sector16k -- mem_addr flag )  ok.
     \ Given the sector16k location of an image in flash, the ram# page  ok.
@@ -1358,14 +1364,14 @@ Mecrisp-Ice 2.7
     \ of the word in SPRAM of a mismatch if there was a mismatch.  ok.
     spiread16k      \ ( size ram# sector16k -- size ram# )  ok.
     $2000 *          \ ( size ram# -- size ram_addr )  ok.
-    swap 0 swap ?do   \ ( size ram_addr -- ram_addr )  ok.
+    swap 0 ?do        \ ( size ram_addr -- ram_addr )  ok.
         pagecmp        \ ( ram_addr -- ram_addr flag )  ok.
         not if          \ ( ram_addr flag -- ram_addr )  ok.
             leave        \ ( ram_addr -- ram_addr )  ok.
         then  ok.
     loop  ok.
     idle  ok.
-    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )  ok.
+    dup $1FFF and 0=         \ (ram_addr -- ram_addr flag )  ok.
 ;  ok.
   ok.
 : zeroram ( ram# -- )  ok.
@@ -1662,7 +1668,7 @@ Mecrisp-Ice 2.7
     waitspi                \ Wait for write to finish  ok.
 ;  ok.
   ok.
-: free_image ( sector16k -- sector16k )  ok.
+: free_image ( sector16k -- block# )  ok.
     \ For a `sector16k` dictionary, find the next free image block  ok.
     \ within the dictionary. Use the last non empty dictionary  ok.
     \ location plus its image length to find next free block.  ok.

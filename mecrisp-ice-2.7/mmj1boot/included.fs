@@ -1299,18 +1299,25 @@ cornerstone hp71b    \ Everything below this is core Forth plus SPI flash suppor
 ;
 
 : pagecmp ( ram_addr -- ram_addr flag )
-    8192 0 ?do      \ Number of words in SPRAM page
-        dup sram@    \ ( ram_addr -- ram_addr ram_word )
-        spi> spi>     \ ( ... -- ram_addr ram_word lowbyte highbyte )
-        8 lshift or    \ ( ... -- ram_addr ram_word flash_word )
-        <>              \ ( ram_addr ram_word flash_word -- ram_addr flag )
-        if               \ ( ram_addr flag -- ram_addr )
-            leave         \ (ram_addr flag -- ram_addr fail )
-        then               \ Increment ram_addr
-        1+                  \ ( ram_addr -- ram_addr+1 )
-    loop
-    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )
+    \ 1. Set counter to zero
+    \ 2. Loop
+    \ 3.   Read memory word from ram_addr
+    \ 4.   Read two bytes from flash, assemble to word
+    \ 5.   Increment counter and mem_addr
+    \ 6. Until counter=8192 or memory word <> flash word
+    \ 7. Return mem_addr, count=8192
+    0 begin             \ ram_addr -- ram_addr count
+	swap dup sram@   \ ram_addr count -- count ram_addr mem
+	spi> spi>         \ Read two flash bytes
+	8 lshift or        \  count ram_addr mem -- count ram_addr mem flash
+	<> >r               \ Save comparison
+	1+ swap 1+ swap      \ count ram_addr -- count+1 ram_addr+1
+	over 8192 =           \ count ram_addr -- count ram_addr flag
+	r> or >r swap r>       \ 6. count ram_addr flag -- ram_addr count flag
+    until
+    8192 =                       \ ram_addr count -- ram_addr flag
 ;
+
 
 : ramromcmp ( size ram# sector16k -- mem_addr flag )
     \ Given the sector16k location of an image in flash, the ram# page
@@ -1319,14 +1326,14 @@ cornerstone hp71b    \ Everything below this is core Forth plus SPI flash suppor
     \ of the word in SPRAM of a mismatch if there was a mismatch.
     spiread16k      \ ( size ram# sector16k -- size ram# )
     $2000 *          \ ( size ram# -- size ram_addr )
-    swap 0 swap ?do   \ ( size ram_addr -- ram_addr )
+    swap 0 ?do        \ ( size ram_addr -- ram_addr )
         pagecmp        \ ( ram_addr -- ram_addr flag )
         not if          \ ( ram_addr flag -- ram_addr )
             leave        \ ( ram_addr -- ram_addr )
         then
     loop
     idle
-    dup $1FFF and 0=          \ (ram_addr -- ram_addr flag )
+    dup $1FFF and 0=         \ (ram_addr -- ram_addr flag )
 ;
 
 : zeroram ( ram# -- )
@@ -1618,7 +1625,7 @@ $80 constant DIRSIZE
     waitspi                \ Wait for write to finish
 ;
 
-: free_image ( sector16k -- sector16k )
+: free_image ( sector16k -- block# )
     \ For a `sector16k` dictionary, find the next free image block
     \ within the dictionary. Use the last non empty dictionary
     \ location plus its image length to find next free block.

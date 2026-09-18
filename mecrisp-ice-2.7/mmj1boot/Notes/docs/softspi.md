@@ -3,7 +3,7 @@
 Select Forth code in this file is derived from UPduino-Mecrisp-Ice-15kB by Igor-m
 BSD 3-Clause license
 
-See: https://github.com/igor-m/UPduino-Mecrisp-Ice-15kB.git
+See: https://github.com/igor-m/UPduino-Mecrisp-Ice-15kB
 
 # Flash Memory Structure
 Flash memory can't be written on an individual memory cell basis; a sector must be erased and then the modified contents of the sector written back. Data can be written in smaller amounts to a sector but the sector must first be erased. In the Winbond standard SPI flash device, sectors can be erased in 4 KB, 32 KB or 64 KB sized blocks.
@@ -39,6 +39,18 @@ The Forth words in this section implement the software-based SPI interface. Thes
 
 - **spimode_std ( -- ) -** Set SPI I/O to Standard mode.
 Commands are sent in Standard transfer mode wherein **MISO** is an input to the FPGA and **MOSI**, **IO2**, and **IO3** are outputs.
+
+- **spidual_out ( -- ) -** Set FPGA I/O to Dual output mode.  
+Data is sent in Dual transfer mode wherein **MISO** and **MOSI** are outputs.  
+
+- **spidual_in ( -- ) -** Set FPGA I/O to Dual input mode.  
+Data is received in Dual transfer mode wherein **MISO** and **MOSI** are inputs.  
+
+- **spiquad_out ( -- ) -** Set FPGA I/O to Quad output mode.  
+Data is sent in Quad transfer mode wherein **MISO**, **MOSI**, **IO2** and **IO3** are outputs.  
+
+- **spiquad_in ( -- ) -** Set FPGA I/O to Quad input mode.  
+Data is received in Quad transfer mode wherein **MISO**, **MOSI**, **IO2**, and **IO3** are inputs.  
 
 - **idle ( -- ) -** Disable Device.  
 Deasserting the Chip Select pin will put the flash memory chip in a quiescent power mode. But it is also needed for other commands, such as the sector erase commands where the chip must be deselected immediately after sending the command. The SPI transfer mode is also set to Standard.  

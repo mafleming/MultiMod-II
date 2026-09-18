@@ -4,6 +4,10 @@ A directory consists of two 16KB pages in flash - the first holding the director
 ## Constants and Variables
 These variables are defined for the Forth directory and HP-71B ROM/IRAM directory. They are initialized to the constant values defined in the *ramrom* Forth file.
 
+- **forthsize (constant) - ** Number Of Image Blocks In Forth Directory.  
+
+- **romsize (constant) - ** Number of Image Blocks In HP-71B Directory.  
+
 - **forthdir (variable) - ** Forth Directory Location.  
 Initialized to the constant value `frtstart`. Use of the variable allows the directory to be relocated if desired.  
 
@@ -62,6 +66,18 @@ Given the 16KB location of a directory and a desired entry number, this will iss
 - **mark_reclaim ( entry# sector16k -- ) -** Mark Entry For Deletion.  
 Given the 16KB location of a directory and a desired entry number, this will mark the entry as Reclaimable. The entry and its associated image are marked for deletion by the **pack** command.  
 
+- **free_image ( sector16k -- sector16k ) -** Return Next Free Image Location.  
+For a given directory located at  `sector16k` return the `block#` offset in the directory of the first free image location. The `block#` is the offset from the directory and its first two 16KB blocks.  
+
+- **entry_type ( entry# sector16k -- type.size ) -** Return Entry Type.  
+For a given directory located at  `sector16k` return the directory entry byte that defines the entry image type (high nibble) and size (low nibble).  
+
+- **entry_image ( entry# sector16k -- block# ) -** Return Image Location.  
+For a given directory located at  `sector16k` and the `entry#` of an image return the `block#` offset in the directory for the start of the image.  
+
+- **image_addr ( block# sector16k -- sector16k ) -** Return Image Address.  
+For a given directory located at  `sector16k` and the `block#` of the entries' image, return the absolute `sector16k` address of the image starting 16KB blocks.  
+
 
 ## Directory Commands
 The following commands generalize the operations on a directory. Normally the Forth directory image directory and the HP-71B ROM/IRAM image directory are specified using the `fthstart` and `romstart` constants defined in the *soft-spi.fs* file. Other directories can be created and manipulated if so desired.
@@ -80,16 +96,13 @@ Given a directory address `sector16k` and a directory image string name, return 
 - **dir_insert ( name type.size sector16k -- block ) -** Insert Directory Entry.  
 Given a directory address `sector16k`, a directory image string name, and a `type.size` value defining the image associated with the entry, insert an entry in the directory and return the block where the image should be stored. The caller is responsible for insuring the name does not already exist.  
 
-- **dir_drop ( name sector16k -- ) -** Mark Directory Entry Reclaimable.  
-Given a directory address `sector16k` and a directory image string name, mark the directory entry as invalid and reclaimable.  
-
 ---
 
 - **dir_free ( sector16k -- number ) - ** Available Directory Image Blocks.  
 Return the number of remaining unused image blocks in the `sector16k`  directory. A zero value indicates the directory needs to be packed.  
 
 - **dir_list ( sector16k -- ) - ** List directory entries.  
-List the valid entries in a directory. The `sector16k` value is normally either `fthstart` or `romstart`.  
+List the valid entries in a directory. The `sector16k` value is normally either `forthdir` or `romdir`.  
 
 - **dir_pack ( sector16k -- ) - ** Pack directory.  
 The `sector16k` value is either `fthstart` or `romstart`. This command will pack both the directory and the image storage associated with the directory.  
