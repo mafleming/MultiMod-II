@@ -1,0 +1,21 @@
+# Forth Embedded Controller for the MultiMod II
+The J1a soft Forth CPU was selected in order to implement the intelligent functionality of the MultiMod II as an HP-71B accessory. The use of Forth as the base language complemented the availability of Forth for the 71B itself.
+
+The **mecrisp-ice** project combines the J1a Forth CPU with the Mecrisp ANSI Forth implementation that targets the J1a instruction set. Details about the J1a implementation can be found at James Bowman's [github repository](https://github.com/jamesbowman/swapforth). More information about Mecrisp Forth can be found at its [Sourceforge](https://mecrisp.sourceforge.net/) site. [Unofficial documentation](https://mecrisp-stellaris-folkdoc.sourceforge.io/) for Mecrisp Forth can be found on Sourceforge as well.
+
+This version of the J1a has the software functionality and the hardware needed to interact with the HP-71B peripheral bus in order to present RAM and ROM device plug-ins. The 128 KB of Single Port RAM (SPRAM) in the FPGA can present up to eight 16 KB ROM, RAM, or Independent RAM (IRAM) devices. The 16 KB devices can be chained together to form larger storage units. The content of those storage units can be initialized from the 16 MB boot flash device, giving the HP-71B owner the impression of plugging in ROM memory modules on demand.
+
+## MultiMod II Embedded Controller Purpose
+An FPGA will load its design configuration, stored as a bitstream in external flash memory, when it first powers up or is forced to reset. Putting this configuration in flash requires equipment that is likely unavailable to a MultiMod II owner. A bootloader is a design configuration that will sense whether the MultiMod II is connected to a USB host. If so, it allows the host to update a working design configuration and then transfer control to that "production" configuration. If not connected to a USB host, control is immediately transferred to the working production configuration. In addition to updating the production FPGA configuration, the bootloader also allows the owner to transfer ROM and IRAM images between their personal computer and the MultiMod II flash memory.
+
+The production configuration contains the digital logic necessary to present the 128 KB of SPRAM as memory devices to the HP-71B Saturn processor. The role of the j1a Forth CPU and its software is to configure the SPRAM as one or more memory devices and transfer content from the 16 MB boot flash device to these devices through owner command.
+
+The owner communicates with the Forth console via control and data registers that appear as a pseudo-serial device in the HP-71B address space, specifically the register space reserved for the HP-71B Card Reader device. The owner uses commands such as **PLUG** and **UNPLUG** to emulate the action of inserting or removing actual physical ROM or RAM modules. Independent RAM (IRAM) modules can also be loaded, modified, and later saved back to the 16 MB boot flash.
+
+## Project Layout
+Board design and documentation for the mecrisp Forth implementation can be found in separate directories beneath the main MultiMod-II directory. The `mecrisp-ice-x.xx` directory contains the board support directories for the MultiMod II. The `mmj1boot` directory contains the necessary build scripts, the default Forth files that support MultiMod II bootloader operation, and the board definition files. The `multimod2` directory (this directory) contains the FPGA configuration, Forth files, and build scripts to create the production FPGA bitstream. See the Build section of this documentation for details.
+
+## Forth Operation
+The current mecrisp-ice configuration supports a serial device implementation that communicates with the default user console. An initial Forth dictionary that is a part of the production configuration bitstream contains Forth words needed to support desired interactivity.
+
+The j1a hardware design controls the HP-71B memory management logic via registers mapped into the j1a I/O address space. The j1a hardware design has also been augmented with the necessary warm boot design components so that control can be transferred to alternative FPGA bitstream configurations. Details are provided in the appropriate sections of these Notes.

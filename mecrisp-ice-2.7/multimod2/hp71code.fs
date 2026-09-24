@@ -1,0 +1,1343 @@
+\ #######   Flash   ###########################################
+
+\ SPI Flash tools and loader
+\ NOTE: Code based on that from UPduino-Mecrisp-Ice-15kB by Igor-m
+\ BSD -3-Clause license
+\ https://github.com/igor-m/UPduino-Mecrisp-Ice-15kB.git
+
+\ Fomu seems to have used some of the first 7 64K sectors for
+\ flash bitstream or data. Reserve the first 1MB (64 16K) sectors
+\ for bitstreams and their data. 16KB sectors 0 to 15 are the
+\ powerup/reset bitstream and should be protected.
+\ Default load on power-up would be 16K sector number 0
+
+cornerstone core4th  \ Everything below this is core Forth
+
+8 constant bitfence  \ Write protect 16KB pages below this point
+64 constant frtstart  \ Forth dictionary images start point
+128 constant romstart  \ HP-71B ROM/IRAM image start
+
+\ #############################################################
+\ #######    SPI IO    ########################################
+
+\ IO Address $0100, SPI Read/Write
+\ +------+------+------+------+------+------+
+\ | CLK  | CS   | IO3  | IO2  | MOSI | MISO |
+\ +-----5+-----4+-----3+-----2+-----1+-----0+
+
+\ IO Address $0101, SPI Direction 1:output, 0:input
+\ +------+------+------+------+
+\ | IO3  | IO2  | MOSI | MISO |
+\ +-----3+-----2+-----1+-----0+
+
+\ IO Address $0200
+\ USB Active/State Read       Boot Write
+\ +------+------+------+      +------+------+------+
+\ | ACTV | P_TX | N_TX |      | BOOT | S1   | S0   |
+\ +-----2+-----1+-----0+      +-----2+-----1+-----0+
+
+
+: spimode_std ( -- )
+    \ Set IO0 as input, IO1/IO2/IO3 as output
+    $E $0101 io!
+;
+
+: spidual_out ( -- )
+    \ Set IO0/IO1/IO2/IO3 as output
+    $F $0101 io!
+;
+
+: spidual_in ( -- )
+    \ Set IO0/IO1 as input, IO2/IO3 as output
+    $C $0101 io!
+;
+
+: spiquad_out ( -- )
+    \ Set IO0/IO1/IO2/IO3 as output
+    $F $0101 io!
+;
+
+: spiquad_in ( -- )
+    \ Set IO0/IO1/IO2/IO3 as input
+    $0 $0101 io!
+;
+
+    
+: idle  ( -- )
+    \ Deselect flash to mark the end of a command
+    $1C $0100 io!   \ Deselect flash CS/ = 1, IO3/IO2=1
+    spimode_std
+;
+
+: spixbit ( x -- y )
+    \ Output data in high byte, assemble input in low byte
+    dup 0< 2 and $C or  \ extract MS bit
+    dup $0100 io!        \ lower SCK, update MOSI
+    $20 or $0100 io!      \ raise SCK
+    2*                     \ next bit
+    $0100 io@ 1 and +       \ read MISO, accumulate
+;
+
+: spix ( outdata -- indata )
+    8 lshift
+    spixbit spixbit spixbit spixbit
+    spixbit spixbit spixbit spixbit
+;
+
+: >spi ( -- byte )
+    spix drop
+;
+
+: spi> ( byte -- )
+    0 spix
+;
+
+: waitspi  ( -- )
+  begin
+    $05 >spi \ Read Flag status register
+    spi> $01 and 0= \ WIP: Write in Progress.
+    idle
+  until
+;
+
+: spiwe ( -- )
+    $06 >spi \ Write enable
+    idle
+;
+
+: spi_powerdn ( -- )
+    \ Power the flash device down
+    \ Standby current drops from 10 to 1 uA
+    $B9 >spi idle
+;
+
+: spi_powerup ( -- )
+    \ Recover from power down state
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM
+    idle
+    0  begin 1+ dup 500 =  until drop \ delay 100us
+;
+
+
+
+\ #############################################################
+\ #######    SPI SUPPORT     ##################################
+
+: sect2addr ( sector16k -- double_rom_addr )
+    \ Convert a 10-bit `sector16k` value to a 24-bit flash address.
+    \ Where TOS is high 8 bits and next is low 16 bits.
+    dup 3 and 14 lshift      \ Low 16 bits of address
+    swap 2 rshift             \ High 16 bits of address
+;
+
+: addr2sect ( double_rom_addr -- sector16k )
+    \ Convert a 24-bit flash address to a 10-bit sector16k value.
+    $FF and 2 lshift    \ High 8 bits masked and shifted right
+    swap 14 rshift or    \ Divide by 16K, form lower 2 bits of sector16k
+;
+
+: addr2spi ( double_rom_addr -- )
+    \ Output a 24-bit address to spi flash. The address is a double
+    \ where the high 8 bits are in TOSand the low 16 bits in NOS.
+    $FF and      >spi     \ Address high byte
+    dup 8 rshift >spi      \ Address mid byte
+    $FF and      >spi       \ Address low byte
+;
+
+: spiread ( double_rom_addr -- )
+    \ Set up the read command and byte address
+    \ Address is a double, high 16-bits in TOS
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM
+    idle
+    0  begin 1+ dup 500 =  until drop \ delay 100us
+
+    03 >spi              \ Read command
+    addr2spi              \ Output 24-bit address
+;
+
+: spiwrite ( double_rom_addr -- )
+    \ Set up the write command and byte address
+    \ Address is a double, high 16-bits in TOS
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM
+    idle
+    0  begin 1+ dup 500 =  until drop \ delay 100us
+ 
+    spiwe       \ Setup write
+    02 >spi      \ Write command
+    addr2spi      \ Output 24-bit address
+;
+
+: spiread16k ( sector16k -- )
+    \ Set up the read command and sector address
+    sect2addr
+    spiread
+;
+
+
+\ #############################################################
+\ #######    SPI UTILITY     ##################################
+
+: spiflush ( Nbytes -- )
+    \ Flush N bytes from the spi flash being read
+    0 ?do
+        spi> drop
+    loop
+;
+
+: spidump ( Nbytes -- )
+    \ Print N bytes from the spi flash being read
+    0 ?do
+        spi> .
+    loop
+;
+
+: numsectors ( -- #sector16k )
+    \ Return the number of 16K sectors in this flash device
+    \ For device independence, RDID command capacity is # of address bits
+    \ i.e. 21 = 2M, 22 = 4M, etc.
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM
+    idle
+    0  begin 1+ dup 500 =  until drop \ delay 100us
+    $9F >spi spi> drop spi> drop spi> 14 - 1 swap lshift
+;
+
+
+\ #######   DATA I/O   ########################################
+\ Definition of load/save/erase words support 16K sectors
+\ 2 MB flash: 128 sectors, 4 MB flash: 256 sectors, 16 MB flash: 1024 sectors
+
+  \ There's only a 4K and 64K sector erase command
+: erase4k ( sector4k -- )
+    dup bitfence 2 lshift 1- u> if   \ Never overwrite bitstream !
+        $AB >spi                      \ Release from Deep Power Down
+        idle
+        0  begin 1+ dup 500 =  until drop  \ delay
+
+        spiwe
+        $20              >spi    \ Sector erase, 4K
+        dup 4 rshift     >spi     \ Sector number, bits 9 to 4
+        $F and 4 lshift  >spi      \ Address high
+        $00              >spi       \ Address low
+        idle
+        waitspi
+    else drop then
+;
+
+  \ Erase 16K sectors using 4K sector erase command four times
+: erase ( sector16k -- ) \ Erase 4 4K sectors given 16K sector number
+  dup + dup +   \ 4K sector number is 4 times 16K sector number
+  dup erase4k
+  1+ dup erase4k
+  1+ dup erase4k
+  1+ erase4k
+;
+
+: load ( sector16k -- )
+    \ Save FORTH instruction store (15K EBR) to 16K sector
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM
+    idle
+    0  begin 1+ dup 500 =  until drop \ delay 100us
+
+    spiread16k
+    spi> spi> 8 lshift or
+
+    dup $FFFF <> \ Execution starts at address 0, there always will be a valid opcode.
+    if             \ $FFFF denotes an empty sector that should not be loaded.
+	0 !         \ Store first byte
+
+        2             \ 2nd through 15K bytes
+        begin
+        spi> spi> 8 lshift or over !
+        2 +
+        dup $3C00 =       \ For 15kB ram
+        until
+
+    then
+
+    drop
+    idle
+    init \ @i ?dup if execute then \ The freshly loaded image might have init set
+    quit
+;
+
+  \ Erase 16K sector then save instruction store
+: save ( sector16k -- )
+    dup bitfence u> if \ Never overwrite bitstream !
+
+        $AB >spi \ Release from Deep Power Down
+        idle
+        0  begin 1+ dup 500 =  until drop \ delay 100us
+
+	dup erase
+        sect2addr
+	begin              \ addrL addrH --
+	    spiwe           \ Write enable
+            $02 >spi         \ Page program (256 bytes)
+	    2dup addr2spi     \ Output 24-bit address
+	    swap               \ addrL addrH -- addrH addrL
+            begin               \ Write 256 bytes, incrementing counter
+		dup $3FFF and    \ Address range 0~$3FFF
+		c@ >spi           \ Read dictionary, write flash
+                1+                 \ Increment addrL
+                dup $FF and 0=      \ 256 bytes?
+	    until
+            idle                      \ Must disable select after last byte
+	    waitspi                    \ Wait for write to finish
+	    swap over                   \ addrH addrL -- addrL addrH addrL
+            $3FFF and $3C00 =            \ for 15kB ram
+        until
+        2drop
+
+    else drop then \ Bitstream protection
+;
+
+cornerstone hp71b-1    \ Everything below this is core Forth plus SPI flash support
+\ #######   Warm Boot   ###########################################
+
+\ Support For FPGA Warm Boot
+
+
+: warmboot ( num -- )
+    \ num is 0 .. 7
+    \ bits [1:0] select bitstream image
+    \ bit [2] = 1 triggers warm boot
+    $0200 io!     \ Write to BOOTCTL register
+;
+
+\ #######   HP-71B  ###########################################
+\ Words to support HP-71B ROM/RAM modules in flash
+
+: rom2ram ( sector16k ram# -- )
+    \ Copy 16K ROM image to SPRAM
+    \ ram# 0~7, 16K block in SPRAM
+    \ sector16k frthstart~1023, 16K block in flash ( 14 MB )
+
+    $AB >spi  \ Release from Deep Power Down Mode, IgorM
+    idle
+    0 begin 1+ dup 500 =  until drop \ delay
+    
+    \ Set SPI flash address to 16K block number
+    swap               \ ( ram# sector16k -- )
+    03             >spi \ Read command
+    dup 2 rshift   >spi  \ Sector number, bits 7-2
+    3 and 6 lshift >spi   \ Address high, bits 1-0 << 6
+    $00            >spi    \ Address low
+
+    $2000 *   \ ( Ram_pointer -- )
+    0 swap     \ ( Ram_counter Ram_pointer -- )
+    begin
+        spi> spi> 8 lshift or    \ ( Ram_counter Ram_pointer Word -- )
+        over            \ ( Ram_counter Ram_pointer Word Ram_pointer -- )
+        sram!            \ ( -- Ram_counter Ram_pointer )
+        1+ swap 1+ swap   \ ( Ram_counter Ram_pointer -- )
+        over $2000 =
+    until
+    idle 2drop
+;
+
+: rom32k2ram ( sector16k ram# -- )
+    \ Copy 32K ROM image to SPRAM
+    \ ram# 0~7, 16K block in SPRAM
+    \ sector16k frthstart~1023, 16K block in flash ( 14 MB )
+
+    dup 7 u< if     \ 32K won't fit last 16K block
+        2dup rom2ram
+        1+ swap 1+ swap
+        rom2ram
+    else
+        2drop
+    then
+;
+
+: rom64k2ram ( sector16k ram# -- )
+    \ Copy 64K ROM image to SPRAM
+    \ ram# 0~7, 16K block in SPRAM
+    \ sector16k frthstart~1023, 16K block in flash ( 14 MB )
+
+    dup 5 u< if     \ 64K won't fit last 16K block
+        2dup rom2ram
+        1+ swap 1+ swap 2dup
+        rom2ram
+        1+ swap 1+ swap 2dup
+        rom2ram
+        1+ swap 1+ swap
+        rom2ram
+    else 2drop then
+;
+
+
+
+: ram2rom  ( ram# sector16k -- )
+    \ ram# 0~7, 16K block in SPRAM
+    \ sector16k 32~127, 16K block in flash ( 2 MB )
+
+    dup bitfence 1- u> if    \ Never overwrite bitstream !
+
+        swap $2000 * swap      \ ( ram# sector16k -- ram_addr sector16k )
+        $AB >spi                \ Release from Deep Power Down
+        idle
+        dup erase
+        dup 3 and 14 lshift    \ beginning count
+        begin   \ ( ram_addr sector16k spi_addr -- )
+            spiwe
+
+            $02            >spi  \ Page program (256 bytes)
+            over 2 rshift  >spi   \ Sector number
+            dup 8 rshift   >spi    \ Address high
+            $00            >spi     \ Address low
+
+            rot                  \ ( sector16k spi_addr ram_addr -- )
+            begin                 \ Write 256 bytes, incrementing counter
+                dup sram@ 
+                dup $FF and >spi
+                8 rshift    >spi
+                1+
+                dup $7F and 0=
+            until
+
+            idle
+            waitspi
+            rot rot $0101 +     \ ( ram_addr sector16k spi_addr -- )
+            dup $3F and $00 =    \ for 16kB ram
+        until
+        2drop drop
+
+    else 2drop then \ Bitstream protection
+;
+
+: ram32k2rom ( ram# sector16k -- )
+    \ Copy 32K SRAM image to ROM
+    \ ram# 0~7, 16K block in SPRAM
+    \ sector16k 32~127, 16K block in flash ( 2 MB )
+
+    over 7 u< if     \ 32K isn't last 16K block
+        2dup ram2rom
+        1+ swap 1+ swap
+        ram2rom
+    else
+        2drop
+    then
+;
+
+: ram64k2rom ( ram# sector16k -- )
+    \ Copy 64K RAM image to ROM
+    \ ram# 0~7, 16K block in SPRAM
+    \ sector16k 32~127, 16K block in flash (2 MB)
+
+    over 5 u< if    \ 64K won't fit in last 3 16K blocks
+        2dup ram2rom
+        1+ swap 1+ swap 2dup
+        ram2rom
+        1+ swap 1+ swap 2dup
+        ram2rom
+        1+ swap 1+ swap
+        ram2rom
+    else
+        2drop
+    then
+;
+
+: ram2ram ( ramfrom# ramto# -- )
+    \ Copy content of one 16K ram block to another
+    \ ramfrom# 0~7, 16K block is SPRAM
+    \ ramto# 0~7, 16K block is SPRAM
+    
+    $2000 * swap $2000 * swap
+    begin             \ ( from_addr to_addr -- )
+        over sram@     \ ( from_addr to_addr -- from_addr to_addr word )
+        over sram!      \ ( from_addr to_addr word -- from_addr to_addr )
+        1+ swap 1+ swap  \ ( from_addr to_addr -- )
+        dup $1FFF and 0=
+    until
+    2drop
+;
+
+: pagecmp ( ram_addr -- ram_addr flag )
+    \ 1. Set counter to zero
+    \ 2. Loop
+    \ 3.   Read memory word from ram_addr
+    \ 4.   Read two bytes from flash, assemble to word
+    \ 5.   Increment counter and mem_addr
+    \ 6. Until counter=8192 or memory word <> flash word
+    \ 7. Return mem_addr, count=8192
+    0 begin             \ ram_addr -- ram_addr count
+	swap dup sram@   \ ram_addr count -- count ram_addr mem
+	spi> spi>         \ Read two flash bytes
+	8 lshift or        \  count ram_addr mem -- count ram_addr mem flash
+	<> >r               \ Save comparison
+	1+ swap 1+ swap      \ count ram_addr -- count+1 ram_addr+1
+	over 8192 =           \ count ram_addr -- count ram_addr flag
+	r> or >r swap r>       \ 6. count ram_addr flag -- ram_addr count flag
+    until
+    8192 =                       \ ram_addr count -- ram_addr flag
+;
+
+
+: ramromcmp ( size ram# sector16k -- mem_addr flag )
+    \ Given the sector16k location of an image in flash, the ram# page
+    \ of the same image and the size of the image in number of blocks,
+    \ return a flag indicating the images match and the last address
+    \ of the word in SPRAM of a mismatch if there was a mismatch.
+    spiread16k      \ size ram# sector16k -- size ram#
+    $2000 *          \ size ram# -- size ram_addr
+    swap 0 ?do        \ size ram_addr -- ram_addr size 0
+        pagecmp        \ ram_addr -- ram_addr+ flag
+        not if          \ ram_addr+ flag -- ram_addr+
+            leave        \ ram_addr+ -- ram_addr+
+        then
+    loop
+    idle
+    dup $1FFF and 0=         \ (ram_addr -- ram_addr flag )
+;
+
+: zeroram ( ram# -- )
+    \ Fill indicated SPRAM block with zeros, used to make IRAMs
+
+    $2000 *         \ Starting address in SPRAM
+    $2000 0 ?do      \ Fill 8K of 16-bit words
+        0 over sram!  \ With zeros
+        1+             \ Next address
+    loop
+    drop
+;
+
+: onesram ( ram# -- )
+    \ Fill indicated SPRAM block with ones, used to fill out data
+    \ written to flash.
+
+    $2000 *             \ Starting address in SPRAM
+    $2000 0 ?do          \ Fill 8K of 16-bit words
+        $FFFF over sram!  \ With ones
+        1+                 \ Next address
+    loop
+    drop
+;
+\ #######   HP-71B  ###########################################
+\ Words to support directories in flash
+
+\ A directory consists of two 16KB sectors in flash - the first holding
+\ the directory itself and the second as a scratch block used when a
+\ pack operation occurs. The 16KB directory sector contains 1024 entries
+\ of 16 bytes each. Following the two 16KB sectors are the 16KB sectors
+\ holding Forth dictionary images or HP-71B ROM/IRAM images.
+
+\ Implementation Note:
+\ Several routines involving access to the name string stored in an
+\ directory entry require the string access functions to flush the
+\ training bytes from the string field in order to keep the read
+\ command address pointer on a directory entry boundary. This
+\ requirement could be discarded if the goto_entry in conjunction
+\ with the loop index to set the read pointer to each entry starting
+\ point.
+
+\ ---------------------------------------------------------------------
+\ ######   Define variables and constants
+
+\ The starting point for the Forth dictionary images and for the HP-71B
+\ ROM/IRAM images are both defined as variables so they can be modified
+\ by the owner.
+
+\ Forth dictionary images begin at the 1MB address, hex $100000, which
+\ would be 16K block #64. The first two 16K blocks are dedicated to the
+\ directory for the images.
+frtstart variable forthdir    \ Initial value taken from stack
+62 constant forthsize          \ Number of blocks in Forth directory
+
+\ HP-71B dictionary images begin at the 2MB address, hex $200000, which
+\ would be block #128. The first two 16K blocks are dedicated to the
+\ directory for the images.
+romstart variable romdir    \ Initial value taken from stack
+894 constant romsize         \ Number of blocks in ROM directory
+
+\ variable fth_dtop     \ Next entry number in Forth directory (0~1023)
+\ variable rom_dtop     \ Next entry number in HP-71B directory (0~1023)
+
+
+\ Types of entry in the first entry byte
+$FF constant Empty
+$F0 constant Valid
+$00 constant Reclaim
+
+\ Types of HP-71B images in upper nibble of the second entry byte
+\ Lower nibble contains image length in 16KB sectors (1~15, 0 reserved)
+$00 constant IRAM
+$10 constant ROM
+$20 constant HARD
+$30 constant TAKEOVER
+$80 constant DIRSIZE
+
+\ Third and forth bytes of entry contain offset from dictionary end
+\ to image (0~1023)
+
+
+
+\ ---------------------------------------------------------------------
+\ ######   Useful support words
+
+: writeloc ( sector16k -- )
+    \ Write a 10-bit `sector16k` value as two bytes to flash write
+    \ pointer location (Assumes write command active)
+    dup $FF and >spi     \ Low byte sector16k location
+    8 rshift 3 and >spi   \ High byte sector16k location
+;
+
+: readloc ( -- sector16k )
+    \ Read a 10-bit sector16k value as two bytes from flash read
+    \ pointer location (Assumes read command active)
+    spi>         \ Low byte sector16k location
+    spi>          \ High byte sector16k location
+    8 lshift or    \ Assemble bytes to 10-bit sector16k value
+;
+
+: writestr ( string -- )
+    \ Take a `string` and write it to flash, truncating it as
+    \ necessary. A string consists of a string length integer (TOS)
+    \ and the address of the string (next on stack).
+    \ Assumes write command active.
+    \ Needs to truncate strings longer than 11 characters!
+    dup 11 > if
+        drop     \ Discard string length > 11
+        11        \ Truncate name to fit space in directory entry
+    then
+    dup >spi        \ Write string length
+    0 do
+	dup c@ >spi   \ Write string character
+	1+             \ Advance pointer
+    loop
+    drop                 \ Lose the string addr
+;
+
+: printstr ( -- )
+    \ Read string from flash, starting with the string length byte,
+    \ and emit each character to the console.
+    \ Assumes read command active.
+    spi>          \ String length
+    dup            \ Keep copy
+    0 do
+	spi> emit    \ Read and print string character
+    loop
+    12 swap - 1-       \ Remaining bytes in directory entry
+    spiflush            \ Move to next entry
+;
+
+: empty_entry ( sector16k -- entry# )
+    \ Return the first empty entry associated with the `sector16k`
+    \ directory. This involves scanning each 16 byte directory entry
+    \ starting at the beginning until an erased entry is found,
+    \ or the end of the directory is found.
+    \ A return value of 1024 indicates a full directory.
+    spiread16k      \ Set read pointer to beginning of directory
+    spi> drop        \ First directory entry is DIRSIZE
+    0                 \ Loop count
+    begin
+	15 spiflush     \ Advance to next directory entry
+	1+               \ Increment counter
+	dup 1024 =        \ End of directory?
+	spi> Empty =       \ Found an empty directory entry?
+	or
+    until
+;
+
+: entry_addr ( entry# sector16k -- double_rom_addr )
+    \ Calculate the SPI flash address of a directory entry given the
+    \ `sector16k` address of the directory and the entry number,
+    \ range 0~1023. Note entries are 16 bytes in length.
+    \ This function can be used as a more efficient way of setting
+    \ the SPI flash write address in place of goto_entry.
+    sect2addr     \ Convert sector16k to double_rom_addr
+    rot 4 lshift   \ Retrieve entry#, multiply by 16
+    0 d+            \ Convert 16*entry# to double, add to directory addr
+;
+
+: goto_entry ( entry# sector16k -- )
+    \ Set up a read operation at the start of a specified directory `entry#`
+    \ For the directory at sector number `sector16k`
+    entry_addr            \ Compute 3-byte flash address
+    spiread                \ Issue read command
+;
+
+: mark_reclaim ( entry# sector16k -- )
+    \ Given the base address `sector16k` of a dictionary and an entry
+    \ number, mark the entry as Reclaim and no longer Valid.
+    entry_addr         \ Compute address of directory entry
+    spiwrite            \ Switch to write mode
+    Reclaim >spi         \ Clear `Valid` bit
+    idle                  \ Must disable select after last byte
+    waitspi                \ Wait for write to finish
+;
+
+: free_image ( sector16k -- block# )
+    \ For a `sector16k` dictionary, find the next free image block
+    \ within the dictionary. Use the last non empty dictionary
+    \ location plus its image length to find next free block.
+    dup empty_entry      \ Last used dictionary entry
+    1- swap               \ ( entry# sector16k -- )
+    goto_entry             \ Flash address of directory entry
+    spi> drop                \ Skip entry type
+    spi> $F and               \ Image Type.Size, mask off Size
+    readloc +                  \ Read pointer to last allocated block
+;
+
+: entry_type ( entry# sector16k -- type.size )
+    goto_entry     \ Set read command pointer to directory entry
+    spi> drop       \ Discard entry type
+    spi>             \ Return type.size byte
+;
+
+: entry_image ( entry# sector16k -- block# )
+    \ Given a directory `sector16k` and a directory entry `entry#`,
+    \ Return the image `block#` where the entry image starting
+    \ address is. The actual `sector16k` address of the image would
+    \ be the directory address + block# + 2.
+    goto_entry     \ Set read command pointer to directory entry
+    2 spiflush      \ Skip entry type and image type.size bytes
+    readloc          \ Read two byte block number
+;
+
+: image_addr ( block# sector16k -- sector16k )
+    \ Given directory location `sector16k` and the block number
+    \ where an image is stored in the directory, return the
+    \ absolute sector address number of the image.
+    + 2 +
+;
+
+
+
+\ ---------------------------------------------------------------------
+\ ######   Commands associated with directory initialization
+
+: dir_init ( nblocks sector16k -- )
+    \ Initialize the two 16K blocks of a directory. The argument is
+    \ the starting block number of the Forth or HP-71B image area,
+    \ either fthstart or romstart, and the number of 16K blocks in
+    \ the directory collection.
+    dup erase dup 1 + erase  \ First two blocks in collection
+    sect2addr spiwrite        \ Address the first directory entry
+    Valid >spi DIRSIZE >spi    \ Valid entry, type SIZE
+    0                           \ First image block offset
+    writeloc                     \ Output 0 image block number
+    writeloc                      \ Output nblocks size to name field
+    idle                           \ Must disable select after last byte
+    waitspi                         \ Wait for write to finish
+;
+
+: dir_size ( sector16k -- nblocks )
+    \ Return the number of 16k image sectors allocated to a directory.
+    \ Placed alongside dir_init due to where the size value is stored.
+    spiread16k        \ Read command to start of directory
+    spi> drop          \ Entry type (Valid, Reclaim, ...)
+    spi> drop           \ Image Type/Size
+    readloc drop         \ First image block
+    readloc idle          \ Stored directory size in name field
+;
+
+
+
+\ ---------------------------------------------------------------------
+\ ######   Commands associated with directory entries and images
+
+: strcmp ( string -- flag )
+    \ Compare a string to a string in flash. The read command pointer
+    \ addresses the first character of the string in flash.
+    \ Return True (1) or False (0) for string match.
+    1 rot rot       \ Assume success ( returnval string -- )
+    0 ?do            \ loop string length times
+        dup c@        \ Fetch string character
+        swap 1+ swap   \ Increment string pointer
+	spi> =          \ String match? ( flag addr flag -- )
+	rot and swap     \ AND result with return value ( flag addr -- )
+    loop
+    drop                   \ Drop pointer
+;
+
+: cmpname ( name -- flag )
+    \ Compares the name on the stack to the name in a directory entry
+    \ that the read command pointer is pointing to.
+    \ Returns true/false flag
+    \ 2drop
+    \ 15 spiflush     \ Advance to next directory entry
+    \ 0
+    dup spi> <> if       \ Are string lengths different?
+        2drop             \ Drop string
+	11 spiflush        \ Skip to end of entry
+	0                   \ Return fail
+    else
+	dup rot rot           \ Save string length on stack
+	strcmp swap            \ String match? ( flag length -- )
+	12 swap - 1-            \ Remaining string characters
+	spiflush                 \ Skip, return string match result
+    then
+;
+
+: dir_find ( name sector16k -- entry# )
+    \ Given a dictionary address `sector16k` and a dictionary image
+    \ string name, return the `sector16k` location in flash. The return
+    \ value is used by the `load` command for Forth dictionaries or one
+    \ of the `ram2rom` commands for HP-71B images.
+    \ Failure to find name will return an invalid value of 1024.
+    spiread16k      \ Set read pointer to beginning of directory
+    16 spiflush      \ Skip DIRSIZE entry
+    1024 1            \ Loop count, iterates 0..1023
+    ?do  
+	spi> Empty =    \ Empty directory entry?
+	if
+            2drop idle    \ String
+            1024 leave     \ Fail
+	then                \ Exit loop
+	3 spiflush           \ Discard Type.Size, Blocks bytes
+	2dup cmpname if       \ True if name found
+	    2drop idle         \ String
+            i leave             \ Found match, return entry#
+        then
+    loop
+;
+
+: dir_insert ( string type.size sector16k -- block )
+    \ Given the directory sector number `sector16k` read
+    \ the next empty directory entry number and the next
+    \ free memory location for an image, then write the
+    \ directory entry value to the directory.
+    \ Return value: Where to store image
+    dup free_image    \ Find next flash block for image
+    swap               \ string type-size block sector16k
+    dup empty_entry     \ Next empty entry
+    swap                 \ string type-size block entry# sector16k
+    entry_addr spiwrite   \ Issue write command at start of entry
+    swap                   \ string block type-size
+    Valid >spi              \ Mark entry as `Valid`
+    >spi                     \ Type/Size byte
+    dup >r                    \ Save block number
+    writeloc                   \ Two byte image address
+    writestr                    \ Entry name
+    idle waitspi                 \ End of write sequence
+    r>                            \ Return image block number
+;
+
+
+
+
+
+\ ---------------------------------------------------------------------
+\ ######   Commands associated with directory status
+
+: dir_free ( sector16k -- number )
+    \ Return the number of free image blocks in the given Forth or HP-71B
+    \ directory. A zero value indicates the directory needs to be packed.
+    dup dir_size     \ Number of image blocks
+    free_image        \ Next empty image block
+    -                  \ Should be >= 0
+;
+
+: prtype ( Type.Size -- )
+    \ Print out the image type and size
+    dup $F0 and case
+        IRAM of ."     IRAM" endof
+        ROM of ."      ROM" endof
+        HARD of ."     HARD" endof
+	TAKEOVER of ." TAKEOVER" endof
+	."  UNKNOWN"
+    endcase
+    $F and 16 * 6 .r ." K "
+;
+
+: prblock ( block -- )
+    \ Print out block size
+    6 .r $20 emit $20 emit   \ Print block number in an 8-wide field
+;
+
+
+: dir_list ( sector16k -- )
+    \ List the valid entries in a directory. The `sector16k` value is
+    \ either `forthdir` or `hp71dir`.
+    
+    ."   Type    Size    Block    Name" cr
+    
+    spiread16k        \ Set read pointer to beginning of directory
+    16 spiflush        \ First directory entry is DIRSIZE
+    1024 0              \ Loop count, iterate 0..1023
+    ?do
+        spi>             \ Entry type
+        dup Valid = if     \ If Valid entry, print it out
+	    spi> prtype     \ Print object type
+	    readloc prblock  \ Print block location
+	    printstr cr       \ Print name
+	else
+	    15 spiflush         \ Skip entry, get next entry type
+	then                     \ ( count entry-type -- )
+	Empty = if                \ Found an empty directory entry?
+            idle leave
+        then
+    loop
+    idle
+;
+
+: dir_resize ( nblocks sector16k -- new-blocks )
+    \ Resize a directory to a larger or smaller number of image
+    \ blocks. If reducing the size, the size can't be smaller than
+    \ the current number of existing image blocks.
+    \ The return value will be the same as the requested value if
+    \ successful, or equal to the lowest valid value.
+    \ The scratch block is erased when a directory is created, so
+    \ no need to erase it again.
+    ." Not Yet Implemented"
+    \ 2dup            \ ( nblocks sector16k nblocks sector16k -- )
+    \ free_image       \ ( nblocks sector16k nblocks free# -- )
+    \  < if             \ True if nblocks < free#
+    \     swap drop      \ ( sector16k -- )
+    \     dup free_image  \ ( sector16k free# -- )
+    \     swap             \ ( free# sector16k -- )
+    \  then
+    \ 2dup 1+ dir_init      \ Scratch is new directory
+    \ swap drop dup 1+       \ ( sector16k sector16k+1 -- )
+    \ 2dup dir_copy           \ Copy entries from sector16k to sector16k+1
+    \ swap dup erase16k        \ Erase old directory block
+    \ 2dup swap dir_copy        \ Copy new directory back to old directory
+    \ swap drop                  \ ( sector16k sector16k -- )
+    \ dup 1+ erase16k             \ Erase scratch block
+    \ swap drop free_image         \ New directory size
+;
+
+: dir_pack ( sector16k -- )
+    \ The `sector16k` value is either `fthstart` or `romstart`.
+    \ This command will pack both the directory and the image
+    \ storage associated with the directory.
+    ." Not Yet Implemented"
+;
+\ #######   HP-71B  ###########################################
+\ Words to support management of the HP-71B I/O bus control
+
+
+\ Implementation Note:
+\ There is a register per bank in the j1a I/O address space. The register
+\ stores both information used by Forth code to track modules accessible
+\ to the HP-71B and control/status bits that configure the HP-71B bus
+\ interface logic. The configuration of each register is as follows.
+
+\ Register Write
+\ +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+\ |15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00|
+\ +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+\ | U| E| Type| xxx |            Image            |
+\ +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+\
+\ Register Read
+\ +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+\ |15 14 13 12 11 10 09 08 07 06 05 04 03 02 01 00|
+\ +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+\ | U| E| Type| S|xx|            Image            |
+\ +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
+\
+\ where
+\
+\ U     - Flag indicating bank is in use
+\ E     - Flag indicating bank continues/ends chain of banks
+\ S     - Bank configuration status
+\ Image - Directory entry number of ROM/IRAM image
+
+\ ---------------------------------------------------------------------
+\ ######   Define variables and constants
+
+\ These are used as substitute for actual hardware registers when
+\ developing code
+\ here 16 allot variable bank   \ Allocate an eight word array
+\ Using separate variables instead of an array
+0 variable bank0     \ Bank 0
+0 variable bank1     \ Bank 1
+0 variable bank2     \ Bank 2
+0 variable bank3     \ Bank 3
+0 variable bank4     \ Bank 4
+0 variable bank5     \ Bank 5
+0 variable bank6     \ Bank 6
+0 variable bank7     \ Bank 7
+
+\ Variables storing image information
+0 variable ibank     \ Range 0~7
+0 variable isize     \ Range $1~F
+0 variable itype     \ Range $00~F0
+0 variable ientry    \ Range $000~3FF
+
+\ Variable and constants for error management
+0 variable errno
+
+0 constant isok
+1 constant nofit
+2 constant nofree
+3 constant noname
+4 constant nobank
+5 constant nouniq
+
+\ ---------------------------------------------------------------------
+\ ######   Useful support words
+
+: bank@ ( banknum -- bankval )
+    \ Read the value stored in bank register banknum. Note the value is
+    \ 0 to 7, and the value is masked to insure it is in the correct range.
+    7 and case               \ Mask banknum, the select bank variable
+        0 of bank0 @ endof
+        1 of bank1 @ endof
+        2 of bank2 @ endof
+        3 of bank3 @ endof
+        4 of bank4 @ endof
+        5 of bank5 @ endof
+        6 of bank6 @ endof
+        7 of bank7 @ endof
+    endcase
+;
+
+: bankreg! ( bankval banknum -- )
+    \ Write settings to a hardware bank control register
+    \ The four bit value is: InUse, ChainEnd, Type[1:0]
+    7 and                \ Confine to range 0~7
+    swap 12 rshift swap   \ Shift bits 15:12 to 3:0
+    $0400 or io!           \ Form IO address 040x and write
+;
+
+: bank! ( bankval banknum -- )
+    \ Write the supplied value of bankval to bank register banknum. Note
+    \ the correct value id 0 to 7 and the value is masked to insure the
+    \ bank array is indexed within bounds.
+    2dup bankreg!
+    7 and case               \ Mask
+        0 of bank0 ! endof
+        1 of bank1 ! endof
+        2 of bank2 ! endof
+        3 of bank3 ! endof
+        4 of bank4 ! endof
+        5 of bank5 ! endof
+        6 of bank6 ! endof
+        7 of bank7 ! endof
+    endcase
+;
+
+: willfit ( -- flag )
+    \ Use variables ibank and isize to determine if a image will fit
+    \ in SPRAM memory
+    ibank @ isize @ + 1- 8 <  \ Can't go from 'bank' past bank 7
+;
+
+: isempty ( -- flag )
+    \ Use variables ibank and isize to ensure target SPRAM banks
+    \ are not already occupied
+    0                 \ Accumulator
+    isize @ ibank @ +  \  0 -- bank+size
+    ibank @             \ 0 bank+size -- 0 bank+size bank
+    ?do                  \ 0 bank+size bank -- 0
+	i bank@ or        \ acc -- acc or bank_i
+    loop                   \ Accumulate InUse flags
+    $8000 and 0=            \ No bank is InUse?
+;
+
+: isname ( -- flag )
+    \ Use variable ientry to determine if a name is valid
+    ientry @  0 <>         \ Zero is not a valid entry #
+    ientry @ 1024 <>        \ dir_find returns 1024 for not found
+    and                      \ Valid entry is neither 0 or 1024
+;
+
+: settypsz ( -- )
+    \ Set the itype and isize variables for an entry
+    ientry @ romdir @   \ -- entry# sector16k
+    entry_type dup       \ entry# sector16k -- type.size type.size
+    $F0 and itype !       \ type.size type.size -- type.size
+    $F and isize !         \ type.size --
+;
+
+: isbanked ( -- flag )
+    \ A valid name's entry number is in banks
+    false 8 0 ?do      \ 2.  -- flag
+        i bank@         \ flag -- flag bank-config
+        $03FF and        \ Mask off configuration name entry#
+        ientry @          \ entry#
+        = or               \ flag bank-entry# entry# -- flag
+    loop                    \ flag -- flag
+;
+
+
+: setbanks ( -- )
+    \ Use ibank isize, itype and ientry to set bank registers
+    isize @ ibank @ +    \  -- bank+size
+    ibank @               \ bank+size -- bank+size bank
+    ?do                    \ Loop through each image bank
+        $8000               \ InUse flag
+        itype @ 8 lshift or  \ Image type
+        ientry @ $3FF and or  \ Image entry, E flag clear
+        i bank!                \ Set bank configuration
+    loop
+    ibank @ isize @ + 1-         \ Last bank in chain
+    dup bank@ $4000 or            \ lastbank -- lastbank bankval
+    swap bank!                     \ Set bank 'E' end flag
+;
+
+
+\ ---------------------------------------------------------------------
+\ ######   Storage Support Functions
+
+: rom2banks ( -- )
+    \ Copy the flash content of a ROM entry to SPRAM
+    ientry @ romdir @    \ -- entry# sector16k
+    entry_image           \ entry# sector16k -- block#
+    romdir @ image_addr    \ block# -- sector16k
+    ibank @ isize @         \ sector16k -- sector16k bank size
+    case                     \ bank sector16k size -- sector16k bank
+        1 of rom2ram          \ sector16k bank --
+        endof
+        2 of rom32k2ram         \ sector16k bank --
+        endof
+        3 of 2dup rom2ram         \ sector16k bank -- sector16k bank
+            1+ swap 1+ swap        \ sector16k bank -- sector16k+1 bank+1
+            rom32k2ram              \ sector16k+1 bank+1 --
+        endof
+        4 of rom64k2ram               \ sector16k bank --
+        endof
+    endcase
+;
+
+: banks2rom ( sector16k -- )
+    \ Copy content of bank(s) back to flash
+    ibank @ swap isize @    \ sector16k -- bank sector16k size
+    case                     \ bank sector16k size -- bank sector16k
+        1 of ram2rom endof    \ bank sector16k --
+        2 of ram32k2rom endof  \ bank sector16k --
+        3 of 2dup ram2rom       \ bank sector16k -- bank sector16k
+            1+ swap 1+ swap      \ bank sector16k -- bank+1 sector16k+1
+            ram32k2rom            \ bank+1 sector16k+1 --
+        endof
+        4 of ram64k2rom endof       \ bank sector16k --
+    endcase
+;
+
+: mkiram ( name -- )
+    \ Convert a RAM into IRAM using the ibank isize variables
+    \ Note: IRAM denoted by $B3DD $DDDE in first four
+    \ nibbles. $DD $B3 $DE $DD
+    ibank @ isize @ +     \ name -- name bank+size
+    ibank @ ?do            \ name bank+size -- name bank+size bank
+            i zeroram       \ Clear memory
+    loop
+    ibank @ $2000 *           \ name -- name ramaddr
+    $B3DD over sram!           \ name ramaddr data ramaddr -- name ramaddr
+    1+ $DDDE swap sram!         \ name data ramaddr+1 -- name
+    2dup IRAM isize @ or         \ name -- name name type.size
+    romdir @ dir_insert           \ name name type.size sector16k -- name block#
+    romdir @ image_addr            \ name block# sector16k -- name sector16k
+    banks2rom                       \ name sector16k -- name
+    romdir @ dir_find ientry !       \ name --
+    setbanks                          \ Update entry# in banks
+;
+
+
+
+\ ---------------------------------------------------------------------
+\ ######   Commands
+
+: listall ( -- )
+    \ For each bank, do
+    \ Print name, type
+    cr ." Bank InUse End Type  Name" cr
+    8 0 ?do
+        i . ."     "       \ Bank number
+        i bank@
+        dup $8000 and
+        0= if
+            ." 0     "
+        else
+            ." 1     "
+        then
+        dup $4000 and
+        0= if
+            ." 0  "
+        else
+            ." 1  "
+        then
+	dup 6 rshift $F0 and
+	over $8000 and 0= if 1 or then
+            case
+                IRAM of ." IRAM " endof
+                ROM of ." ROM   " endof
+                HARD of ." HARD " endof
+                TAKEOVER of ." TAKE " endof
+                ." ---- "
+	    endcase
+        $3FF and
+        dup 0 <> if
+             romdir @ goto_entry
+	    4 spiflush printstr idle
+        else
+            drop
+        then
+        cr
+    loop
+;
+
+: newram ( size bank -- flag )
+    \ 1. Check that RAM will fit, return false if not
+    \ 2. Insure bank(s) are empty, return false if not
+    \ 3. Setup bank(s) configuration
+    \ 4. Return true
+    ibank ! isize !    \ Save arguments
+    0 ientry !          \ Not a valid entry#, regular RAM
+    IRAM itype !         \ Not correct but won't be backed to flash
+    willfit if            \ 1. Will the new RAM fit memory?
+	isempty if         \ 2. Insure banks are empty
+	    setbanks        \ 3. Setup bank(s) configuration
+            isok errno !
+            true
+        else
+            nofree errno !
+            false          \ No, banks not empty, return Fail
+        then
+    else
+        nofit errno !
+        false             \ No, won't fit, return Fail
+    then
+;
+
+: newiram ( name size bank -- flag )
+    \ 1. Insure name does not already exist
+    \ 2. Check that image size will fit, return false if not
+    \ 3. Insure bank(s) are empty, return false if not
+    \ 4. Initialize bank(s) as an IRAM
+    \ 5. Save bank(s) to flash as directory entry 'name'
+    \ 6. Return true
+    ibank ! isize !         \ name size bank -- name
+    2dup romdir @ dir_find   \ name -- name entry#
+    ientry !                  \ name entry# -- name
+    isname not if              \ 1.  name -- name
+        isize @ ibank @         \ name -- name size bank
+        newram if                \ 1~4. name size bank -- name
+	    mkiram                \ name --
+	    isok errno !
+            true
+        else
+            2drop                    \ name --
+            nouniq errno !
+            false
+        then
+    else
+        2drop                  \ name --
+        noname errno !
+        false
+    then
+;
+
+: save ( -- flag )
+    \ 1. Check that name exists in bank(s), return false if not
+    \ 2. Write bank(s) content back to flash
+    \ 3. Return true
+    
+    isbanked if           \ 1.  --
+        settypsz           \ Size value needed when writing back
+        ientry @            \ -- entry#
+        8 0 ?do              \ Find first bank
+            dup               \ entry# -- entry# entry#
+            i bank@ $3FF and   \ entry# entry# -- entry# entry# bank-entry#
+            = if                \ entry# entry# bank-entry -- entry#
+                i ibank !        \ Save first bank#
+                leave             \ entry# -- entry#
+            then
+        loop
+	romdir @ entry_image         \ entry# -- block#
+	romdir @ image_addr           \ block# -- sector16k
+        banks2rom                      \ sector16k --
+        isok errno !
+        true
+    else
+        nobank errno !
+        false
+    then
+;
+
+: savename ( name -- flag )
+    \ Save an image by name.
+    \ 1. Check that name exists, return false if not
+    \ 2. Save
+    romdir @     \ name -- name sector16k
+    dir_find      \ name sector16k -- entry#
+    ientry !       \ entry# --
+    isname if       \ 1.
+        save         \ 2.  -- flag
+        isok errno !
+    else
+        noname errno !
+        false
+    then
+;
+
+
+: plug ( bank name -- flag )
+    \ 1. Check that name exists, return false if not
+    \ 2. Check that image will fit
+    \ 3. Insure bank(s) are empty
+    \ 4. Copy image to bank(s)
+    \ 5. Setup bank(s) configuration
+    \ 6. Return true.
+    romdir @ dir_find    \ 1. bank name -- bank entry#
+    ientry ! ibank !      \ Save entry# and bank
+    isname if
+        settypsz            \ Set itype and isize
+	willfit if           \ 2.
+            isempty if        \ 3.
+		rom2banks      \ 4.
+		setbanks        \ 5.
+                isok errno !
+                true
+            else
+                nofree errno !
+                false
+            then
+        else
+            nofit errno !
+            false
+        then
+    else
+        noname errno !
+        false
+    then
+;
+
+: unplug ( name -- flag )
+    \ 1. Check that name exists, return false if not
+    \ 2. Check that name exists in bank(s), return false if not
+    \ 3. Check if name is IRAM and save if true
+    \ 4. Clear bank(s) configuration that match name
+    \ 5. Return true
+    romdir @ dir_find       \ 1. name -- entry#
+    ientry ! isname if       \ entry# --
+        isbanked if           \ 2.
+            ientry @ romdir @  \ -- entry# sector16k
+            entry_type          \ entry# sector16k -- type.size
+            $F0 and IRAM = if    \ 3.
+                save              \ --
+            then
+            8 0 ?do
+                ientry @           \ -- entry#
+                i bank@ $03FF and   \ entry# -- entry# bank-entry#
+                = if
+                    0 i bank!         \ 4. Clear configuration
+                then
+            loop
+            isok errno !
+            true
+        else
+            nobank errno !
+            false
+        then
+    else
+        noname errno !
+        false
+    then
+;
+
+: unplugall ( -- )
+    \ Set all banks to zero, clearing InUse flag
+    8 0 ?do
+        0 i bank!
+    loop
+;
+
+: clrbank ( bank -- )
+    \ Mark a bank as not InUse
+    \ Use with caution!
+    0 swap bank!
+;
+
