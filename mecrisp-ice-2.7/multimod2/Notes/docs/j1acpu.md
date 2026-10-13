@@ -35,20 +35,18 @@ Modifications were made to support SPI communication for Dual and Quad mode tran
 ### Pseudo Dual Port RAM Support
 The 128 KB of Single Port RAM (SPRAM) in the FPGA must be shared by both the j1a Forth CPU and the HP-71B Saturn CPU. This is accomplished by a state machine that emulates a true dual port RAM through arbitration of memory access requests from the two CPUs. Because the Forth CPU clock is roughly twenty times faster than that of the HP-71B I/O bus clock, the Forth CPU is given priority over the HP-71B if memory requests are simultaneous. A pseudo state machine table is shown below.
 
-```
-State   Input           R/W  Next State     Comment
-------- --------------- ---  ----------     --------------------
-Idle    ~en1 ^ ~en2          Idle           No access requests
-Idle     en1   ~en2      X   Mem1           High priority request honored
-Idle    ~en1 ^  en2      X   Mem2           Low priority request honored
-Idle     en1 ^  en2      X   Mem1           Low priority request queued
-Mem1    addr1            R   Idle           Process request, register read data
-Mem2    addr2            R   Idle           Process request, register read data
-Mem1    addr1            W   Memw1          Process request, register read data
-Mem2    addr2            W   Memw2          Process request, register read data
-Memw1   addr1            X   Idle           Process request, write data
-Memw2   addr2            X   Idle           Process request, write data
-```
+| State | Input        | R/W | Next State |    Comment |
+| ----  | -----------  | --- | ---------- |    -------------------- |
+| Idle  | ~en1 ^ ~en2  |     | Idle       |    No access requests |
+| Idle  |  en1   ~en2  |   X | Mem1       |    High priority request honored |
+| Idle  | ~en1 ^  en2  |   X | Mem2       |   Low priority request honored |
+| Idle  |  en1 ^  en2  |   X | Mem1       |   Low priority request queued |
+| Mem1  | addr1        |   R | Idle   |   Process request, register read data |
+| Mem2  | addr2        |   R | Idle   |   Process request, register read data |
+| Mem1  | addr1        |   W | Memw1  |   Process request, register read data |
+| Mem2  | addr2        |   W | Memw2  |   Process request, register read data |
+| Memw1 | addr1        |   X | Idle     |   Process request, write data |
+| Memw2 | addr2        |   X | Idle     |   Process request, write data |
 
 An enable event `en1` for the Forth CPU occurs when an address is written to the address register `sram_addr` or when data is written to the `sram_in` register. When the address register is written, a read request occurs and the data from SPRAM is registered at the end of a `Mem1` state.
 
