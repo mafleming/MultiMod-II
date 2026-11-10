@@ -9,7 +9,6 @@ module hp71b
    input  [ 2:0] bank_addr,
    input 	 bank_wr,
    input  [ 3:0] bank_datain,
-   output [ 3:0] bank_dataout,
 
    input 	 daisyin_i,
    input 	 stroben_i,
@@ -25,7 +24,7 @@ module hp71b
 
    output [19:0] spram_addr,
    output [ 3:0] spram_out,
-   input [ 3:0]  spram_in,
+   input  [ 3:0] spram_in,
    output        spram_en,
    output 	 spram_wr
    );
@@ -34,7 +33,6 @@ module hp71b
   // M. Fleming
   // No need to add control signals to j1a address space
   // Buffers are controlled by HP-71B bus state machine
-   reg  [ 3:0] bank_out;
    reg  [ 3:0] data_out;
    reg  [19:0] ramaddr;
    //reg  [ 3:0] ramout;
@@ -49,13 +47,18 @@ module hp71b
    wire        sel7;
    // A valid SPRAM access is in a read or write state
    wire        spram_req;
+   // General conditions
+   wire        idout;
+   wire        pcdpout;
 
 
-   assign bank_dataout  = bank_out;
    assign cntrl_enb_o   = 1;
-   assign busout_enb_o  = (state == ID)  | (state == ID2) | (state == ID3) |
-			  (state == ID4) | (state == ID5) |
-			  (state == PCREAD) | (state == DPREAD);
+   assign idout         = (state == ID)  | (state == ID2) | (state == ID3) |
+		          (state == ID4) | (state == ID5);
+   assign pcdpout       = (state == PCREAD) | (state == DPREAD);
+
+   assign busout_enb_o  = (idout & daisyin_i & !bankdout[7]) |
+			  (pcdpout & spram_en);
    assign busin_enb_o   = !busout_enb_o;
    assign data_dir_o    = busout_enb_o ? 4'hF : 4'h0;
    
@@ -84,12 +87,12 @@ module hp71b
 		       data_out;
    assign spram_addr = ramaddr;
    assign spram_out  = bus_in;
-   assign spram_req = (state == PCREAD) | (state == DPREAD) |
+   assign spram_req  = (state == PCREAD) | (state == DPREAD) |
 		      (state == PCWRITE) | (state == DPWRITE);
 
-   assign spram_en = spram_req & (sel0 | sel1 | sel2 | sel3 |
+   assign spram_en   = spram_req & (sel0 | sel1 | sel2 | sel3 |
 				  sel4 | sel5 | sel6 | sel7);
-   assign spram_wr = busout_enb_o;
+   assign spram_wr   = busout_enb_o;
 
      
 
@@ -131,7 +134,7 @@ module hp71b
   // responses to the ID command and accepts CONFIG command
   // addresses
    reg 	       din_last = 0;
-   reg  [7:0]  bankdout = 0;
+   wire [7:0]  bankdout;
    
 
   // ######   HP-71B State Machine   ##########################
@@ -208,16 +211,6 @@ module hp71b
 	      7: bank7 <= bank_datain;
 	    endcase // case (bank_addr)
 	 end // if (bank_wr)
-	 case (bank_addr)
-	   0: bank_out <= bank0;
-	   1: bank_out <= bank1;
-	   2: bank_out <= bank2;
-	   3: bank_out <= bank3;
-	   4: bank_out <= bank4;
-	   5: bank_out <= bank5;
-	   6: bank_out <= bank6;
-	   7: bank_out <= bank7;
-	    endcase // case (bank_addr)
       end
    end
    
@@ -225,43 +218,8 @@ module hp71b
      // Reset valid address bits on rising edge of Daisy-In
      if ( daisyin_i && !din_last ) begin
 	valid_addr <= 0;
-	bankdout   <= 0;
-     end
-     if ( !daisyin_i && din_last ) begin
-	bankdout   <= 0;
      end
      din_last <= daisyin_i;
-
-     // Daisy-In chain management while daisyin_i == 1
-     // Daisy-Out = InUse & Configured | InUse & (HARD | TAKEOVER)
-     if (daisyin_i == 1) begin
-	bankdout[0] <= bank0[3] & valid_addr[0] |
-		       bank0[3] & bank0[1]; // HARD or TAKEOVER
-
-	bankdout[1] <= bankdout[0] & bank1[3] & valid_addr[1] |
-		       bank1[3] & bank1[1]; // HARD or TAKEOVER
-
-	bankdout[2] <= bankdout[1] & bank1[3] & valid_addr[2] |
-		       bank2[3] & bank2[1]; // HARD or TAKEOVER
-
-	bankdout[3] <= bankdout[2] & bank1[3] & valid_addr[3] |
-		       bank3[3] & bank3[1]; // HARD or TAKEOVER
-
-	bankdout[4] <= bankdout[3] & bank1[3] & valid_addr[4] |
-		       bank4[3] & bank4[1]; // HARD or TAKEOVER
-
-	bankdout[5] <= bankdout[4] & bank1[3] & valid_addr[5] |
-		       bank5[3] & bank5[1]; // HARD or TAKEOVER
-
-	bankdout[6] <= bankdout[5] & bank1[3] & valid_addr[6] |
-		       bank6[3] & bank6[1]; // HARD or TAKEOVER
-
-	bankdout[7] <= bankdout[6] & bank1[3] & valid_addr[7] |
-		       bank7[3] & bank7[1]; // HARD or TAKEOVER
-     end // if (daisyin_i == 1)
-     else
-       bankdout <= 0;
-
 
      // Data from Saturn CPU valid on rising edge of STRN
      // Data is a command if CDN=0
@@ -468,64 +426,6 @@ module hp71b
      // Data out to the 71B bus should be asserted at the beginning
      // of a bus cycle
      case (state)
-       ID: begin
-	  if (daisyin_i) begin
-	     data_out   <= 4'hB;     // 16K memory chip size
-	  end
-       end
-       ID2: begin
-	  if (daisyin_i) begin
-	     data_out   <= 4'h0;     // Reserved for future use
-	  end
-       end
-       ID3: begin
-	  if (daisyin_i)
-
-	  // 0 for RAM, 1 for ROM,
-	  // 2~E asst mem types, F memory mapped I/O
-	  if ( daisyin_i & bank0[3] & !bank0[1] )
-	    data_out <= {3'b000, bank0[0]};
-	  if ( daisyin_i & bank1[3] & !bank1[1] )
-	    data_out <= {3'b000, bank1[0]};
-	  if ( daisyin_i & bank2[3] & !bank2[1] )
-	    data_out <= {3'b000, bank2[0]};
-	  if ( daisyin_i & bank3[3] & !bank3[1] )
-	    data_out <= {3'b000, bank3[0]};
-	  if ( daisyin_i & bank4[3] & !bank4[1] )
-	    data_out <= {3'b000, bank4[0]};
-	  if ( daisyin_i & bank5[3] & !bank5[1] )
-	    data_out <= {3'b000, bank5[0]};
-	  if ( daisyin_i & bank6[3] & !bank6[1] )
-	    data_out <= {3'b000, bank6[0]};
-	  if (daisyin_i & bank7[3] & !bank7[1] )
-	    data_out <= {3'b000, bank7[0]};
-       end
-       ID4: begin
-	  if (daisyin_i) begin
-	     data_out <= 4'h0;     // Memory, value unassigned
-	  end
-       end
-       ID5: begin
-
-	  // Set bits 3 & 2 to 1 if last chip flag set
-	  // MultiMod only sets bit 3?
-	  if ( daisyin_i & bank0[3] & !bank0[1] )
-	    data_out <= {bank0[2], bank0[2], 2'b00};
-	  if ( daisyin_i & bank1[3] & !bank1[1] )
-	    data_out <= {bank1[2], bank1[2], 2'b00};
-	  if ( daisyin_i & bank2[3] & !bank2[1] )
-	    data_out <= {bank2[2], bank2[2], 2'b00};
-	  if ( daisyin_i & bank3[3] & !bank3[1] )
-	    data_out <= {bank3[2], bank3[2], 2'b00};
-	  if ( daisyin_i & bank4[3] & !bank4[1] )
-	    data_out <= {bank4[2], bank4[2], 2'b00};
-	  if ( daisyin_i & bank5[3] & !bank5[1] )
-	    data_out <= {bank5[2], bank5[2], 2'b00};
-	  if ( daisyin_i & bank6[3] & !bank6[1] )
-	    data_out <= {bank6[2], bank6[2], 2'b00};
-	  if ( daisyin_i & bank7[3] & !bank7[1] )
-	    data_out <= {bank7[2], bank7[2], 2'b00};
-       end
        PCREAD: begin
 	  // SPRAM read transaction
 	  ramaddr <= pcreg;
@@ -549,14 +449,54 @@ module hp71b
 
    
   always @(*) begin
+     // Daisy-In chain management while daisyin_i == 1
+     // Daisy-Out = DaisyIn & InUse & Configured |
+     //             DaisyIn & InUse & (HARD | TAKEOVER) |
+     //             DaisyIn & !InUse
+     bankdout[0] = (daisyin_i & bank0[3] & valid_addr[0]) |
+		   (daisyin_i & bank0[3] & bank0[1]) | // HARD or TAKEOVER
+		   (!bank0[3] & daisyin_i);
+
+     bankdout[1] = (bankdout[0] & bank1[3] & valid_addr[1]) |
+		   (bankdout[0] & bank1[3] & bank1[1]) | // HARD or TAKEOVER
+		   (!bank1[3] & bankdout[0]);
+
+     bankdout[2] = (bankdout[1] & bank2[3] & valid_addr[2]) |
+		   (bankdout[1] & bank2[3] & bank2[1]) | // HARD or TAKEOVER
+		   (!bank2[3] & bankdout[1]);
+
+     bankdout[3] = (bankdout[2] & bank3[3] & valid_addr[3]) |
+		   (bankdout[2] & bank3[3] & bank3[1]) | // HARD or TAKEOVER
+		   (!bank3[3] & bankdout[2]);
+
+     bankdout[4] = (bankdout[3] & bank4[3] & valid_addr[4]) |
+		   (bankdout[3] & bank4[3] & bank4[1]) | // HARD or TAKEOVER
+		   (!bank4[3] & bankdout[3]);
+
+     bankdout[5] = (bankdout[4] & bank5[3] & valid_addr[5]) |
+		   (bankdout[4] & bank5[3] & bank5[1]) | // HARD or TAKEOVER
+		   (!bank5[3] & bankdout[4]);
+
+     bankdout[6] = (bankdout[5] & bank6[3] & valid_addr[6]) |
+		   (bankdout[5] & bank6[3] & bank6[1]) | // HARD or TAKEOVER
+		   (!bank6[3] & bankdout[5]);
+
+     bankdout[7] = (bankdout[6] & bank7[3] & valid_addr[7]) |
+		   (bankdout[6] & bank7[3] & bank7[1]) | // HARD or TAKEOVER
+		   (!bank7[3] & bankdout[6]);
+     
      // Must use sampled bus values since CDN and Data Bus state
      // not held through the end of a bus cycle
-     if (bus_data[4] == 0)
+     if (bus_data[4] == 0)   // commandn_i == 0
        next_state = {1'b0, bus_data[3:0]};
      else
        case (state)
 	 ID: begin
-	    next_state = ID2;
+	    // Only respond if DaisyIn and not DaisyOut
+	    if (daisyin_i & !bankdout[7])
+	      next_state = ID2;
+	    else
+	      next_state = NOP;
 	 end
 	 ID2: begin
 	    next_state = ID3;
@@ -613,7 +553,10 @@ module hp71b
 	    next_state = DPREAD;
 	 end
 	 CONFIG: begin
-	    next_state = CONFIG2;
+	    if (daisyin_i == 1)
+	      next_state = CONFIG2;
+	    else
+	      next_state = NOP;
 	 end
 	 CONFIG2: begin
 	    next_state = CONFIG3;
@@ -636,7 +579,70 @@ module hp71b
 	 default: begin
 	    next_state = NOP;
 	 end
-       endcase
+       endcase // case (state)
+
+     /* verilator lint_off CASEINCOMPLETE */
+     case (state)
+       ID: begin
+	  if (daisyin_i) begin
+	     data_out = 4'hB;     // 16K memory chip size
+	  end
+       end
+       ID2: begin
+	  if (daisyin_i) begin
+	     data_out = 4'h0;     // Reserved for future use
+	  end
+       end
+       ID3: begin
+	  if (daisyin_i) begin
+	     // 0 for RAM, 1 for ROM,
+	     // 2~E asst mem types, F memory mapped I/O
+	     if ( daisyin_i & bank0[3] & !bank0[1] )
+	       data_out = {3'b000, bank0[0]};
+	     if ( daisyin_i & bank1[3] & !bank1[1] )
+	       data_out = {3'b000, bank1[0]};
+	     if ( daisyin_i & bank2[3] & !bank2[1] )
+	       data_out = {3'b000, bank2[0]};
+	     if ( daisyin_i & bank3[3] & !bank3[1] )
+	       data_out = {3'b000, bank3[0]};
+	     if ( daisyin_i & bank4[3] & !bank4[1] )
+	       data_out = {3'b000, bank4[0]};
+	     if ( daisyin_i & bank5[3] & !bank5[1] )
+	       data_out = {3'b000, bank5[0]};
+	     if ( daisyin_i & bank6[3] & !bank6[1] )
+	       data_out = {3'b000, bank6[0]};
+	     if (daisyin_i & bank7[3] & !bank7[1] )
+	       data_out = {3'b000, bank7[0]};
+	  end
+       end
+       ID4: begin
+	  if (daisyin_i) begin
+	     data_out = 4'h0;     // Memory, value unassigned
+	  end
+       end
+       ID5: begin
+	  // Set bits 3 & 2 to 1 if last chip flag set
+	  // MultiMod only sets bit 3?
+	  if ( daisyin_i & bank0[3] & !bank0[1] )
+	    data_out = {bank0[2], bank0[2], 2'b00};
+	  if ( daisyin_i & bank1[3] & !bank1[1] )
+	    data_out = {bank1[2], bank1[2], 2'b00};
+	  if ( daisyin_i & bank2[3] & !bank2[1] )
+	    data_out = {bank2[2], bank2[2], 2'b00};
+	  if ( daisyin_i & bank3[3] & !bank3[1] )
+	    data_out = {bank3[2], bank3[2], 2'b00};
+	  if ( daisyin_i & bank4[3] & !bank4[1] )
+	    data_out = {bank4[2], bank4[2], 2'b00};
+	  if ( daisyin_i & bank5[3] & !bank5[1] )
+	    data_out = {bank5[2], bank5[2], 2'b00};
+	  if ( daisyin_i & bank6[3] & !bank6[1] )
+	    data_out = {bank6[2], bank6[2], 2'b00};
+	  if ( daisyin_i & bank7[3] & !bank7[1] )
+	    data_out = {bank7[2], bank7[2], 2'b00};
+       end // case: ID5
+     endcase // case (state)
+     /* verilator lint_on CASEINCOMPLETE */
+     
   end
 
 endmodule

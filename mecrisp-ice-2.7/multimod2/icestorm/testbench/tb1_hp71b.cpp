@@ -12,11 +12,28 @@ vluint64_t posedge_cnt = 0;
 /*********************************************************************
      Test bench to validate the bank register access function for the
      HP71B state machine.
+     The clk_i input is driven by the same clock as the j1a Forth CPU
+     and is only active when the CPU is active.
+     The test bench accesses each bank register in turn, writing a
+     configuration value similar to the MultiMod default ROM content.
+     This includes the Forth/Assembler 16K ROM, the 32K hard ROM
+     associated with Forth, and two 32K ROMs, Math & JPC05. One bank
+     is left unused.
  ********************************************************************/
+
+#define BANKSET(t,a,v) case t: \
+  dut->bank_addr = a;	       \
+  dut->bank_wr = 1;	       \
+  dut->bank_datain = v;	       \
+  break;		       \
+  case t+1:		       \
+  dut->bank_wr = 0;	       \
+  break;
+
 
 void dut_reset (Vhp71b *dut, vluint64_t &sim_time){
     dut->clk_i = 0;
-    dut->rstn_i = 1;
+    dut->rstn_i = 0;
     dut->bank_addr = 0;
     dut->bank_wr = 0;
     dut->bank_datain = 0;
@@ -39,117 +56,29 @@ int main(int argc, char** argv, char** env) {
 
       if (dut->clk_i == 1){ // Active on clock high
 	posedge_cnt++;
-	//	set_rnd_out_valid(dut, sim_time);
 	switch (posedge_cnt){
-	case 5:
+
+	case 2:
+	  dut->rstn_i = 1;
+	  break;
+
 	  // 16KB Forth/Assembler ROM
-	  dut->bank_addr = 0;
-	  dut->bank_wr = 1;
-	  dut->bank_datain = 0b1101;  // Inuse, ChainEnd, ROM (01)
-	  break;
+	  BANKSET(5,0,0b1101)  // Inuse, ChainEnd, ROM (01)
 
-	case 6:
-	  dut->bank_addr = 0;
-	  dut->bank_wr = 0;
-	  dut->bank_datain = 0b1101;  // Inuse, ChainEnd, ROM (01)
-	  break;
+	    // 32KB Forth/Assembler Hard ROM
+	    BANKSET(10,1,0b1010)  // Inuse, Hard ROM (10)
+	    BANKSET(15,2,0b1110)  // Inuse, ChainEnd, Hard ROM (10)
 
-	case 10:
-	  // 32KB Forth/Assembler Hard ROM
-	  dut->bank_addr = 1;
-	  dut->bank_wr = 1;
-	  dut->bank_datain = 0b1010;  // Inuse, Hard ROM (10)
-	  break;
+	    // 16KB Unused Bank
+	    BANKSET(20,3,0)  // None
 
-	case 11:
-	  // 32KB Forth/Assembler Hard ROM
-	  dut->bank_addr = 1;
-	  dut->bank_wr = 0;
-	  dut->bank_datain = 0b1010;  // Inuse, Hard ROM (10)
-	  break;
+	    // 32KB Math ROM
+	    BANKSET(25,4,0b1001)  // Inuse, Hard ROM (01)
+	    BANKSET(30,5,0b1101)  // Inuse, ChainEnd, Hard ROM (01)
 
-	case 15:
-	  // 32KB Forth/Assembler Hard ROM
-	  dut->bank_addr = 2;
-	  dut->bank_wr = 1;
-	  dut->bank_datain = 0b1110;  // Inuse, ChainEnd, Hard ROM (10)
-	  break;
-
-	case 16:
-	  // 32KB Forth/Assembler Hard ROM
-	  dut->bank_addr = 2;
-	  dut->bank_wr = 0;
-	  dut->bank_datain = 0b1110;  // Inuse, ChainEnd, Hard ROM (10)
-	  break;
-
-	case 20:
-	  // 16KB Unused Bank
-	  dut->bank_addr = 3;
-	  dut->bank_wr = 1;
-	  dut->bank_datain = 0;  // None
-	  break;
-
-	case 21:
-	  dut->bank_addr = 3;
-	  dut->bank_wr = 0;
-	  dut->bank_datain = 0;  // None
-	  break;
-
-	case 25:
-	  // 32KB Math ROM
-	  dut->bank_addr = 4;
-	  dut->bank_wr = 1;
-	  dut->bank_datain = 0b1001;  // Inuse, ROM (01)
-	  break;
-
-	case 26:
-	  // 32KB Math ROM
-	  dut->bank_addr = 4;
-	  dut->bank_wr = 0;
-	  dut->bank_datain = 0b1001;  // Inuse, Hard ROM (01)
-	  break;
-
-	case 30:
-	  // 32KB Math ROM
-	  dut->bank_addr = 5;
-	  dut->bank_wr = 1;
-	  dut->bank_datain = 0b1101;  // Inuse, ChainEnd, ROM (01)
-	  break;
-
-	case 31:
-	  // 32KB Math ROM
-	  dut->bank_addr = 5;
-	  dut->bank_wr = 0;
-	  dut->bank_datain = 0b1101;  // Inuse, ChainEnd, ROM (01)
-	  break;
-
-	case 35:
-	  // 32KB JPC05 ROM
-	  dut->bank_addr = 6;
-	  dut->bank_wr = 1;
-	  dut->bank_datain = 0b1001;  // Inuse, ROM (01)
-	  break;
-
-	case 36:
-	  // 32KB JPC05 ROM
-	  dut->bank_addr = 6;
-	  dut->bank_wr = 0;
-	  dut->bank_datain = 0b1001;  // Inuse, Hard ROM (01)
-	  break;
-
-	case 40:
-	  // 32KB JPC05 ROM
-	  dut->bank_addr = 7;
-	  dut->bank_wr = 1;
-	  dut->bank_datain = 0b1101;  // Inuse, ChainEnd, ROM (01)
-	  break;
-
-	case 41:
-	  // 32KB JPC05 ROM
-	  dut->bank_addr = 7;
-	  dut->bank_wr = 0;
-	  dut->bank_datain = 0b1101;  // Inuse, ChainEnd, ROM (01)
-	  break;
+	    // 32KB JPC05 ROM
+	    BANKSET(35,6,0b1001)  // Inuse, Hard ROM (01)
+	    BANKSET(40,7,0b1101)  // Inuse, ChainEnd, Hard ROM (01)
 
 	}
       }

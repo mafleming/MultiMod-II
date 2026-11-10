@@ -10,6 +10,8 @@
 `include "../common-verilog/usb_cdc/phy_tx.v"
 `include "../common-verilog/usb_cdc/sie.v"
 
+`include "hp71b.v"
+
 module top (
     input  clki,     // 48 MHz clock input
     output clki_en,  // Enable external clock
@@ -141,7 +143,19 @@ module top (
    localparam ROM      = 2'b01;
    localparam HARD     = 2'b10;
    localparam TAKEOVER = 2'b11;
-   
+/*
+   hp71b _hp71b
+ (
+  .clk_i(clk),
+  .rstn_i(resetq),
+  .bank_addr_i(io_addr[2:0]),
+  .bank_wr_i(io_wr & io_addr[10]),
+  .bank_data_i(io_dout[3:0]),
+  .daisyin_i(din71),
+  .stroben_i(strn71),
+  .commandn_i(cdn71)
+  );
+*/   
 
   // Bank bits are: InUse, ChainEnd, ROMtype[1:0]
    reg [3:0]  bank0 = 0;
